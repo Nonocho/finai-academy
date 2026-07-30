@@ -1,0 +1,61 @@
+course:
+  name: FinAI Academy
+  author: Arnaud Demes
+  language: en
+  format: modular
+  capstone: FinResearch Copilot
+
+brand:
+  signature: "FinAI Academy - Arnaud Demes"
+  logo: none
+  primary: "#051C2A"
+  royal_blue: "#1F40CB"
+  cyan: "#00A2EB"
+  orange: "#F07D00"
+  off_white: "#F5F5F5"
+
+chapters:
+  - id: "00"
+    slug: product-demo-and-system-map
+    deck: decks/00-product-demo-and-system-map.pptx
+    notebook: notebooks/00-product-demo-and-system-map.ipynb
+  - id: "01"
+    slug: ai-and-llm-foundations
+    deck: decks/01-ai-and-llm-foundations.pptx
+    notebook: notebooks/01-ai-and-llm-foundations.ipynb
+  - id: "02"
+    slug: prompting-and-structured-outputs
+    deck: decks/02-prompting-and-structured-outputs.pptx
+    notebook: notebooks/02-prompting-and-structured-outputs.ipynb
+  - id: "03"
+    slug: retrieval-from-first-principles
+    deck: decks/03-retrieval-from-first-principles.pptx
+    notebook: notebooks/03-retrieval-from-first-principles.ipynb
+  - id: "04"
+    slug: document-ingestion-and-chunking
+    deck: decks/04-document-ingestion-and-chunking.pptx
+    notebook: notebooks/04-document-ingestion-and-chunking.ipynb
+  - id: "05"
+    slug: embeddings-and-advanced-retrieval
+    deck: decks/05-embeddings-and-advanced-retrieval.pptx
+    notebook: notebooks/05-embeddings-and-advanced-retrieval.ipynb
+  - id: "06"
+    slug: rag-with-evidence
+    deck: decks/06-rag-with-evidence.pptx
+    notebook: notebooks/06-rag-with-evidence.ipynb
+  - id: "07"
+    slug: tools-and-deterministic-workflows
+    deck: decks/07-tools-and-deterministic-workflows.pptx
+    notebook: notebooks/07-tools-and-deterministic-workflows.ipynb
+  - id: "08"
+    slug: langgraph-agents-and-self-correction
+    deck: decks/08-langgraph-agents-and-self-correction.pptx
+    notebook: notebooks/08-langgraph-agents-and-self-correction.ipynb
+  - id: "09"
+    slug: multi-agent-financial-research
+    deck: decks/09-multi-agent-financial-research.pptx
+    notebook: notebooks/09-multi-agent-financial-research.ipynb
+  - id: "10"
+    slug: evaluation-observability-and-llmops
+    deck: decks/10-evaluation-observability-and-llmops.pptx
+    notebook: notebooks/10-evaluation-observability-and-llmops.ipynb

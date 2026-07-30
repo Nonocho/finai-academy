@@ -1,0 +1,51 @@
+[project]
+name = "finai-academy"
+version = "0.1.0"
+description = "Hands-on AI systems engineering for financial research"
+readme = "README.md"
+requires-python = ">=3.11"
+authors = [
+  { name = "Arnaud Demes" }
+]
+dependencies = [
+  "ipykernel",
+  "ipywidgets",
+  "jupyterlab",
+  "matplotlib",
+  "numpy",
+  "pandas",
+  "pydantic>=2",
+  "python-dotenv",
+  "scikit-learn",
+]
+
+[project.optional-dependencies]
+ai = [
+  "langchain",
+  "langchain-community",
+  "langchain-ollama",
+  "langgraph",
+  "openai",
+]
+rag = [
+  "docling",
+  "flashrank",
+]
+finance = [
+  "edgartools",
+  "yfinance",
+]
+dev = [
+  "pytest",
+  "ruff",
+]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"

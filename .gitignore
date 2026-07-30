@@ -1,0 +1,15 @@
+.DS_Store
+.env
+.venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+.ipynb_checkpoints/
+dist/
+build/
+*.egg-info/
+artifacts/
+data/private/
+data/raw/
+!data/raw/.gitkeep
