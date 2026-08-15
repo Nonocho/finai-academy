@@ -10,6 +10,7 @@ dist/
 build/
 *.egg-info/
 artifacts/
+.artifacts/
 data/private/
 data/raw/
 !data/raw/.gitkeep

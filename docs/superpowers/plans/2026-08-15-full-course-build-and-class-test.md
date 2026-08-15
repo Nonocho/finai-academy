@@ -13,7 +13,7 @@
 - Every LLM-dependent notebook must run unchanged with `FINAI_MODEL_PROVIDER=ollama` or `FINAI_MODEL_PROVIDER=openai`.
 - Every embedding-dependent notebook must run unchanged with `FINAI_EMBEDDING_PROVIDER=ollama` or `FINAI_EMBEDDING_PROVIDER=openai`.
 - Default local chat model: `qwen3:8b`; default local embedding model: `qwen3-embedding:0.6b`.
-- Default hosted chat model: `gpt-4.1-mini`; default hosted embedding model: `text-embedding-3-small`.
+- Default hosted chat model: `gpt-5-mini`; default hosted embedding model: `text-embedding-3-small`.
 - Model identifiers remain overrideable through environment variables.
 - No API key, secret, generated credential, or private financial document is committed.
 - Unit and notebook-contract tests run without network access, an API key, or an Ollama daemon.
@@ -191,7 +191,7 @@ def test_openai_defaults(monkeypatch):
     monkeypatch.delenv("FINAI_CHAT_MODEL", raising=False)
     monkeypatch.delenv("FINAI_EMBEDDING_MODEL", raising=False)
     settings = Settings.from_environment()
-    assert settings.chat_model == "gpt-4.1-mini"
+    assert settings.chat_model == "gpt-5-mini"
     assert settings.embedding_model == "text-embedding-3-small"
 ```
 
@@ -204,7 +204,7 @@ Run: `uv run --extra dev pytest tests/test_settings.py tests/test_providers.py -
 ```python
 SUPPORTED_PROVIDERS = frozenset({"ollama", "openai"})
 
-CHAT_DEFAULTS = {"ollama": "qwen3:8b", "openai": "gpt-4.1-mini"}
+CHAT_DEFAULTS = {"ollama": "qwen3:8b", "openai": "gpt-5-mini"}
 EMBEDDING_DEFAULTS = {
     "ollama": "qwen3-embedding:0.6b",
     "openai": "text-embedding-3-small",

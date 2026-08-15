@@ -12,24 +12,33 @@ dependencies = [
   "ipywidgets",
   "jupyterlab",
   "matplotlib",
+  "nbclient",
+  "nbformat",
   "numpy",
   "pandas",
   "pydantic>=2",
+  "pyyaml",
   "python-dotenv",
   "scikit-learn",
 ]
+
+[build-system]
+requires = ["setuptools>=70"]
+build-backend = "setuptools.build_meta"
 
 [project.optional-dependencies]
 ai = [
   "langchain",
   "langchain-community",
   "langchain-ollama",
+  "langchain-openai",
   "langgraph",
   "openai",
 ]
 rag = [
   "docling",
   "flashrank",
+  "pdfplumber",
 ]
 finance = [
   "edgartools",
