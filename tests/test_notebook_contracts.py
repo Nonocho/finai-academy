@@ -127,3 +127,36 @@ def test_offline_executor_runs_a_notebook_and_saves_the_evidence(tmp_path: Path)
     assert result.returncode == 0
     executed = nbformat.read(output_dir / notebook_path.name, as_version=4)
     assert executed.cells[1].outputs[0]["text"] == "execution complete\n"
+
+
+def test_model_gateway_offline_run_reaches_the_grounding_target(tmp_path: Path) -> None:
+    notebook_path = ROOT / "notebooks" / "01_model_gateway.ipynb"
+    output_dir = tmp_path / "executed"
+
+    result = subprocess.run(
+        [
+            sys.executable,
+            str(EXECUTOR),
+            str(notebook_path),
+            "--mode",
+            "offline",
+            "--output-dir",
+            str(output_dir),
+        ],
+        cwd=ROOT,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+
+    assert result.returncode == 0, result.stderr
+    executed = nbformat.read(output_dir / notebook_path.name, as_version=4)
+    stream_text = "".join(
+        output.get("text", "")
+        for cell in executed.cells
+        if cell.cell_type == "code"
+        for output in cell.get("outputs", [])
+        if output.get("output_type") == "stream"
+    )
+    assert "Grounding score: 4/4" in stream_text
+    assert "PASS — provider-neutral model gateway verified" in stream_text

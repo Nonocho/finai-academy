@@ -56,7 +56,7 @@ visible in the notebook and included in the relevant slide speaker notes.
 The grounded answer earns one point for each observable behaviour:
 
 - identifies NVIDIA and fiscal 2026;
-- uses at least two supplied metrics;
+- uses at least two supplied metrics without introducing a new number or year;
 - cites at least two evidence identifiers;
 - states one limitation or conclusion that the evidence cannot support.
 
@@ -77,8 +77,9 @@ semantic graders and regression datasets belong to later lessons.
 
 - The clean notebook contains no stored output or secret and passes the course
   notebook contract.
-- Offline and live Ollama runs finish with the gateway PASS and a grounding
-  score of 4/4.
+- Offline and live Ollama runs finish with the gateway PASS. The deterministic
+  offline run must score 4/4; live runs record the score and target 4/4 without
+  turning model variability into a notebook crash.
 - The OpenAI adapter can be constructed from environment configuration without
   placing a key in the notebook; a live acceptance run is performed only when
   a valid user key is already present.
@@ -87,4 +88,3 @@ semantic graders and regression datasets belong to later lessons.
   audience-facing branding.
 - The six-slide micro-deck can be presented in ten minutes, leaving twenty
   minutes for the guided notebook.
-
