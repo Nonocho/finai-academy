@@ -1,9 +1,11 @@
 course:
-  name: FinAI Academy
+  name: AI Engineering for Asset Management
+  subtitle: Build a Financial Analyst Copilot in Two Days
   author: Arnaud Demes
   language: en
-  format: modular
-  capstone: FinResearch Copilot
+  format: notebook-first technical workshop
+  blueprint: docs/program-blueprint.md
+  capstone: Financial Analyst Copilot
 
 brand:
   signature: "FinAI Academy - Arnaud Demes"
@@ -14,48 +16,182 @@ brand:
   orange: "#F07D00"
   off_white: "#F5F5F5"
 
-chapters:
-  - id: "00"
-    slug: product-demo-and-system-map
-    deck: decks/00-product-demo-and-system-map.pptx
-    notebook: notebooks/00-product-demo-and-system-map.ipynb
+delivery:
+  two_day:
+    day_start: "09:00"
+    day_end: "17:00"
+    lunch:
+      start: "12:00"
+      end: "13:30"
+    breaks:
+      - day: 1
+        start: "10:30"
+        end: "10:45"
+      - day: 1
+        start: "15:00"
+        end: "15:15"
+      - day: 2
+        start: "10:15"
+        end: "10:30"
+
+lessons:
+  - id: D1-OPEN
+    title: Product demo and system architecture
+    day: 1
+    start: "09:00"
+    end: "09:30"
+    deck: decks/00-course-introduction.pptx
+    chapter: chapters/00-course-introduction.md
+    capstone_increment: Shared product and evidence contract
+
   - id: "01"
-    slug: ai-and-llm-foundations
-    deck: decks/01-ai-and-llm-foundations.pptx
-    notebook: notebooks/01-ai-and-llm-foundations.ipynb
+    title: Local and hosted model gateway
+    day: 1
+    start: "09:30"
+    end: "10:00"
+    deck: decks/01-model-gateway.pptx
+    notebook: notebooks/01_model_gateway.ipynb
+    chapter: chapters/01-model-gateway.md
+    capstone_increment: First provider-neutral model response
+
   - id: "02"
-    slug: prompting-and-structured-outputs
-    deck: decks/02-prompting-and-structured-outputs.pptx
-    notebook: notebooks/02-prompting-and-structured-outputs.ipynb
+    title: Prompt engineering and structured outputs
+    day: 1
+    start: "10:00"
+    end: "10:30"
+    deck: decks/02-prompts-and-structured-outputs.pptx
+    notebook: notebooks/02_prompts_and_structured_outputs.ipynb
+    chapter: chapters/02-prompts-and-structured-outputs.md
+    capstone_increment: Validated analyst brief
+
   - id: "03"
-    slug: retrieval-from-first-principles
-    deck: decks/03-retrieval-from-first-principles.pptx
-    notebook: notebooks/03-retrieval-from-first-principles.ipynb
+    title: Context engineering and CAG
+    day: 1
+    start: "10:45"
+    end: "11:30"
+    deck: decks/03-cag-financial-document.pptx
+    notebook: notebooks/03_cag_financial_document.ipynb
+    chapter: chapters/03-cag-financial-document.md
+    capstone_increment: Complete-document grounded answer
+
   - id: "04"
-    slug: document-ingestion-and-chunking
-    deck: decks/04-document-ingestion-and-chunking.pptx
-    notebook: notebooks/04-document-ingestion-and-chunking.ipynb
+    title: RAG from first principles
+    day: 1
+    start: "11:30"
+    end: "12:00"
+    deck: decks/04-rag-from-scratch.pptx
+    notebook: notebooks/04_rag_from_scratch.ipynb
+    chapter: chapters/04-rag-from-scratch.md
+    capstone_increment: First retrieval-backed answer
+
   - id: "05"
-    slug: embeddings-and-advanced-retrieval
-    deck: decks/05-embeddings-and-advanced-retrieval.pptx
-    notebook: notebooks/05-embeddings-and-advanced-retrieval.ipynb
+    title: Financial documents and chunking laboratory
+    day: 1
+    start: "13:30"
+    end: "15:00"
+    deck: decks/05-document-and-chunking-lab.pptx
+    notebook: notebooks/05_document_and_chunking_lab.ipynb
+    chapter: chapters/05-document-and-chunking-lab.md
+    capstone_increment: Configurable ingestion and chunking pipeline
+
   - id: "06"
-    slug: rag-with-evidence
-    deck: decks/06-rag-with-evidence.pptx
-    notebook: notebooks/06-rag-with-evidence.ipynb
+    title: Embeddings and hybrid retrieval
+    day: 1
+    start: "15:15"
+    end: "16:00"
+    deck: decks/06-hybrid-retrieval.pptx
+    notebook: notebooks/06_hybrid_retrieval.ipynb
+    chapter: chapters/06-hybrid-retrieval.md
+    capstone_increment: Filtered hybrid retrieval and reranking
+
   - id: "07"
-    slug: tools-and-deterministic-workflows
-    deck: decks/07-tools-and-deterministic-workflows.pptx
-    notebook: notebooks/07-tools-and-deterministic-workflows.ipynb
+    title: RAG evaluation and tracing
+    day: 1
+    start: "16:00"
+    end: "16:45"
+    deck: decks/07-rag-evaluation.pptx
+    notebook: notebooks/07_rag_evaluation.ipynb
+    chapter: chapters/07-rag-evaluation.md
+    capstone_increment: RAG evaluation suite and traces
+
+  - id: D1-CLOSE
+    title: Day 1 integration checkpoint
+    day: 1
+    start: "16:45"
+    end: "17:00"
+    deck: decks/00-course-introduction.pptx
+    capstone_increment: Complete Day 1 financial RAG pipeline
+
+  - id: D2-OPEN
+    title: Debugging review
+    day: 2
+    start: "09:00"
+    end: "09:30"
+    deck: decks/00-course-introduction.pptx
+    capstone_increment: Corrected measured retrieval failure
+
   - id: "08"
-    slug: langgraph-agents-and-self-correction
-    deck: decks/08-langgraph-agents-and-self-correction.pptx
-    notebook: notebooks/08-langgraph-agents-and-self-correction.ipynb
+    title: Stateful RAG workflow with LangGraph
+    day: 2
+    start: "09:30"
+    end: "10:15"
+    deck: decks/08-langgraph-rag-workflow.pptx
+    notebook: notebooks/08_langgraph_rag_workflow.ipynb
+    chapter: chapters/08-langgraph-rag-workflow.md
+    capstone_increment: Stateful streaming RAG workflow
+
   - id: "09"
-    slug: multi-agent-financial-research
-    deck: decks/09-multi-agent-financial-research.pptx
-    notebook: notebooks/09-multi-agent-financial-research.ipynb
+    title: Financial tools and deterministic workflows
+    day: 2
+    start: "10:30"
+    end: "11:15"
+    deck: decks/09-tools-and-workflows.pptx
+    notebook: notebooks/09_tools_and_workflows.ipynb
+    chapter: chapters/09-tools-and-workflows.md
+    capstone_increment: Typed multi-source research workflow
+
   - id: "10"
-    slug: evaluation-observability-and-llmops
-    deck: decks/10-evaluation-observability-and-llmops.pptx
-    notebook: notebooks/10-evaluation-observability-and-llmops.ipynb
+    title: Workflow versus agent
+    day: 2
+    start: "11:15"
+    end: "12:00"
+    deck: decks/10-workflow-vs-agent.pptx
+    notebook: notebooks/10_workflow_vs_agent.ipynb
+    chapter: chapters/10-workflow-vs-agent.md
+    capstone_increment: Minimal bounded agent loop
+
+  - id: "11"
+    title: Reliable agent and trajectory evaluation
+    day: 2
+    start: "13:30"
+    end: "14:30"
+    deck: decks/11-reliable-agent.pptx
+    notebook: notebooks/11_reliable_agent.ipynb
+    chapter: chapters/11-reliable-agent.md
+    capstone_increment: Recovery, budgets, and trajectory evaluation
+
+  - id: "12"
+    title: Model Context Protocol
+    day: 2
+    start: "14:30"
+    end: "15:30"
+    deck: decks/12-financial-mcp.pptx
+    notebook: notebooks/12_financial_mcp.ipynb
+    chapter: chapters/12-financial-mcp.md
+    capstone_increment: Financial MCP server and client
+
+  - id: CAPSTONE
+    title: Capstone integration challenge
+    day: 2
+    start: "15:30"
+    end: "16:30"
+    deck: decks/00-course-introduction.pptx
+    capstone_increment: Integrated Financial Analyst Copilot
+
+  - id: DEMO
+    title: Demonstration and architecture review
+    day: 2
+    start: "16:30"
+    end: "17:00"
+    deck: decks/00-course-introduction.pptx
+    capstone_increment: Evaluated NVIDIA-Schneider research mission
