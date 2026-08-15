@@ -206,10 +206,12 @@ def _normalize_text(text: str) -> str:
 
 
 def _normalize_vector(vector: list[float]) -> list[float]:
-    magnitude = math.sqrt(sum(component * component for component in vector))
-    if magnitude == 0.0:
+    scale = max(abs(component) for component in vector)
+    if scale == 0.0:
         return vector
-    return [component / magnitude for component in vector]
+    scaled_vector = [component / scale for component in vector]
+    magnitude = math.sqrt(sum(component * component for component in scaled_vector))
+    return [component / magnitude for component in scaled_vector]
 
 
 def _validate_and_normalize_vector(

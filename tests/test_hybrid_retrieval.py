@@ -10,6 +10,18 @@ from finai_academy.hybrid_retrieval import (
 )
 
 
+class HighMagnitudeEmbeddings:
+    """Return finite vectors whose direct squared norm overflows."""
+
+    vector = (1e308, -1e308)
+
+    def embed_documents(self, texts: list[str]) -> list[list[float]]:
+        return [list(self.vector) for _ in texts]
+
+    def embed_query(self, text: str) -> list[float]:
+        return list(self.vector)
+
+
 def test_company_and_period_filters_block_cross_company_candidates(corpus):
     index = DenseIndex(
         corpus,
@@ -68,3 +80,17 @@ def test_equal_dense_scores_use_passage_id_as_stable_tie_break(corpus):
 
     tied_ids = [hit.passage.passage_id for hit in hits if hit.score == 0.5]
     assert tied_ids == sorted(tied_ids)
+
+
+def test_identical_high_magnitude_vectors_have_cosine_similarity_one(corpus):
+    index = DenseIndex(
+        corpus[:1],
+        HighMagnitudeEmbeddings(),
+        provider="offline",
+        model="teaching-test",
+        chunking_strategy="test",
+    )
+
+    (_, cosine), = index.cosine_scores("finite high-magnitude vector")
+
+    assert cosine == pytest.approx(1.0)
