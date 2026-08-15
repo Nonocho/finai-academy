@@ -1,19 +1,21 @@
-# Chapter decks
+# Course decks
 
-Each chapter will have one editable PowerPoint deck:
+The live course uses one introduction deck and twelve technical micro-decks:
 
 ```text
-00-product-demo-and-system-map.pptx
-01-ai-and-llm-foundations.pptx
-02-prompting-and-structured-outputs.pptx
-03-retrieval-from-first-principles.pptx
-04-document-ingestion-and-chunking.pptx
-05-embeddings-and-advanced-retrieval.pptx
-06-rag-with-evidence.pptx
-07-tools-and-deterministic-workflows.pptx
-08-langgraph-agents-and-self-correction.pptx
-09-multi-agent-financial-research.pptx
-10-evaluation-observability-and-llmops.pptx
+00-course-introduction.pptx
+01-model-gateway.pptx
+02-prompts-and-structured-outputs.pptx
+03-cag-financial-document.pptx
+04-rag-from-scratch.pptx
+05-document-and-chunking-lab.pptx
+06-hybrid-retrieval.pptx
+07-rag-evaluation.pptx
+08-langgraph-rag-workflow.pptx
+09-tools-and-workflows.pptx
+10-workflow-vs-agent.pptx
+11-reliable-agent.pptx
+12-financial-mcp.pptx
 ```
 
 Decks must follow the visual and authoring contracts documented in:
@@ -21,4 +23,8 @@ Decks must follow the visual and authoring contracts documented in:
 - `assets/brand/finai-academy-style.md`
 - `docs/authoring-guide.md`
 
-PowerPoint files are added only after complete rendering and visual QA.
+Every PowerPoint is editable and includes speaker notes. Files are accepted only
+after all slides are rendered, inspected at full size, and checked for overflow.
+
+`00-course-introduction.pptx` contains the learning promise, capstone mission,
+exact two-day schedule, provider strategy, and class acceptance contract.
