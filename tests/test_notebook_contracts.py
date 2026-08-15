@@ -381,3 +381,21 @@ def test_hybrid_retrieval_notebook_offline_run_is_visual_and_verified(tmp_path):
     assert "Cross-company leakage blocked" in output_text
     assert "Hybrid retrieval improves maintained recall" in output_text
     assert "PASS — hybrid retrieval laboratory verified" in output_text
+
+
+def test_hybrid_retrieval_notebook_separates_live_and_controlled_outcomes():
+    notebook = nbformat.read(ROOT / "notebooks" / "06_hybrid_retrieval.ipynb", as_version=4)
+    code_by_id = {
+        cell.id: cell.source for cell in notebook.cells if cell.cell_type == "code"
+    }
+
+    assert "controlled_dense_index" in code_by_id["lesson06-012"]
+    assert "controlled_dense_index" in code_by_id["lesson06-014"]
+    assert "observed_cosine_min" in code_by_id["lesson06-009"]
+    assert (
+        'if not live_mode:\n    assert maintained_recall["Reranked hybrid"] '
+        '> maintained_recall["Dense"]'
+        in code_by_id["lesson06-019"]
+    )
+    assert '"provider vectors are finite"' in code_by_id["lesson06-021"]
+    assert "if not live_mode:\n    assert moved_rankings" in code_by_id["lesson06-023"]

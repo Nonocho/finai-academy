@@ -54,15 +54,15 @@ Do not borrow notebook time to finish the deck. At 15:00, move to the executable
 | 0:00–2:00 | Run imports and provider selection. | `Embedding runtime: offline / financial-concepts-v1` offline, or the selected live provider/model. |
 | 2:00–5:00 | Inspect Figure 1 and rebuild source data. | Exactly seven passages; manifest schema v1, evidence-set version and corpus-hash prefix print. |
 | 5:00–7:00 | Inspect Figure 2. | Seven passage points and four starred query points are visible; axes say “teaching view only.” |
-| 7:00–10:00 | Inspect Figure 3. | Four-by-seven matrix with raw cosine values and a “not confidence” colorbar. |
+| 7:00–10:00 | Inspect Figure 3. | Four-by-seven matrix with raw cosine values, a “not confidence” colorbar and limits derived from the observed provider values, including negatives. |
 | 10:00–13:00 | Run all maintained questions and inspect Figure 4. | Keyword, dense and RRF ladders expose their own score types; green identifies expected evidence. |
-| 13:00–16:00 | Run the exact-number failure, Figure 5. | Keyword finds `18.7%`; dense raw cosine values tie at zero; `Dense exact-term failure reproduced` prints. |
-| 16:00–19:00 | Run pre-filtering, Figure 6. | The unfiltered result is Schneider; every filtered candidate is NVIDIA; `Cross-company leakage blocked` prints. |
+| 13:00–16:00 | Run the controlled exact-number failure, Figure 5. | The illustrative deterministic index finds `18.7%` lexically and ties at zero densely; `Dense exact-term failure reproduced` prints in every provider mode. |
+| 16:00–19:00 | Run controlled pre-filtering, Figure 6. | The illustrative unfiltered result is Schneider and every filtered candidate is NVIDIA; `Cross-company leakage blocked` prints in every provider mode. |
 | 19:00–22:00 | Inspect RRF contributions, Figure 7. | Each bar is the visible sum of keyword and dense reciprocal-rank terms. |
 | 22:00–25:00 | Inspect rerank features, Figure 8. | Weighted features sum to the displayed rerank score; exact numeric evidence leads. |
-| 25:00–27:00 | Run Figure 9 scorecard. | Reranked hybrid reaches 4/4 and exceeds dense recall; `Hybrid retrieval improves maintained recall` prints. |
-| 27:00–28:30 | Run verification. | Six checks print `PASS`; final line is `PASS — hybrid retrieval laboratory verified`. |
-| 28:30–30:00 | Run the weight challenge and debrief. | At least one `Ranking moved — …` line and the moved question IDs print. |
+| 25:00–27:00 | Run Figure 9 scorecard. | Offline: reranked hybrid reaches 4/4 and prints `Hybrid retrieval improves maintained recall`. Live: observed recall prints without a fixed rank threshold. |
+| 27:00–28:30 | Run verification. | Provider-invariant vector, filter, stage, score and provenance checks pass; offline additionally checks 4/4 maintained recall. Final line is `PASS — hybrid retrieval laboratory verified`. |
+| 28:30–30:00 | Run the weight challenge and debrief. | Offline asserts and prints moved ranks. Live prints either moved ranks or an explicit valid no-movement result. |
 
 ## Checkpoints and markers
 
@@ -83,7 +83,9 @@ handwritten fixture.
 
 ### `Dense exact-term failure reproduced`
 
-The query is only `18.7%`. The deterministic embedding intentionally excludes numeric
+This figure always uses a separate illustrative `DeterministicTeachingEmbeddings` index,
+including during Ollama and OpenAI runs. The query is only `18.7%`. The deterministic
+embedding intentionally excludes numeric
 tokens, so the raw query vector is zero and every raw cosine similarity is `0.000`.
 Identifier tie-breaking places an NVIDIA passage first, while the lexical channel finds a
 Schneider passage containing the exact number. The marker confirms the controlled failure,
@@ -91,14 +93,17 @@ not a successful dense lookup.
 
 ### `Cross-company leakage blocked`
 
-The unfiltered query `energy management organic growth` ranks Schneider Electric evidence
-first. With the application scope set to NVIDIA FY2026, the same dense search returns only
-eligible NVIDIA passages. The marker confirms that pre-filtering blocks cross-company
-candidates before ranking.
+This is also a controlled deterministic illustration in every provider mode. The
+unfiltered query `energy management organic growth` ranks Schneider Electric evidence
+first. With the application scope set to NVIDIA FY2026, the same controlled dense search
+returns only eligible NVIDIA passages. The marker confirms the mechanism. Verification
+separately asserts that the active live provider's filtered result contains only NVIDIA
+passages without requiring a particular rank order or similarity value.
 
 ### `Hybrid retrieval improves maintained recall`
 
-For the versioned four-question set, the expected offline scorecard is:
+This marker is an offline-only assertion. For the versioned four-question set, the expected
+deterministic scorecard is:
 
 | Stage | Expected rank-1 recovery |
 |---|---:|
@@ -113,9 +118,12 @@ miss while retaining the other expected evidence.
 
 ### `PASS — hybrid retrieval laboratory verified`
 
-This final marker appears only after all six checks pass: seven manifest-derived passages,
-complete provenance, two persisted index files, the cross-company barrier and 4/4 reranked
-maintained recall.
+This final marker is provider-neutral. It appears after the active provider returns finite,
+dimensionally valid vectors; metadata filtering admits only NVIDIA passages; all four
+retrieval stages remain visible; every recorded score is finite; provenance is complete;
+and both index artifacts exist. Offline mode additionally requires 4/4 reranked maintained
+recall. Live mode does not require a particular ranking, tie, recall improvement or RRF
+weight response.
 
 ## Core explanations
 
@@ -176,9 +184,13 @@ boundary before scoring.
 ## Challenge solution
 
 The challenge changes only the keyword weight from `1.0` to `3.0`; dense remains `1.0`.
-In the deterministic offline run, at least the NVIDIA exact-number ranking moves because
+In the deterministic offline run, at least the NVIDIA exact-number ranking must move because
 the keyword-first passage receives a larger RRF contribution. Additional lower-rank moves
 may print for the Schneider questions where channel order differs.
+
+Ollama and OpenAI rankings are provider observations. They may move or remain unchanged;
+both are valid. The live challenge prints what happened and never fails solely because the
+selected provider produced stable ranks.
 
 The correct conclusion is:
 
@@ -202,9 +214,10 @@ The correct conclusion is:
 
 ## Provider modes
 
-The source manifest, parsers, chunking, filters, fusion, reranking and verification remain
-the same in every mode. Only the embedding implementation changes through the shared
-gateway.
+The source manifest, parsers, chunking, filters, fusion and reranking remain the same in
+every mode. The active index uses the shared embedding gateway. Figures 5 and 6 deliberately
+use a separate deterministic teaching index so their controlled failures remain reproducible
+without imposing offline rank assumptions on the live provider.
 
 ### Offline
 
@@ -215,17 +228,26 @@ gateway.
   --output-dir /private/tmp/finai-lesson06-executed
 ```
 
+Expected: all four execution-contract markers print, the scorecard is 4/4 after reranking,
+the weight challenge reports at least one moved ranking and final verification passes.
+
 ### Ollama
 
 ```bash
 FINAI_EMBEDDING_MODEL=qwen3-embedding:0.6b \
   .venv/bin/python scripts/execute_notebooks.py \
   notebooks/06_hybrid_retrieval.ipynb \
-  --mode live --provider ollama
+  --mode live --provider ollama \
+  --output-dir /private/tmp/finai-lesson06-ollama
 ```
 
 Ensure Ollama is running and the configured embedding model is available. The executor
 sets `FINAI_LIVE_MODE=1` and selects the provider through shared settings.
+
+Expected: Figures 5 and 6 still print their clearly labelled controlled markers. The live
+scorecard prints observed recall without asserting 4/4 or improvement; provider vectors,
+dimensions, filtered companies, visible stages, finite scores and provenance are verified.
+The challenge may report moved rankings or no movement. Final verification must pass.
 
 ### OpenAI
 
@@ -233,11 +255,14 @@ sets `FINAI_LIVE_MODE=1` and selects the provider through shared settings.
 OPENAI_API_KEY=... FINAI_EMBEDDING_MODEL=text-embedding-3-small \
   .venv/bin/python scripts/execute_notebooks.py \
   notebooks/06_hybrid_retrieval.ipynb \
-  --mode live --provider openai
+  --mode live --provider openai \
+  --output-dir /private/tmp/finai-lesson06-openai
 ```
 
 Keep credentials outside the notebook. Live embeddings can change rank ties and therefore
-challenge output; the safety and provenance checks must still hold.
+scorecard and challenge output. The same provider-invariant structural checks described for
+Ollama must pass; no fixed live ranking, cosine sign, recall value or RRF movement is
+promised.
 
 ## Index-version debugging
 
