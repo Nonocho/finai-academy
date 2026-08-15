@@ -100,3 +100,4 @@ def test_implemented_lesson_six_assets_exist() -> None:
 
     assert (ROOT / lesson["chapter"]).is_file()
     assert (ROOT / lesson["notebook"]).is_file()
+    assert (ROOT / lesson["deck"]).is_file()
