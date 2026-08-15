@@ -2,11 +2,16 @@
 
 from __future__ import annotations
 
+import hashlib
+import json
 import math
 import re
 from collections.abc import Sequence
-from dataclasses import dataclass
+from dataclasses import asdict, dataclass
+from pathlib import Path
 from typing import Protocol
+
+import numpy as np
 
 from finai_academy.retrieval import EvidencePassage, LexicalRetriever, RetrievalHit
 
@@ -59,6 +64,23 @@ class RetrievalFilters:
             expected is None or _normalize_metadata(expected) == _normalize_metadata(getattr(passage, name))
             for name, expected in expected_values.items()
         )
+
+
+@dataclass(frozen=True)
+class EmbeddingIndexVersion:
+    """The identity metadata required to reuse locally stored document vectors."""
+
+    schema_version: int
+    provider: str
+    model: str
+    dimension: int
+    corpus_hash: str
+    chunking_strategy: str
+    passage_ids: tuple[str, ...]
+
+
+class IndexVersionError(ValueError):
+    """Raised when persisted vectors do not describe the requested corpus."""
 
 
 class DeterministicTeachingEmbeddings:
@@ -161,6 +183,64 @@ class DenseIndex:
             raise ValueError("embedding vectors must not be empty")
         if any(len(vector) != self.dimension for vector in self._document_vectors):
             raise ValueError("embedding vectors must have consistent dimensions")
+        self.document_matrix = np.asarray(self._document_vectors, dtype=float)
+        self.version = _build_index_version(
+            self.passages,
+            provider=self.provider,
+            model=self.model,
+            dimension=self.dimension,
+            chunking_strategy=self.chunking_strategy,
+        )
+
+    def save(self, directory: str | Path) -> None:
+        """Persist this index's identity metadata and normalized document vectors."""
+
+        artifact_directory = Path(directory)
+        artifact_directory.mkdir(parents=True, exist_ok=True)
+        with (artifact_directory / "manifest.json").open("w", encoding="utf-8") as manifest_file:
+            json.dump(asdict(self.version), manifest_file, sort_keys=True)
+        np.save(artifact_directory / "vectors.npy", self.document_matrix)
+
+    @classmethod
+    def from_artifact(
+        cls,
+        directory: str | Path,
+        passages: Sequence[IndexedPassage],
+        embeddings: EmbeddingModel,
+        *,
+        expected_version: EmbeddingIndexVersion,
+    ) -> DenseIndex:
+        """Load vectors only when their manifest matches the requested index identity."""
+
+        restored_passages = tuple(passages)
+        _validate_passages(restored_passages)
+        if not isinstance(expected_version, EmbeddingIndexVersion):
+            raise IndexVersionError("expected_version must be an EmbeddingIndexVersion")
+
+        artifact_directory = Path(directory)
+        stored_version = _load_embedding_index_version(artifact_directory / "manifest.json")
+        _validate_matching_versions(stored_version, expected_version)
+        _validate_manifest_corpus(stored_version, restored_passages)
+        document_matrix = _load_document_matrix(
+            artifact_directory / "vectors.npy",
+            passage_count=len(restored_passages),
+            dimension=stored_version.dimension,
+        )
+        _validate_query_vector_dimension(embeddings, stored_version.dimension)
+
+        restored_index = cls.__new__(cls)
+        restored_index.passages = restored_passages
+        restored_index.embeddings = embeddings
+        restored_index.provider = stored_version.provider
+        restored_index.model = stored_version.model
+        restored_index.chunking_strategy = stored_version.chunking_strategy
+        restored_index.dimension = stored_version.dimension
+        restored_index.document_matrix = document_matrix
+        restored_index._document_vectors = tuple(
+            tuple(vector) for vector in restored_index.document_matrix.tolist()
+        )
+        restored_index.version = stored_version
+        return restored_index
 
     def search(
         self,
@@ -233,6 +313,130 @@ def _validate_and_normalize_vector(
 def _cosine_similarity(left: Sequence[float], right: Sequence[float]) -> float:
     cosine = sum(left_value * right_value for left_value, right_value in zip(left, right, strict=True))
     return max(-1.0, min(1.0, cosine))
+
+
+def _build_index_version(
+    passages: Sequence[IndexedPassage],
+    *,
+    provider: str,
+    model: str,
+    dimension: int,
+    chunking_strategy: str,
+) -> EmbeddingIndexVersion:
+    return EmbeddingIndexVersion(
+        schema_version=1,
+        provider=provider,
+        model=model,
+        dimension=dimension,
+        corpus_hash=_hash_corpus(passages),
+        chunking_strategy=chunking_strategy,
+        passage_ids=tuple(passage.passage_id for passage in passages),
+    )
+
+
+def _hash_corpus(passages: Sequence[IndexedPassage]) -> str:
+    field_delimiter = "\x1f"
+    passage_delimiter = "\x1e"
+    corpus_text = passage_delimiter.join(
+        field_delimiter.join(
+            (
+                passage.passage_id,
+                passage.company,
+                passage.period,
+                passage.document_type,
+                passage.section,
+                passage.text,
+                passage.source_url,
+            )
+        )
+        for passage in passages
+    )
+    return hashlib.sha256(corpus_text.encode("utf-8")).hexdigest()
+
+
+def _load_embedding_index_version(manifest_path: Path) -> EmbeddingIndexVersion:
+    try:
+        with manifest_path.open(encoding="utf-8") as manifest_file:
+            manifest = json.load(manifest_file)
+        version = EmbeddingIndexVersion(
+            schema_version=manifest["schema_version"],
+            provider=manifest["provider"],
+            model=manifest["model"],
+            dimension=manifest["dimension"],
+            corpus_hash=manifest["corpus_hash"],
+            chunking_strategy=manifest["chunking_strategy"],
+            passage_ids=tuple(manifest["passage_ids"]),
+        )
+    except (KeyError, OSError, TypeError, ValueError, json.JSONDecodeError) as error:
+        raise IndexVersionError("manifest contains invalid index version metadata") from error
+
+    if version.schema_version != 1:
+        raise IndexVersionError("schema_version is not supported")
+    if not isinstance(version.dimension, int) or isinstance(version.dimension, bool):
+        raise IndexVersionError("dimension must be an integer")
+    if version.dimension <= 0:
+        raise IndexVersionError("dimension must be positive")
+    for field_name in ("provider", "model", "corpus_hash", "chunking_strategy"):
+        if not isinstance(getattr(version, field_name), str):
+            raise IndexVersionError(f"{field_name} must be a string")
+    if not all(isinstance(passage_id, str) for passage_id in version.passage_ids):
+        raise IndexVersionError("passage_ids must contain strings")
+    return version
+
+
+def _validate_matching_versions(
+    stored_version: EmbeddingIndexVersion,
+    expected_version: EmbeddingIndexVersion,
+) -> None:
+    for field_name in (
+        "schema_version",
+        "provider",
+        "model",
+        "dimension",
+        "corpus_hash",
+        "chunking_strategy",
+        "passage_ids",
+    ):
+        if getattr(stored_version, field_name) != getattr(expected_version, field_name):
+            raise IndexVersionError(f"index version mismatch for {field_name}")
+
+
+def _validate_manifest_corpus(
+    stored_version: EmbeddingIndexVersion,
+    passages: Sequence[IndexedPassage],
+) -> None:
+    passage_ids = tuple(passage.passage_id for passage in passages)
+    if stored_version.passage_ids != passage_ids:
+        raise IndexVersionError("manifest passage_ids do not match the requested corpus order")
+    if stored_version.corpus_hash != _hash_corpus(passages):
+        raise IndexVersionError("manifest corpus_hash does not match the requested corpus")
+
+
+def _load_document_matrix(
+    vectors_path: Path,
+    *,
+    passage_count: int,
+    dimension: int,
+) -> np.ndarray:
+    try:
+        matrix = np.load(vectors_path, allow_pickle=False)
+    except (OSError, ValueError) as error:
+        raise IndexVersionError("vectors.npy could not be loaded") from error
+    if matrix.shape != (passage_count, dimension):
+        raise IndexVersionError("vector matrix shape does not match the index version")
+    if not np.issubdtype(matrix.dtype, np.number) or not np.all(np.isfinite(matrix)):
+        raise IndexVersionError("vector matrix must contain finite numeric values")
+    return np.asarray(matrix, dtype=float)
+
+
+def _validate_query_vector_dimension(embeddings: EmbeddingModel, dimension: int) -> None:
+    try:
+        _validate_and_normalize_vector(
+            embeddings.embed_query("embedding index dimension validation"),
+            expected_dimension=dimension,
+        )
+    except ValueError as error:
+        raise IndexVersionError("query vector dimension does not match the index version") from error
 
 
 def _validate_passages(passages: Sequence[IndexedPassage]) -> None:

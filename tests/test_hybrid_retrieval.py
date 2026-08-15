@@ -1,10 +1,14 @@
 """Contract tests for provider-neutral hybrid retrieval indexes."""
 
+from dataclasses import replace
+
+import numpy as np
 import pytest
 
 from finai_academy.hybrid_retrieval import (
     DenseIndex,
     DeterministicTeachingEmbeddings,
+    IndexVersionError,
     KeywordIndex,
     RetrievalFilters,
 )
@@ -20,6 +24,62 @@ class HighMagnitudeEmbeddings:
 
     def embed_query(self, text: str) -> list[float]:
         return list(self.vector)
+
+
+def build_offline_dense_index(corpus):
+    """Build an offline index with the stable Lesson 06 identity metadata."""
+
+    embeddings = DeterministicTeachingEmbeddings()
+    return DenseIndex(
+        corpus,
+        embeddings,
+        provider="offline",
+        model=embeddings.model_name,
+        chunking_strategy="contextual-structure",
+    )
+
+
+def test_dense_index_round_trip_preserves_vectors_and_version(corpus, tmp_path):
+    """Persisted vectors must serve the same corpus and version identity."""
+
+    original = build_offline_dense_index(corpus)
+    original.save(tmp_path)
+
+    restored = DenseIndex.from_artifact(
+        tmp_path,
+        corpus,
+        DeterministicTeachingEmbeddings(),
+        expected_version=original.version,
+    )
+
+    assert np.array_equal(restored.document_matrix, original.document_matrix)
+    assert restored.version == original.version
+
+
+@pytest.mark.parametrize(
+    ("field", "replacement"),
+    [
+        ("provider", "different-provider"),
+        ("model", "different-model"),
+        ("dimension", 99),
+        ("corpus_hash", "0" * 64),
+        ("chunking_strategy", "fixed"),
+    ],
+)
+def test_loading_rejects_an_incompatible_index(corpus, tmp_path, field, replacement):
+    """Expected identity fields must reject mismatched persisted indexes."""
+
+    index = build_offline_dense_index(corpus)
+    index.save(tmp_path)
+    incompatible = replace(index.version, **{field: replacement})
+
+    with pytest.raises(IndexVersionError, match=field):
+        DenseIndex.from_artifact(
+            tmp_path,
+            corpus,
+            DeterministicTeachingEmbeddings(),
+            expected_version=incompatible,
+        )
 
 
 def test_company_and_period_filters_block_cross_company_candidates(corpus):
