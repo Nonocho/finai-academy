@@ -20,6 +20,7 @@ REQUIRED_HEADINGS = (
 
 ABSOLUTE_USER_PATH = re.compile(r"(?:/Users/[^/\s]+|[A-Za-z]:\\Users\\[^\\\s]+)")
 SECRET_PATTERN = re.compile(r"(?:sk-[A-Za-z0-9_-]{16,}|tvly-[A-Za-z0-9_-]{16,})")
+COURSE_SIGNATURES = ("First Finance - Arnaud Demes", "FinAI Academy")
 
 
 def validate_notebook(path: Path) -> list[str]:
@@ -29,8 +30,8 @@ def validate_notebook(path: Path) -> list[str]:
     errors: list[str] = []
     source = "\n".join(cell.source for cell in notebook.cells)
 
-    if "FinAI Academy" not in source:
-        errors.append("missing the FinAI Academy signature")
+    if not any(signature in source for signature in COURSE_SIGNATURES):
+        errors.append("missing an approved course signature")
 
     for heading in REQUIRED_HEADINGS:
         if f"## {heading}" not in source:
@@ -88,7 +89,7 @@ def main() -> None:
         raise SystemExit(1)
 
     noun = "notebook" if len(paths) == 1 else "notebooks"
-    print(f"{len(paths)} {noun} passed the FinAI Academy contract.")
+    print(f"{len(paths)} {noun} passed the course notebook contract.")
 
 
 if __name__ == "__main__":

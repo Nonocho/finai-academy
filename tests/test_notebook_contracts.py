@@ -21,7 +21,13 @@ REQUIRED_HEADINGS = (
 )
 
 
-def write_notebook(path: Path, *, body: str, with_output: bool = False) -> None:
+def write_notebook(
+    path: Path,
+    *,
+    body: str,
+    with_output: bool = False,
+    signature: str = "FinAI Academy — Arnaud Demes",
+) -> None:
     notebook = nbformat.v4.new_notebook()
     notebook.metadata.kernelspec = {
         "display_name": "Python 3 (ipykernel)",
@@ -32,7 +38,7 @@ def write_notebook(path: Path, *, body: str, with_output: bool = False) -> None:
     notebook.metadata.finai = {"expected_runtime_minutes": 10}
     notebook.cells = [
         nbformat.v4.new_markdown_cell(
-            "# 01 — Test lesson\n\n**FinAI Academy — Arnaud Demes**\n\n"
+            f"# 01 — Test lesson\n\n**{signature}**\n\n"
             + "\n\n".join(f"## {heading}\n\n{body}" for heading in REQUIRED_HEADINGS)
         ),
         nbformat.v4.new_code_cell("result = 2 + 2"),
@@ -58,6 +64,20 @@ def run_validator(path: Path) -> subprocess.CompletedProcess[str]:
 def test_valid_notebook_passes_the_teaching_contract(tmp_path: Path) -> None:
     notebook_path = tmp_path / "01_valid.ipynb"
     write_notebook(notebook_path, body="Clear learner-facing explanation.")
+
+    result = run_validator(notebook_path)
+
+    assert result.returncode == 0
+    assert "1 notebook passed" in result.stdout
+
+
+def test_first_finance_signature_passes_the_teaching_contract(tmp_path: Path) -> None:
+    notebook_path = tmp_path / "01_first_finance.ipynb"
+    write_notebook(
+        notebook_path,
+        body="Clear learner-facing explanation.",
+        signature="First Finance - Arnaud Demes",
+    )
 
     result = run_validator(notebook_path)
 
