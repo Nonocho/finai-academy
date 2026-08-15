@@ -152,6 +152,25 @@ def test_loading_rejects_non_integer_schema_version(corpus, tmp_path, invalid_sc
         )
 
 
+@pytest.mark.parametrize("invalid_schema_version", [True, 1.0])
+def test_loading_rejects_non_integer_expected_schema_version(
+    corpus, tmp_path, invalid_schema_version
+):
+    """Caller-provided index versions require the same literal schema type."""
+
+    index = build_offline_dense_index(corpus)
+    index.save(tmp_path)
+    invalid_version = replace(index.version, schema_version=invalid_schema_version)
+
+    with pytest.raises(IndexVersionError, match="schema_version"):
+        DenseIndex.from_artifact(
+            tmp_path,
+            corpus,
+            DeterministicTeachingEmbeddings(),
+            expected_version=invalid_version,
+        )
+
+
 @pytest.mark.parametrize(
     ("field", "replacement"),
     [

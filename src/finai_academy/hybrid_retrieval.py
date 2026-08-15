@@ -224,6 +224,7 @@ class DenseIndex:
         _validate_passages(restored_passages)
         if not isinstance(expected_version, EmbeddingIndexVersion):
             raise IndexVersionError("expected_version must be an EmbeddingIndexVersion")
+        _validate_embedding_index_version(expected_version)
 
         artifact_directory = Path(directory)
         stored_version = _load_embedding_index_version(artifact_directory / "manifest.json")
@@ -376,6 +377,11 @@ def _load_embedding_index_version(manifest_path: Path) -> EmbeddingIndexVersion:
     except (KeyError, OSError, TypeError, ValueError, json.JSONDecodeError) as error:
         raise IndexVersionError("manifest contains invalid index version metadata") from error
 
+    _validate_embedding_index_version(version)
+    return version
+
+
+def _validate_embedding_index_version(version: EmbeddingIndexVersion) -> None:
     if type(version.schema_version) is not int:
         raise IndexVersionError("schema_version must be an integer")
     if version.schema_version != 1:
@@ -389,7 +395,6 @@ def _load_embedding_index_version(manifest_path: Path) -> EmbeddingIndexVersion:
             raise IndexVersionError(f"{field_name} must be a string")
     if not all(isinstance(passage_id, str) for passage_id in version.passage_ids):
         raise IndexVersionError("passage_ids must contain strings")
-    return version
 
 
 def _validate_matching_versions(
