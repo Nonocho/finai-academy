@@ -88,7 +88,7 @@ def test_pipeline_keeps_all_rankings_visible_after_pre_filtering(corpus):
 
 
 def test_pipeline_does_not_abstain_when_only_the_dense_index_has_eligible_passages(corpus):
-    """Eligibility must cover both channel corpora before the pipeline abstains."""
+    """Active dense retrieval must accept weights declared for both supported channels."""
 
     embeddings = DeterministicTeachingEmbeddings()
     keyword_index = KeywordIndex(corpus[:1])
@@ -107,12 +107,30 @@ def test_pipeline_does_not_abstain_when_only_the_dense_index_has_eligible_passag
         filters=RetrievalFilters(company="Schneider Electric"),
         candidate_k=2,
         final_k=1,
+        weights={"keyword": 1.0, "dense": 2.0},
     )
 
     assert result.abstention_reason is None
     assert result.keyword_hits == ()
     assert result.dense_hits
     assert result.reranked_hits[0].passage.company == "Schneider Electric"
+
+
+def test_pipeline_validates_weights_before_an_empty_filter_result(corpus):
+    """Unsupported channel weights must fail at the public orchestration boundary."""
+
+    keyword_index, dense_index = build_indexes(corpus)
+
+    with pytest.raises(ValueError, match="weights"):
+        retrieve_evidence(
+            "What was revenue?",
+            keyword_index=keyword_index,
+            dense_index=dense_index,
+            filters=RetrievalFilters(company="Absent Company"),
+            candidate_k=4,
+            final_k=2,
+            weights={"unsupported": 1.0},
+        )
 
 
 @pytest.mark.parametrize(("candidate_k", "final_k"), [(0, 1), (1, 0), (1, 2)])

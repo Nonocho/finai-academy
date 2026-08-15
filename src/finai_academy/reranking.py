@@ -2,9 +2,11 @@
 
 from __future__ import annotations
 
+import math
 import re
 from collections.abc import Sequence
 from dataclasses import dataclass
+from types import MappingProxyType
 
 from finai_academy.hybrid_retrieval import FusedHit, IndexedPassage
 
@@ -17,13 +19,17 @@ WORD_TOKEN_PATTERN = re.compile(r"[a-z][a-z0-9]*", re.IGNORECASE)
 QUERY_STOP_WORDS = frozenset(
     {"a", "an", "and", "at", "by", "did", "does", "for", "in", "is", "of", "on", "or", "the", "to", "was", "what", "with"}
 )
-RERANK_FEATURE_WEIGHTS = {
-    "lexical_coverage": 0.25,
-    "numeric_coverage": 0.45,
-    "section_overlap": 0.10,
-    "metadata_eligibility": 0.10,
-    "fusion_signal": 0.10,
-}
+RERANK_FEATURE_WEIGHTS = MappingProxyType(
+    {
+        "lexical_coverage": 0.25,
+        "numeric_coverage": 0.45,
+        "section_overlap": 0.10,
+        "metadata_eligibility": 0.10,
+        "fusion_signal": 0.10,
+    }
+)
+if not math.isclose(sum(RERANK_FEATURE_WEIGHTS.values()), 1.0):
+    raise RuntimeError("RERANK_FEATURE_WEIGHTS must sum to 1.0")
 
 
 @dataclass(frozen=True)

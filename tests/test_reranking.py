@@ -5,7 +5,7 @@ from dataclasses import replace
 import pytest
 
 from finai_academy.hybrid_retrieval import FusedHit
-from finai_academy.reranking import rerank_candidates
+from finai_academy.reranking import RERANK_FEATURE_WEIGHTS, rerank_candidates
 
 
 def test_reranker_rewards_exact_numeric_evidence(corpus):
@@ -76,3 +76,17 @@ def test_fused_hit_rejects_scores_that_cannot_produce_normalized_features(corpus
 
     with pytest.raises(ValueError, match="rrf_score"):
         FusedHit(corpus[0], rrf_score, (("keyword", 1),))
+
+
+def test_rerank_weights_are_immutable_and_keep_scores_bounded(corpus):
+    """The declared fixed formula must remain immutable, normalized, and bounded."""
+
+    candidates = [FusedHit(corpus[0], 0.02, (("keyword", 1),))]
+
+    with pytest.raises(TypeError):
+        RERANK_FEATURE_WEIGHTS["numeric_coverage"] = 2.0
+
+    reranked = rerank_candidates("Data Center revenue", candidates, top_k=1)
+
+    assert sum(RERANK_FEATURE_WEIGHTS.values()) == pytest.approx(1.0)
+    assert 0.0 <= reranked[0].score <= 1.0
