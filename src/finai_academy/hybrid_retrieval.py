@@ -8,7 +8,7 @@ import math
 import pickle
 import re
 import zipfile
-from collections.abc import Sequence
+from collections.abc import Mapping, Sequence
 from dataclasses import asdict, dataclass
 from pathlib import Path
 from typing import Protocol
@@ -66,6 +66,23 @@ class RetrievalFilters:
             expected is None or _normalize_metadata(expected) == _normalize_metadata(getattr(passage, name))
             for name, expected in expected_values.items()
         )
+
+
+@dataclass(frozen=True)
+class FusedHit:
+    """One deduplicated passage with its reciprocal-rank contributions."""
+
+    passage: IndexedPassage
+    rrf_score: float
+    channel_ranks: tuple[tuple[str, int], ...]
+
+    def __post_init__(self) -> None:
+        """Keep the fusion signal suitable for normalized downstream features."""
+
+        if not isinstance(self.rrf_score, (int, float)) or not math.isfinite(self.rrf_score):
+            raise ValueError("rrf_score must be a finite number")
+        if self.rrf_score < 0:
+            raise ValueError("rrf_score must not be negative")
 
 
 @dataclass(frozen=True)
@@ -283,6 +300,54 @@ class DenseIndex:
         return sorted(scores, key=lambda item: (-item[1], item[0].passage_id))
 
 
+def reciprocal_rank_fusion(
+    rankings: Mapping[str, Sequence[RetrievalHit]],
+    *,
+    k: int = 60,
+    weights: Mapping[str, float] | None = None,
+) -> list[FusedHit]:
+    """Combine ranked channels using deterministic, identifier-based RRF.
+
+    Each ranking must contain every passage identifier at most once. A shared
+    identifier contributes one weighted reciprocal-rank term per channel.
+    """
+
+    _validate_rrf_inputs(rankings, k=k, weights=weights)
+    resolved_weights = {channel: 1.0 for channel in rankings}
+    if weights is not None:
+        resolved_weights.update(weights)
+
+    passages_by_id: dict[str, IndexedPassage] = {}
+    score_by_id: dict[str, float] = {}
+    ranks_by_id: dict[str, dict[str, int]] = {}
+    for channel, hits in rankings.items():
+        seen_ids: set[str] = set()
+        for rank, hit in enumerate(hits, start=1):
+            passage = hit.passage
+            passage_id = passage.passage_id
+            if passage_id in seen_ids:
+                raise ValueError(f"duplicate passage_id {passage_id!r} in {channel!r} ranking")
+            seen_ids.add(passage_id)
+            existing_passage = passages_by_id.get(passage_id)
+            if existing_passage is not None and existing_passage != passage:
+                raise ValueError(f"inconsistent passage content for passage_id {passage_id!r}")
+            passages_by_id[passage_id] = passage
+            score_by_id[passage_id] = score_by_id.get(passage_id, 0.0) + (
+                resolved_weights[channel] / (k + rank)
+            )
+            ranks_by_id.setdefault(passage_id, {})[channel] = rank
+
+    fused_hits = [
+        FusedHit(
+            passage=passages_by_id[passage_id],
+            rrf_score=score_by_id[passage_id],
+            channel_ranks=tuple(sorted(ranks_by_id[passage_id].items())),
+        )
+        for passage_id in passages_by_id
+    ]
+    return sorted(fused_hits, key=lambda hit: (-hit.rrf_score, hit.passage.passage_id))
+
+
 def _normalize_metadata(value: str) -> str:
     return value.casefold().strip()
 
@@ -473,3 +538,29 @@ def _validate_query(query: str) -> None:
 def _validate_top_k(top_k: int) -> None:
     if top_k <= 0:
         raise ValueError("top_k must be positive")
+
+
+def _validate_rrf_inputs(
+    rankings: Mapping[str, Sequence[RetrievalHit]],
+    *,
+    k: int,
+    weights: Mapping[str, float] | None,
+) -> None:
+    if not isinstance(k, int) or isinstance(k, bool) or k <= 0:
+        raise ValueError("k must be a positive integer")
+    if not rankings:
+        raise ValueError("rankings must contain at least one channel")
+    if weights is not None:
+        unknown_channels = set(weights).difference(rankings)
+        if unknown_channels:
+            raise ValueError(f"weights contain unknown channels: {sorted(unknown_channels)!r}")
+        for channel, weight in weights.items():
+            if not isinstance(weight, (int, float)) or isinstance(weight, bool) or not math.isfinite(weight):
+                raise ValueError(f"weight for {channel!r} must be a finite number")
+            if weight < 0:
+                raise ValueError(f"weight for {channel!r} must not be negative")
+    for channel, hits in rankings.items():
+        if not isinstance(channel, str) or not channel.strip():
+            raise ValueError("ranking channel names must be non-empty strings")
+        if not hits:
+            raise ValueError(f"{channel!r} ranking must contain at least one hit")

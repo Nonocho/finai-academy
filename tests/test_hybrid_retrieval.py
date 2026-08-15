@@ -12,7 +12,9 @@ from finai_academy.hybrid_retrieval import (
     IndexVersionError,
     KeywordIndex,
     RetrievalFilters,
+    reciprocal_rank_fusion,
 )
+from finai_academy.retrieval import RetrievalHit
 
 
 class HighMagnitudeEmbeddings:
@@ -269,3 +271,103 @@ def test_identical_high_magnitude_vectors_have_cosine_similarity_one(corpus):
     (_, cosine), = index.cosine_scores("finite high-magnitude vector")
 
     assert cosine == pytest.approx(1.0)
+
+
+def test_rrf_deduplicates_and_preserves_channel_ranks(corpus):
+    """Fusion must add one contribution per ranked channel for a shared passage."""
+
+    lexical = [
+        RetrievalHit(passage=corpus[0], score=0.9),
+        RetrievalHit(passage=corpus[1], score=0.8),
+    ]
+    dense = [
+        RetrievalHit(passage=corpus[1], score=0.95),
+        RetrievalHit(passage=corpus[2], score=0.7),
+    ]
+
+    fused = reciprocal_rank_fusion(
+        {"keyword": lexical, "dense": dense},
+        k=60,
+        weights={"keyword": 1.0, "dense": 1.0},
+    )
+
+    shared = next(hit for hit in fused if hit.passage.passage_id == corpus[1].passage_id)
+    assert dict(shared.channel_ranks) == {"dense": 1, "keyword": 2}
+    assert shared.rrf_score == pytest.approx(1 / 61 + 1 / 62)
+    assert len({hit.passage.passage_id for hit in fused}) == len(fused)
+
+
+def test_rrf_weight_changes_the_controlled_top_result(corpus):
+    """Changing a channel weight must change the winner when ranks are opposed."""
+
+    rankings = {
+        "keyword": [
+            RetrievalHit(passage=corpus[0], score=0.9),
+            RetrievalHit(passage=corpus[1], score=0.8),
+        ],
+        "dense": [
+            RetrievalHit(passage=corpus[1], score=0.95),
+            RetrievalHit(passage=corpus[0], score=0.7),
+        ],
+    }
+
+    keyword_heavy = reciprocal_rank_fusion(
+        rankings, k=60, weights={"keyword": 2.0, "dense": 1.0}
+    )
+    dense_heavy = reciprocal_rank_fusion(
+        rankings, k=60, weights={"keyword": 1.0, "dense": 2.0}
+    )
+
+    assert keyword_heavy[0].passage.passage_id != dense_heavy[0].passage.passage_id
+
+
+def test_rrf_equal_scores_use_passage_id_as_stable_tie_break(corpus):
+    """Equal RRF sums must not depend on mapping or retrieval order."""
+
+    rankings = {
+        "keyword": [RetrievalHit(passage=corpus[0], score=0.9)],
+        "dense": [RetrievalHit(passage=corpus[1], score=0.9)],
+    }
+
+    fused = reciprocal_rank_fusion(rankings, k=60)
+
+    assert [hit.passage.passage_id for hit in fused] == sorted(
+        [corpus[0].passage_id, corpus[1].passage_id]
+    )
+
+
+@pytest.mark.parametrize(
+    ("rankings", "k", "weights", "message"),
+    [
+        ({}, 60, None, "rankings"),
+        ({"keyword": []}, 60, None, "keyword"),
+        ({"keyword": []}, 0, None, "k"),
+        ({"keyword": []}, 60, {"dense": 1.0}, "unknown"),
+        ({"keyword": []}, 60, {"keyword": -1.0}, "negative"),
+    ],
+)
+def test_rrf_rejects_invalid_ranking_inputs(rankings, k, weights, message):
+    """Fusion must fail rather than silently turn malformed rank lists into evidence."""
+
+    with pytest.raises(ValueError, match=message):
+        reciprocal_rank_fusion(rankings, k=k, weights=weights)
+
+
+def test_rrf_rejects_duplicate_ids_and_conflicting_passage_content(corpus):
+    """A passage ID must have one occurrence per channel and one canonical record."""
+
+    duplicate_channel = [
+        RetrievalHit(passage=corpus[0], score=0.9),
+        RetrievalHit(passage=corpus[0], score=0.8),
+    ]
+    conflicting_passage = replace(corpus[0], text="Different text with the same identifier.")
+
+    with pytest.raises(ValueError, match="duplicate"):
+        reciprocal_rank_fusion({"keyword": duplicate_channel})
+    with pytest.raises(ValueError, match="inconsistent"):
+        reciprocal_rank_fusion(
+            {
+                "keyword": [RetrievalHit(passage=corpus[0], score=0.9)],
+                "dense": [RetrievalHit(passage=conflicting_passage, score=0.8)],
+            }
+        )
