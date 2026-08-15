@@ -4,12 +4,104 @@ from __future__ import annotations
 
 import json
 import re
+from collections.abc import Sequence
 from dataclasses import dataclass
-from typing import Any, TypeVar
+from typing import Any, Protocol, TypeVar
 
+import numpy as np
 from pydantic import BaseModel
 
 ResponseT = TypeVar("ResponseT", bound=BaseModel)
+
+
+class ManifestLabelPassage(Protocol):
+    """The provenance fields required for compact notebook labels."""
+
+    company: str
+    period: str
+    passage_id: str
+
+
+def normalize_rows(values: Sequence[Sequence[float]]) -> np.ndarray:
+    """Return finite row-normalized vectors while preserving all-zero rows."""
+
+    matrix = np.asarray(values, dtype=float)
+    if matrix.ndim != 2:
+        raise ValueError("values must be a two-dimensional matrix")
+    if not np.isfinite(matrix).all():
+        raise ValueError("values must contain only finite numbers")
+    norms = np.linalg.norm(matrix, axis=1, keepdims=True)
+    return np.divide(matrix, norms, out=np.zeros_like(matrix), where=norms > 0)
+
+
+def compact_manifest_labels(
+    passages: Sequence[ManifestLabelPassage],
+) -> dict[str, str]:
+    """Build provenance-rich labels with collision-safe stable-ID abbreviations."""
+
+    passage_ids = [passage.passage_id for passage in passages]
+    if len(passage_ids) != len(set(passage_ids)):
+        raise ValueError("passage_id values must be unique")
+
+    abbreviated_ids = {
+        passage.passage_id: _abbreviate_manifest_id(passage.passage_id)
+        for passage in passages
+    }
+    provisional_labels = {
+        passage.passage_id: (
+            f"{passage.company} · {passage.period} · "
+            f"{abbreviated_ids[passage.passage_id]}"
+        )
+        for passage in passages
+    }
+    collisions = {
+        label
+        for label in provisional_labels.values()
+        if tuple(provisional_labels.values()).count(label) > 1
+    }
+    return {
+        passage.passage_id: (
+            f"{passage.company} · {passage.period} · "
+            f"{passage.passage_id if provisional_labels[passage.passage_id] in collisions else abbreviated_ids[passage.passage_id]}"
+        )
+        for passage in passages
+    }
+
+
+def spread_label_positions(
+    desired_positions: Sequence[float],
+    *,
+    lower: float,
+    upper: float,
+    minimum_gap: float,
+) -> tuple[float, ...]:
+    """Place ordered annotation centers deterministically without vertical collisions."""
+
+    if not all(np.isfinite(value) for value in (*desired_positions, lower, upper, minimum_gap)):
+        raise ValueError("label positions and bounds must be finite")
+    if upper <= lower or minimum_gap <= 0:
+        raise ValueError("label bounds and minimum_gap must be positive")
+    if len(desired_positions) > 1 and (len(desired_positions) - 1) * minimum_gap > upper - lower:
+        raise ValueError("label bounds cannot accommodate the requested minimum_gap")
+    if not desired_positions:
+        return ()
+
+    positions = [min(upper, max(lower, float(value))) for value in desired_positions]
+    positions[0] = min(positions[0], upper - minimum_gap * (len(positions) - 1))
+    for index in range(1, len(positions)):
+        positions[index] = max(positions[index], positions[index - 1] + minimum_gap)
+    if positions[-1] > upper:
+        positions[-1] = upper
+        for index in range(len(positions) - 2, -1, -1):
+            positions[index] = min(positions[index], positions[index + 1] - minimum_gap)
+    return tuple(positions)
+
+
+def _abbreviate_manifest_id(passage_id: str) -> str:
+    parts = passage_id.split("-")
+    if len(passage_id) <= 20 or len(parts) < 2:
+        return passage_id
+    return f"{parts[0]}…{parts[-1]}"
 
 
 @dataclass(frozen=True)

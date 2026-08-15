@@ -178,8 +178,8 @@ ranks preserved. Equal fused scores use passage identifier as a stable tie break
 Reranking receives a wider fused candidate set and produces a smaller evidence set. The
 offline scorer is transparent and combines:
 
-- normalized query-to-passage lexical coverage;
-- exact numeric and ticker preservation;
+- normalized query-to-passage lexical coverage, including ticker tokens such as `NVDA`;
+- exact numeric-literal coverage;
 - section-title overlap;
 - metadata eligibility; and
 - the normalized fusion rank signal.

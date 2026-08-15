@@ -164,11 +164,16 @@ class KeywordIndex:
         """Return eligible lexical matches, descending by score then identifier."""
 
         _validate_top_k(top_k)
-        ranked_hits = self._retriever.rank(query)
-        eligible_hits = [
-            hit for hit in ranked_hits if filters is None or filters.matches(hit.passage)
-        ]
-        return eligible_hits[:top_k]
+        eligible_indices = (
+            range(len(self.passages))
+            if filters is None
+            else (
+                index
+                for index, passage in enumerate(self.passages)
+                if filters.matches(passage)
+            )
+        )
+        return self._retriever.rank_subset(query, eligible_indices)[:top_k]
 
 
 class DenseIndex:
@@ -536,8 +541,8 @@ def _validate_query(query: str) -> None:
 
 
 def _validate_top_k(top_k: int) -> None:
-    if top_k <= 0:
-        raise ValueError("top_k must be positive")
+    if not isinstance(top_k, int) or isinstance(top_k, bool) or top_k <= 0:
+        raise ValueError("top_k must be a positive integer")
 
 
 def _validate_rrf_inputs(

@@ -1,5 +1,8 @@
 """Integration tests for the metadata-safe hybrid retrieval boundary."""
 
+from dataclasses import replace
+from types import SimpleNamespace
+
 import pytest
 
 from finai_academy.hybrid_retrieval import (
@@ -8,7 +11,7 @@ from finai_academy.hybrid_retrieval import (
     KeywordIndex,
     RetrievalFilters,
 )
-from finai_academy.retrieval_pipeline import retrieve_evidence
+from finai_academy.retrieval_pipeline import retrieve_evidence, verify_retrieval_runs
 
 
 def build_indexes(corpus):
@@ -148,3 +151,108 @@ def test_pipeline_rejects_an_invalid_candidate_and_final_budget(corpus, candidat
             candidate_k=candidate_k,
             final_k=final_k,
         )
+
+
+def build_maintained_run(corpus):
+    """Build one successful maintained run for verification-predicate tests."""
+
+    keyword_index, dense_index = build_indexes(corpus)
+    return retrieve_evidence(
+        "What margin reached 18.7%?",
+        keyword_index=keyword_index,
+        dense_index=dense_index,
+        filters=RetrievalFilters(company="Schneider Electric", period="FY2025"),
+        candidate_k=2,
+        final_k=2,
+    )
+
+
+def test_verification_report_requires_every_structural_and_offline_evidence_check(
+    corpus, tmp_path
+):
+    """The PASS predicate must cover artifacts, stages, filters, order, IDs, and evidence."""
+
+    run = build_maintained_run(corpus)
+    manifest = tmp_path / "manifest.json"
+    vectors = tmp_path / "vectors.npy"
+    manifest.touch()
+    vectors.touch()
+
+    report = verify_retrieval_runs(
+        {"se-margin": run},
+        expected_evidence={"se-margin": "18.7%"},
+        require_expected_evidence=True,
+        required_artifacts=(manifest, vectors),
+    )
+
+    assert report.passed
+    assert all(report.checks.values())
+
+
+@pytest.mark.parametrize(
+    ("mutate", "failed_check"),
+    [
+        (
+            lambda run: replace(
+                run,
+                filters=RetrievalFilters(company="NVIDIA", period="FY2026"),
+            ),
+            "all stage hits satisfy their run filters",
+        ),
+        (
+            lambda run: replace(run, fused_hits=(run.fused_hits[0], run.fused_hits[0])),
+            "fused passage identifiers are unique per run",
+        ),
+        (
+            lambda run: replace(run, fused_hits=tuple(reversed(run.fused_hits))),
+            "fused hits are sorted by descending score then passage ID",
+        ),
+        (
+            lambda run: replace(
+                run,
+                keyword_hits=(
+                    SimpleNamespace(
+                        passage=run.keyword_hits[0].passage,
+                        score=float("nan"),
+                    ),
+                ),
+            ),
+            "all retrieval scores are finite",
+        ),
+    ],
+)
+def test_verification_report_rejects_each_regressed_run_invariant(
+    corpus, tmp_path, mutate, failed_check
+):
+    """A regressed invariant must make the explicit verification predicate false."""
+
+    manifest = tmp_path / "manifest.json"
+    manifest.touch()
+    run = mutate(build_maintained_run(corpus))
+
+    report = verify_retrieval_runs(
+        {"se-margin": run},
+        expected_evidence={"se-margin": "18.7%"},
+        require_expected_evidence=True,
+        required_artifacts=(manifest,),
+    )
+
+    assert report.passed is False
+    assert report.checks[failed_check] is False
+
+
+def test_verification_report_rejects_missing_artifacts_and_expected_evidence(
+    corpus, tmp_path
+):
+    """Offline PASS must fail when an artifact or final-k evidence token is absent."""
+
+    report = verify_retrieval_runs(
+        {"se-margin": build_maintained_run(corpus)},
+        expected_evidence={"se-margin": "not present"},
+        require_expected_evidence=True,
+        required_artifacts=(tmp_path / "missing-manifest.json",),
+    )
+
+    assert report.passed is False
+    assert report.checks["required index artifacts exist"] is False
+    assert report.checks["offline expected evidence is recovered within final_k"] is False

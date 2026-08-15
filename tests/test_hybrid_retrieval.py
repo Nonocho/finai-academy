@@ -6,6 +6,7 @@ from dataclasses import replace
 import numpy as np
 import pytest
 
+import finai_academy.retrieval as retrieval_module
 from finai_academy.hybrid_retrieval import (
     DenseIndex,
     DeterministicTeachingEmbeddings,
@@ -242,6 +243,40 @@ def test_each_supported_metadata_filter_is_enforced(corpus, filters, expected_id
     hits = KeywordIndex(corpus).search("revenue growth", top_k=10, filters=filters)
 
     assert {hit.passage.passage_id for hit in hits} == expected_ids
+
+
+def test_keyword_filter_limits_the_matrix_rows_passed_to_cosine_scoring(
+    corpus, monkeypatch
+):
+    """Ineligible TF-IDF rows must never reach the cosine scorer."""
+
+    scored_row_counts = []
+    real_cosine_similarity = retrieval_module.cosine_similarity
+
+    def record_scored_rows(query_vector, document_matrix):
+        scored_row_counts.append(document_matrix.shape[0])
+        return real_cosine_similarity(query_vector, document_matrix)
+
+    monkeypatch.setattr(retrieval_module, "cosine_similarity", record_scored_rows)
+
+    hits = KeywordIndex(corpus).search(
+        "revenue growth",
+        top_k=4,
+        filters=RetrievalFilters(company="NVIDIA", period="FY2026"),
+    )
+
+    assert scored_row_counts == [2]
+    assert {hit.passage.company for hit in hits} == {"NVIDIA"}
+
+
+@pytest.mark.parametrize("index_kind", ["keyword", "dense"])
+def test_public_indexes_reject_boolean_top_k(corpus, index_kind):
+    """Boolean values must not pass the public integer result-budget contract."""
+
+    index = KeywordIndex(corpus) if index_kind == "keyword" else build_offline_dense_index(corpus)
+
+    with pytest.raises(ValueError, match="top_k"):
+        index.search("revenue", top_k=True)
 
 
 def test_equal_dense_scores_use_passage_id_as_stable_tie_break(corpus):

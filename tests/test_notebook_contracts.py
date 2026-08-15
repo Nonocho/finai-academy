@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 import subprocess
 import sys
 from pathlib import Path
@@ -147,6 +148,90 @@ def test_offline_executor_runs_a_notebook_and_saves_the_evidence(tmp_path: Path)
     assert result.returncode == 0
     executed = nbformat.read(output_dir / notebook_path.name, as_version=4)
     assert executed.cells[1].outputs[0]["text"] == "execution complete\n"
+
+
+def test_live_executor_provider_overrides_stale_model_and_embedding_environment(
+    tmp_path: Path,
+) -> None:
+    """Explicit live provider selection must replace both stale provider variables."""
+
+    notebook_path = tmp_path / "01_provider_override.ipynb"
+    write_notebook(notebook_path, body="Provider override contract.")
+    notebook = nbformat.read(notebook_path, as_version=4)
+    notebook.cells[1].source = (
+        "import os\n"
+        'print(os.environ["FINAI_MODEL_PROVIDER"] + "/" + '
+        'os.environ["FINAI_EMBEDDING_PROVIDER"])'
+    )
+    nbformat.write(notebook, notebook_path)
+    output_dir = tmp_path / "executed"
+    hostile_environment = os.environ.copy()
+    hostile_environment.update(
+        {
+            "FINAI_MODEL_PROVIDER": "openai",
+            "FINAI_EMBEDDING_PROVIDER": "openai",
+        }
+    )
+
+    result = subprocess.run(
+        [
+            sys.executable,
+            str(EXECUTOR),
+            str(notebook_path),
+            "--mode",
+            "live",
+            "--provider",
+            "ollama",
+            "--output-dir",
+            str(output_dir),
+        ],
+        cwd=ROOT,
+        env=hostile_environment,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+
+    assert result.returncode == 0, result.stderr
+    executed = nbformat.read(output_dir / notebook_path.name, as_version=4)
+    assert stream_text(executed) == "ollama/ollama\n"
+
+
+def test_lesson06_offline_execution_ignores_hostile_provider_environment(
+    tmp_path: Path,
+) -> None:
+    """Offline deterministic embeddings must be selected before provider validation."""
+
+    notebook_path = ROOT / "notebooks" / "06_hybrid_retrieval.ipynb"
+    output_dir = tmp_path / "executed"
+    hostile_environment = os.environ.copy()
+    hostile_environment.update(
+        {
+            "FINAI_MODEL_PROVIDER": "hostile-model-provider",
+            "FINAI_EMBEDDING_PROVIDER": "hostile-embedding-provider",
+        }
+    )
+
+    result = subprocess.run(
+        [
+            sys.executable,
+            str(EXECUTOR),
+            str(notebook_path),
+            "--mode",
+            "offline",
+            "--output-dir",
+            str(output_dir),
+        ],
+        cwd=ROOT,
+        env=hostile_environment,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+
+    assert result.returncode == 0, result.stderr
+    executed = nbformat.read(output_dir / notebook_path.name, as_version=4)
+    assert "Embedding runtime: offline / financial-concepts-v1" in stream_text(executed)
 
 
 def test_model_gateway_offline_run_reaches_the_grounding_target(tmp_path: Path) -> None:

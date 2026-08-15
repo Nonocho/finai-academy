@@ -93,12 +93,35 @@ class LexicalRetriever:
     def rank(self, query: str) -> list[RetrievalHit]:
         """Rank the complete corpus using a deterministic tie break."""
 
+        return self.rank_subset(query, range(len(self.passages)))
+
+    def rank_subset(
+        self,
+        query: str,
+        passage_indices: Collection[int],
+    ) -> list[RetrievalHit]:
+        """Rank only selected rows while retaining the corpus-wide TF-IDF vocabulary."""
+
         normalized_query = self._normalize_query(query)
+        selected_indices = tuple(passage_indices)
+        if not selected_indices:
+            return []
+        if len(set(selected_indices)) != len(selected_indices):
+            raise ValueError("passage_indices must be unique")
+        if any(
+            not isinstance(index, int)
+            or isinstance(index, bool)
+            or not 0 <= index < len(self.passages)
+            for index in selected_indices
+        ):
+            raise ValueError("passage_indices contains an invalid corpus row")
+
         query_vector = self._vectorizer.transform([normalized_query])
-        scores = cosine_similarity(query_vector, self._document_term_matrix)[0]
+        selected_matrix = self._document_term_matrix[list(selected_indices)]
+        scores = cosine_similarity(query_vector, selected_matrix)[0]
         hits = [
-            RetrievalHit(passage=passage, score=float(score))
-            for passage, score in zip(self.passages, scores, strict=True)
+            RetrievalHit(passage=self.passages[index], score=float(score))
+            for index, score in zip(selected_indices, scores, strict=True)
         ]
         return sorted(hits, key=lambda hit: (-hit.score, hit.passage.passage_id))
 

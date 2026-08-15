@@ -118,12 +118,14 @@ miss while retaining the other expected evidence.
 
 ### `PASS — hybrid retrieval laboratory verified`
 
-This final marker is provider-neutral. It appears after the active provider returns finite,
-dimensionally valid vectors; metadata filtering admits only NVIDIA passages; all four
-retrieval stages remain visible; every recorded score is finite; provenance is complete;
-and both index artifacts exist. Offline mode additionally requires 4/4 reranked maintained
-recall. Live mode does not require a particular ranking, tie, recall improvement or RRF
-weight response.
+This final marker is provider-neutral. It appears only after every maintained run proves
+that all channel, fused and final hits satisfy its filters; fused IDs are unique; fused
+ordering is exactly descending RRF score then passage ID; all four stages remain visible;
+every recorded score is finite; provenance is complete; provider vectors and normalized
+projection-query rows are finite; and both index artifacts exist. Offline mode additionally
+requires every maintained evidence token to appear within the configured `final_k=2` result.
+Live mode does not require a particular ranking, tie, recall improvement or RRF weight
+response.
 
 ## Core explanations
 
@@ -161,7 +163,7 @@ must be evaluated; they do not turn RRF into probability.
 
 The offline reranker exposes five normalized features:
 
-- lexical query coverage: 0.25;
+- lexical query coverage, including ticker tokens such as `NVDA`: 0.25;
 - exact numeric coverage: 0.45;
 - query overlap with the section name: 0.10;
 - metadata eligibility: 0.10; and
@@ -218,6 +220,11 @@ The source manifest, parsers, chunking, filters, fusion and reranking remain the
 every mode. The active index uses the shared embedding gateway. Figures 5 and 6 deliberately
 use a separate deterministic teaching index so their controlled failures remain reproducible
 without imposing offline rank assumptions on the live provider.
+
+The executor sets both `FINAI_MODEL_PROVIDER` and `FINAI_EMBEDDING_PROVIDER` from the
+explicit live `--provider` argument, replacing stale provider values. Offline execution
+selects `DeterministicTeachingEmbeddings` before constructing or validating `Settings`, so
+unrelated provider environment values cannot break the deterministic path.
 
 ### Offline
 

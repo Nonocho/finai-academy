@@ -1,7 +1,9 @@
 import subprocess
 import sys
+import zipfile
 from itertools import pairwise
 from pathlib import Path
+from xml.etree import ElementTree
 
 import yaml
 
@@ -15,6 +17,14 @@ def time_to_minutes(value: str) -> int:
 
 def load_course_manifest() -> dict:
     return yaml.safe_load((ROOT / "course.yml").read_text(encoding="utf-8"))
+
+
+def pptx_text(deck_path: Path, part_name: str) -> str:
+    """Return all visible text runs from one presentation package part."""
+
+    with zipfile.ZipFile(deck_path) as package:
+        root = ElementTree.fromstring(package.read(part_name))
+    return " ".join(node.text or "" for node in root.iter() if node.tag.endswith("}t"))
 
 
 def test_two_day_manifest_defines_twelve_ordered_notebooks() -> None:
@@ -101,3 +111,22 @@ def test_implemented_lesson_six_assets_exist() -> None:
     assert (ROOT / lesson["chapter"]).is_file()
     assert (ROOT / lesson["notebook"]).is_file()
     assert (ROOT / lesson["deck"]).is_file()
+
+
+def test_lesson_six_slide_three_uses_one_executed_query_and_traceable_manifest_ids() -> None:
+    """The comparison slide must report real ranks from one maintained notebook run."""
+
+    deck_path = ROOT / "decks" / "06-hybrid-retrieval.pptx"
+    slide_text = pptx_text(deck_path, "ppt/slides/slide3.xml")
+    notes_text = pptx_text(deck_path, "ppt/notesSlides/notesSlide3.xml")
+
+    assert "Which NVIDIA business generated $193.7 billion?" in slide_text
+    assert "NVDA…003" in slide_text
+    assert "NVDA…001" in slide_text
+    assert "NVDA…002" in slide_text
+    assert "SU-TABLE" not in slide_text
+    assert "NVDA-TABLE" not in slide_text
+    assert "NVDA-2026-10K-EXCERPT-CONTEXTUAL-003" in notes_text
+    normalized_notes = notes_text.casefold()
+    assert "keyword rank 1" in normalized_notes
+    assert "dense rank 4" in normalized_notes

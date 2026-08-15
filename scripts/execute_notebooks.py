@@ -20,7 +20,7 @@ def configure_mode(mode: str, provider: str | None) -> None:
         raise ValueError("--provider is required when --mode=live")
     os.environ["FINAI_LIVE_MODE"] = "1"
     os.environ["FINAI_MODEL_PROVIDER"] = provider
-    os.environ.setdefault("FINAI_EMBEDDING_PROVIDER", provider)
+    os.environ["FINAI_EMBEDDING_PROVIDER"] = provider
 
 
 def execute_notebook(path: Path, output_dir: Path, timeout: int) -> Path:

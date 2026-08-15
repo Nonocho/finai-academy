@@ -70,6 +70,18 @@ def test_reranker_preserves_sentence_final_and_thousands_separated_numbers(corpu
     assert reranked[0].features.numeric_coverage == 1.0
 
 
+def test_reranker_preserves_ticker_tokens_through_lexical_coverage(corpus):
+    """Ticker words belong to lexical coverage, not numeric literal coverage."""
+
+    ticker_passage = replace(corpus[0], text="NVDA reported Data Center revenue growth.")
+    candidates = [FusedHit(ticker_passage, 0.02, (("keyword", 1),))]
+
+    reranked = rerank_candidates("NVDA", candidates, top_k=1)
+
+    assert reranked[0].features.lexical_coverage == 1.0
+    assert reranked[0].features.numeric_coverage == 0.0
+
+
 @pytest.mark.parametrize("rrf_score", [-0.01, float("inf"), float("nan")])
 def test_fused_hit_rejects_scores_that_cannot_produce_normalized_features(corpus, rrf_score):
     """Reranking requires finite, non-negative fusion signals at its input boundary."""
