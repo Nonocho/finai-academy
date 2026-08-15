@@ -1,6 +1,9 @@
-# FinAI Academy
+# AI Engineering for Asset Management
 
-**Build trustworthy AI systems for financial research - from first principles to production.**
+**A FinAI Academy program by Arnaud Demes.**
+
+Build trustworthy AI systems for financial research, from the first local model
+call to a deployed analyst copilot.
 
 FinAI Academy is an English-language learning path for finance professionals,
 analysts, data practitioners, and software engineers who want to understand and
@@ -13,26 +16,27 @@ Each chapter combines:
 - a guided Jupyter notebook for experiments;
 - checkpoint questions and practical exercises;
 - optional challenges for advanced learners;
-- one cumulative capstone: **FinResearch Copilot**.
+- one cumulative capstone: **Financial Analyst Copilot**.
 
 Every public asset in this repository is original FinAI Academy material.
 
-## Learning path
+## Canonical program
 
-| # | Chapter | Core outcome |
+The [program blueprint](docs/program-blueprint.md) is the source of truth for
+learning outcomes, lesson order, module missions, and scope.
+
+| Module | Theme | Product milestone |
 |---:|---|---|
-| 00 | Product demo and system map | Understand the product we will build |
-| 01 | AI and LLM foundations | Explain tokens, context, inference, limits, and model trade-offs |
-| 02 | Prompting and structured outputs | Produce reliable, typed responses |
-| 03 | Retrieval from first principles | Build search before introducing vector databases |
-| 04 | Document ingestion and chunking | Turn financial documents into retrieval-ready knowledge |
-| 05 | Embeddings and advanced retrieval | Combine semantic, lexical, hybrid, and reranked search |
-| 06 | RAG with evidence | Generate grounded answers with claim-level citations |
-| 07 | Tools and deterministic workflows | Connect models to safe, typed financial tools |
-| 08 | LangGraph agents and self-correction | Build stateful agents with retries and stop conditions |
-| 09 | Multi-agent financial research | Coordinate specialist agents and synthesize results |
-| 10 | Evaluation, observability, and LLMOps | Measure quality, latency, cost, and reliability |
-| Capstone | FinResearch Copilot | Assemble the complete application |
+| 00 | First financial AI app: models, prompts, structured outputs, memory | Financial Brief v1 |
+| 01 | Context engineering, chunking, retrieval, citations, and RAG evaluation | Filings Intelligence v2 |
+| 02 | Typed financial tools, Tavily news, and deterministic workflows | Research Workflow v3 |
+| 03 | Bounded agents, recovery, planning, MCP, and trajectory evaluation | Research Agent v4 |
+| 04 | Datasets, evaluation, optimization, security, cost, and observability | Reliability v5 |
+| 05 | API, UI, persistence, Docker, deployment, and monitoring | Deployed Copilot v6 |
+| Capstone | NVIDIA and Schneider Electric comparative research | Financial Analyst Copilot |
+
+The existing chapter briefs and notebooks are seed assets. They will be refactored
+into this module sequence as lessons are produced.
 
 ## Repository map
 
@@ -43,7 +47,7 @@ finai-academy/
 ├── decks/                  # One PowerPoint deck per chapter
 ├── notebooks/              # One guided notebook per chapter
 ├── src/finai_academy/      # Reusable Python package
-├── final-project/          # FinResearch Copilot capstone
+├── final-project/          # Financial Analyst Copilot capstone and product spec
 ├── docs/                   # Authoring, delivery, model, and content standards
 ├── scripts/                # Repository validation and authoring helpers
 └── tests/                  # Tests for shared course code
@@ -82,10 +86,12 @@ signed:
 
 See [assets/brand/finai-academy-style.md](assets/brand/finai-academy-style.md).
 
-## Status
+## Current status
 
-The repository structure and learning contracts are established. Chapter content,
-decks, notebooks, exercises, and the capstone will be developed incrementally.
+The canonical program and capstone specification are established. The first
+capstone vertical slice defines a provider-neutral, Pydantic-validated analyst
+brief and a CLI entry point. RAG, tools, agents, and MCP will be added in the same
+order in which learners encounter them.
 
 ## Copyright
 

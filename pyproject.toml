@@ -16,6 +16,8 @@ dependencies = [
   "nbformat",
   "numpy",
   "pandas",
+  "beautifulsoup4",
+  "pdfplumber",
   "pydantic>=2",
   "pyyaml",
   "python-dotenv",

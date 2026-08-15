@@ -28,6 +28,10 @@ Every chapter must contain:
 - Set random seeds when supported.
 - Never commit API keys, private client files, or licensed datasets.
 - Display expected outputs for non-deterministic steps as ranges, not guarantees.
+- Render important system state as executable visuals, not static screenshots.
+- From Lesson 03 onward, include at least two meaningful code-generated figures.
+- Retrieval and evaluation lessons must visualize document structure, retrieved
+  evidence, rankings, or evaluation results rather than relying on printed lists alone.
 
 ## Deck contract
 
@@ -38,6 +42,10 @@ Every chapter must contain:
 - Use 24 pt or larger for subheadings and 16 pt or larger for body copy.
 - Put citations and asset sources in speaker notes.
 - End with application or synthesis, not a generic thank-you slide.
+- Every technical lesson must contain at least one original explanatory diagram.
+- Mirror the notebook's central mechanism so students can connect the conceptual
+  diagram to the code they execute.
+- Prefer simple flows and decision boundaries over decorative diagrams.
 
 ## Public-content policy
 

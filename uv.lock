@@ -1229,6 +1229,7 @@ name = "finai-academy"
 version = "0.1.0"
 source = { editable = "." }
 dependencies = [
+    { name = "beautifulsoup4" },
     { name = "ipykernel" },
     { name = "ipywidgets" },
     { name = "jupyterlab" },
@@ -1238,6 +1239,7 @@ dependencies = [
     { name = "numpy", version = "2.4.6", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.12'" },
     { name = "numpy", version = "2.5.2", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.12'" },
     { name = "pandas" },
+    { name = "pdfplumber" },
     { name = "pydantic" },
     { name = "python-dotenv" },
     { name = "pyyaml" },
@@ -1269,6 +1271,7 @@ rag = [
 
 [package.metadata]
 requires-dist = [
+    { name = "beautifulsoup4" },
     { name = "docling", marker = "extra == 'rag'" },
     { name = "edgartools", marker = "extra == 'finance'" },
     { name = "flashrank", marker = "extra == 'rag'" },
@@ -1286,6 +1289,7 @@ requires-dist = [
     { name = "numpy" },
     { name = "openai", marker = "extra == 'ai'" },
     { name = "pandas" },
+    { name = "pdfplumber" },
     { name = "pdfplumber", marker = "extra == 'rag'" },
     { name = "pydantic", specifier = ">=2" },
     { name = "pytest", marker = "extra == 'dev'" },

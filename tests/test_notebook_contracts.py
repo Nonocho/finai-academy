@@ -160,3 +160,175 @@ def test_model_gateway_offline_run_reaches_the_grounding_target(tmp_path: Path) 
     )
     assert "Grounding score: 4/4" in stream_text
     assert "PASS — provider-neutral model gateway verified" in stream_text
+
+
+def test_structured_outputs_offline_run_reaches_the_validation_target(
+    tmp_path: Path,
+) -> None:
+    notebook_path = ROOT / "notebooks" / "02_prompts_and_structured_outputs.ipynb"
+    output_dir = tmp_path / "executed"
+
+    result = subprocess.run(
+        [
+            sys.executable,
+            str(EXECUTOR),
+            str(notebook_path),
+            "--mode",
+            "offline",
+            "--output-dir",
+            str(output_dir),
+        ],
+        cwd=ROOT,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+
+    assert result.returncode == 0, result.stderr
+    executed = nbformat.read(output_dir / notebook_path.name, as_version=4)
+    stream_text = "".join(
+        output.get("text", "")
+        for cell in executed.cells
+        if cell.cell_type == "code"
+        for output in cell.get("outputs", [])
+        if output.get("output_type") == "stream"
+    )
+    assert "Validation caught the unsupported candidate" in stream_text
+    assert "PASS — structured financial brief verified" in stream_text
+
+
+def test_cag_notebook_offline_run_produces_visual_evidence_and_a_decision(
+    tmp_path: Path,
+) -> None:
+    notebook_path = ROOT / "notebooks" / "03_cag_financial_document.ipynb"
+    output_dir = tmp_path / "executed"
+
+    result = subprocess.run(
+        [
+            sys.executable,
+            str(EXECUTOR),
+            str(notebook_path),
+            "--mode",
+            "offline",
+            "--output-dir",
+            str(output_dir),
+        ],
+        cwd=ROOT,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+
+    assert result.returncode == 0, result.stderr
+    executed = nbformat.read(output_dir / notebook_path.name, as_version=4)
+    visual_outputs = [
+        output
+        for cell in executed.cells
+        if cell.cell_type == "code"
+        for output in cell.get("outputs", [])
+        if output.get("output_type") in {"display_data", "execute_result"}
+        and "image/png" in output.get("data", {})
+    ]
+    stream_text = "".join(
+        output.get("text", "")
+        for cell in executed.cells
+        if cell.cell_type == "code"
+        for output in cell.get("outputs", [])
+        if output.get("output_type") == "stream"
+    )
+
+    assert len(visual_outputs) >= 3
+    assert "Decision: RAG required" in stream_text
+    assert "PASS — CAG boundary verified" in stream_text
+
+
+def test_naive_rag_notebook_offline_run_visualizes_and_verifies_baseline(
+    tmp_path: Path,
+) -> None:
+    notebook_path = ROOT / "notebooks" / "04_rag_from_scratch.ipynb"
+    output_dir = tmp_path / "executed"
+
+    result = subprocess.run(
+        [
+            sys.executable,
+            str(EXECUTOR),
+            str(notebook_path),
+            "--mode",
+            "offline",
+            "--output-dir",
+            str(output_dir),
+        ],
+        cwd=ROOT,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+
+    assert result.returncode == 0, result.stderr
+    executed = nbformat.read(output_dir / notebook_path.name, as_version=4)
+    visual_outputs = [
+        output
+        for cell in executed.cells
+        if cell.cell_type == "code"
+        for output in cell.get("outputs", [])
+        if output.get("output_type") in {"display_data", "execute_result"}
+        and "image/png" in output.get("data", {})
+    ]
+    stream_text = "".join(
+        output.get("text", "")
+        for cell in executed.cells
+        if cell.cell_type == "code"
+        for output in cell.get("outputs", [])
+        if output.get("output_type") == "stream"
+    )
+
+    assert len(visual_outputs) >= 5
+    assert "Retrieval check:" in stream_text
+    assert "Grounding check:" in stream_text
+    assert "PASS — naive RAG baseline verified" in stream_text
+
+
+def test_document_chunking_notebook_offline_run_is_visual_and_verified(
+    tmp_path: Path,
+) -> None:
+    notebook_path = ROOT / "notebooks" / "05_document_and_chunking_lab.ipynb"
+    output_dir = tmp_path / "executed"
+
+    result = subprocess.run(
+        [
+            sys.executable,
+            str(EXECUTOR),
+            str(notebook_path),
+            "--mode",
+            "offline",
+            "--output-dir",
+            str(output_dir),
+        ],
+        cwd=ROOT,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+
+    assert result.returncode == 0, result.stderr
+    executed = nbformat.read(output_dir / notebook_path.name, as_version=4)
+    visual_outputs = [
+        output
+        for cell in executed.cells
+        if cell.cell_type == "code"
+        for output in cell.get("outputs", [])
+        if output.get("output_type") in {"display_data", "execute_result"}
+        and "image/png" in output.get("data", {})
+    ]
+    stream_text = "".join(
+        output.get("text", "")
+        for cell in executed.cells
+        if cell.cell_type == "code"
+        for output in cell.get("outputs", [])
+        if output.get("output_type") == "stream"
+    )
+
+    assert len(visual_outputs) >= 8
+    assert "Table integrity failure reproduced" in stream_text
+    assert "Seven strategies compared" in stream_text
+    assert "PASS — document and chunking laboratory verified" in stream_text

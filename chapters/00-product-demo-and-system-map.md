@@ -2,7 +2,7 @@
 
 ## Learning promise
 
-Learners can describe FinResearch Copilot as a set of observable components rather
+Learners can describe Financial Analyst Copilot as a set of observable components rather
 than as a mysterious chatbot.
 
 ## Deck narrative

@@ -1,0 +1,29 @@
+{
+  "schema_version": 1,
+  "sources": [
+    {
+      "source_id": "NVDA-2026-10K-EXCERPT",
+      "company": "NVIDIA",
+      "period": "FY2026",
+      "document_type": "10-K teaching extract",
+      "language": "en",
+      "source_url": "https://www.sec.gov/Archives/edgar/data/1045810/000104581026000021/nvda-20260125.htm",
+      "retrieval_date": "2026-08-15",
+      "fixture_path": "assets/course-data/fixtures/nvidia_fy2026_excerpt.html",
+      "fixture_sha256": "a11e563df3996db3b34e60407dbbf36333aae5a9379d5f96c940b1a9aca04ce7",
+      "provenance_mode": "fixture"
+    },
+    {
+      "source_id": "SU-2025-FY-EXCERPT",
+      "company": "Schneider Electric",
+      "period": "FY2025",
+      "document_type": "Full-year results teaching extract",
+      "language": "en",
+      "source_url": "https://www.se.com/ww/en/assets/564/document/528237/release-fy-results-2025.pdf",
+      "retrieval_date": "2026-08-15",
+      "fixture_path": "assets/course-data/fixtures/schneider_fy2025_excerpt.pdf",
+      "fixture_sha256": "b666d982d718d8b412f24868c7421e5fd3d3db66a3175216bdc4ca30e96dc0c2",
+      "provenance_mode": "fixture"
+    }
+  ]
+}

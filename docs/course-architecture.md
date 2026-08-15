@@ -27,23 +27,29 @@ Notebooks make one concept observable at a time. Every notebook contains:
 
 ### Final project
 
-The capstone integrates reusable package code into FinResearch Copilot. The final
-application is not developed as one giant notebook.
+The capstone integrates reusable package code into Financial Analyst Copilot. The
+final application is not developed as one giant notebook.
 
 ## Learning sequence
 
 ```text
-Model behavior
-  → reliable outputs
-  → retrieval
+First model call
+  → prompt engineering
+  → structured outputs
+  → memory and streaming
+  → context and retrieval
   → grounded generation
-  → tools
-  → workflows
-  → agents
-  → multi-agent orchestration
-  → evaluation
+  → typed tools
+  → deterministic workflows
+  → bounded agents
+  → MCP
+  → system and trajectory evaluation
   → production
 ```
+
+The detailed source of truth is [program-blueprint.md](program-blueprint.md).
+Multi-agent orchestration is an elective after the bounded-agent path, not a
+required dependency.
 
 ## Adaptation principle
 

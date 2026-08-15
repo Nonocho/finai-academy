@@ -1,3 +1,5 @@
+import subprocess
+import sys
 from itertools import pairwise
 from pathlib import Path
 
@@ -59,3 +61,34 @@ def test_lesson_windows_do_not_overlap() -> None:
             previous_end <= next_start
             for (_, previous_end), (next_start, _) in pairwise(windows)
         )
+
+
+def test_repository_validator_accepts_manifest_paths_alongside_legacy_material() -> None:
+    result = subprocess.run(
+        [sys.executable, str(ROOT / "scripts" / "validate_repo.py")],
+        cwd=ROOT,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+
+    assert result.returncode == 0, result.stderr
+    assert "repository structure is valid" in result.stdout
+
+
+def test_implemented_lesson_four_assets_exist() -> None:
+    manifest = load_course_manifest()
+    lesson = next(item for item in manifest["lessons"] if item["id"] == "04")
+
+    assert (ROOT / lesson["chapter"]).is_file()
+    assert (ROOT / lesson["notebook"]).is_file()
+    assert (ROOT / lesson["deck"]).is_file()
+
+
+def test_implemented_lesson_five_assets_exist() -> None:
+    manifest = load_course_manifest()
+    lesson = next(item for item in manifest["lessons"] if item["id"] == "05")
+
+    assert (ROOT / lesson["chapter"]).is_file()
+    assert (ROOT / lesson["notebook"]).is_file()
+    assert (ROOT / lesson["deck"]).is_file()
