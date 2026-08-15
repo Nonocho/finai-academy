@@ -1,9 +1,10 @@
-# FinAI Academy visual system
+# First Finance course visual system
 
 ## Identity
 
-- Name: **FinAI Academy**
-- Signature: **FinAI Academy - Arnaud Demes**
+- Organisation: **First Finance**
+- Course: **AI Engineering for Asset Management**
+- Signature: **First Finance - Arnaud Demes**
 - Logo: none
 - Visual relationship: ScaleNow color system, independent course identity
 
@@ -41,7 +42,7 @@
 Every audience-facing slide except the title slide includes:
 
 ```text
-FinAI Academy - Arnaud Demes                                  [slide number]
+First Finance - Arnaud Demes                                  [slide number]
 ```
 
 ## Accessibility
