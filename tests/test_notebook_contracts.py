@@ -399,3 +399,12 @@ def test_hybrid_retrieval_notebook_separates_live_and_controlled_outcomes():
     )
     assert '"provider vectors are finite"' in code_by_id["lesson06-021"]
     assert "if not live_mode:\n    assert moved_rankings" in code_by_id["lesson06-023"]
+
+
+def test_hybrid_retrieval_notebook_qualifies_offline_success_in_markdown():
+    notebook = nbformat.read(ROOT / "notebooks" / "06_hybrid_retrieval.ipynb", as_version=4)
+    learning_objectives = next(cell for cell in notebook.cells if cell.id == "lesson06-001")
+
+    assert "deterministic offline laboratory success condition" in learning_objectives.source
+    assert "Live OpenAI and Ollama runs report observed recall" in learning_objectives.source
+    assert "provider-invariant structural behavior" in learning_objectives.source
