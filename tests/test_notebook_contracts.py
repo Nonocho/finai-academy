@@ -61,6 +61,26 @@ def run_validator(path: Path) -> subprocess.CompletedProcess[str]:
     )
 
 
+def count_png_outputs(notebook) -> int:
+    return sum(
+        "image/png" in output.get("data", {})
+        for cell in notebook.cells
+        if cell.cell_type == "code"
+        for output in cell.get("outputs", [])
+        if output.get("output_type") in {"display_data", "execute_result"}
+    )
+
+
+def stream_text(notebook) -> str:
+    return "".join(
+        output.get("text", "")
+        for cell in notebook.cells
+        if cell.cell_type == "code"
+        for output in cell.get("outputs", [])
+        if output.get("output_type") == "stream"
+    )
+
+
 def test_valid_notebook_passes_the_teaching_contract(tmp_path: Path) -> None:
     notebook_path = tmp_path / "01_valid.ipynb"
     write_notebook(notebook_path, body="Clear learner-facing explanation.")
@@ -332,3 +352,32 @@ def test_document_chunking_notebook_offline_run_is_visual_and_verified(
     assert "Table integrity failure reproduced" in stream_text
     assert "Seven strategies compared" in stream_text
     assert "PASS — document and chunking laboratory verified" in stream_text
+
+
+def test_hybrid_retrieval_notebook_offline_run_is_visual_and_verified(tmp_path):
+    notebook_path = ROOT / "notebooks" / "06_hybrid_retrieval.ipynb"
+    output_dir = tmp_path / "executed"
+    result = subprocess.run(
+        [
+            sys.executable,
+            str(EXECUTOR),
+            str(notebook_path),
+            "--mode",
+            "offline",
+            "--output-dir",
+            str(output_dir),
+        ],
+        cwd=ROOT,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+
+    assert result.returncode == 0, result.stderr
+    executed = nbformat.read(output_dir / notebook_path.name, as_version=4)
+    assert count_png_outputs(executed) >= 8
+    output_text = stream_text(executed)
+    assert "Dense exact-term failure reproduced" in output_text
+    assert "Cross-company leakage blocked" in output_text
+    assert "Hybrid retrieval improves maintained recall" in output_text
+    assert "PASS — hybrid retrieval laboratory verified" in output_text

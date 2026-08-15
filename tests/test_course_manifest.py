@@ -92,3 +92,11 @@ def test_implemented_lesson_five_assets_exist() -> None:
     assert (ROOT / lesson["chapter"]).is_file()
     assert (ROOT / lesson["notebook"]).is_file()
     assert (ROOT / lesson["deck"]).is_file()
+
+
+def test_implemented_lesson_six_assets_exist() -> None:
+    manifest = load_course_manifest()
+    lesson = next(item for item in manifest["lessons"] if item["id"] == "06")
+
+    assert (ROOT / lesson["chapter"]).is_file()
+    assert (ROOT / lesson["notebook"]).is_file()
