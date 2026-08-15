@@ -5,7 +5,9 @@ from __future__ import annotations
 import hashlib
 import json
 import math
+import pickle
 import re
+import zipfile
 from collections.abc import Sequence
 from dataclasses import asdict, dataclass
 from pathlib import Path
@@ -174,16 +176,16 @@ class DenseIndex:
         document_vectors = embeddings.embed_documents([passage.text for passage in self.passages])
         if len(document_vectors) != len(self.passages):
             raise ValueError("embed_documents must return one vector per passage")
-        self._document_vectors = tuple(
+        document_vectors = tuple(
             _validate_and_normalize_vector(vector, expected_dimension=None)
             for vector in document_vectors
         )
-        self.dimension = len(self._document_vectors[0])
+        self.dimension = len(document_vectors[0])
         if self.dimension == 0:
             raise ValueError("embedding vectors must not be empty")
-        if any(len(vector) != self.dimension for vector in self._document_vectors):
+        if any(len(vector) != self.dimension for vector in document_vectors):
             raise ValueError("embedding vectors must have consistent dimensions")
-        self.document_matrix = np.asarray(self._document_vectors, dtype=float)
+        self._document_matrix = np.asarray(document_vectors, dtype=float)
         self.version = _build_index_version(
             self.passages,
             provider=self.provider,
@@ -192,6 +194,12 @@ class DenseIndex:
             chunking_strategy=self.chunking_strategy,
         )
 
+    @property
+    def document_matrix(self) -> np.ndarray:
+        """Return a copy of the normalized document vectors for inspection."""
+
+        return self._document_matrix.copy()
+
     def save(self, directory: str | Path) -> None:
         """Persist this index's identity metadata and normalized document vectors."""
 
@@ -199,7 +207,7 @@ class DenseIndex:
         artifact_directory.mkdir(parents=True, exist_ok=True)
         with (artifact_directory / "manifest.json").open("w", encoding="utf-8") as manifest_file:
             json.dump(asdict(self.version), manifest_file, sort_keys=True)
-        np.save(artifact_directory / "vectors.npy", self.document_matrix)
+        np.save(artifact_directory / "vectors.npy", self._document_matrix)
 
     @classmethod
     def from_artifact(
@@ -235,10 +243,7 @@ class DenseIndex:
         restored_index.model = stored_version.model
         restored_index.chunking_strategy = stored_version.chunking_strategy
         restored_index.dimension = stored_version.dimension
-        restored_index.document_matrix = document_matrix
-        restored_index._document_vectors = tuple(
-            tuple(vector) for vector in restored_index.document_matrix.tolist()
-        )
+        restored_index._document_matrix = document_matrix
         restored_index.version = stored_version
         return restored_index
 
@@ -271,7 +276,7 @@ class DenseIndex:
         )
         scores = [
             (passage, _cosine_similarity(query_vector, vector))
-            for passage, vector in zip(self.passages, self._document_vectors, strict=True)
+            for passage, vector in zip(self.passages, self._document_matrix, strict=True)
             if filters is None or filters.matches(passage)
         ]
         return sorted(scores, key=lambda item: (-item[1], item[0].passage_id))
@@ -335,23 +340,24 @@ def _build_index_version(
 
 
 def _hash_corpus(passages: Sequence[IndexedPassage]) -> str:
-    field_delimiter = "\x1f"
-    passage_delimiter = "\x1e"
-    corpus_text = passage_delimiter.join(
-        field_delimiter.join(
-            (
-                passage.passage_id,
-                passage.company,
-                passage.period,
-                passage.document_type,
-                passage.section,
-                passage.text,
-                passage.source_url,
-            )
+    records = [
+        (
+            passage.passage_id,
+            passage.company,
+            passage.period,
+            passage.document_type,
+            passage.section,
+            passage.text,
+            passage.source_url,
         )
         for passage in passages
+    ]
+    canonical_corpus = json.dumps(
+        records,
+        ensure_ascii=True,
+        separators=(",", ":"),
     )
-    return hashlib.sha256(corpus_text.encode("utf-8")).hexdigest()
+    return hashlib.sha256(canonical_corpus.encode("utf-8")).hexdigest()
 
 
 def _load_embedding_index_version(manifest_path: Path) -> EmbeddingIndexVersion:
@@ -370,6 +376,8 @@ def _load_embedding_index_version(manifest_path: Path) -> EmbeddingIndexVersion:
     except (KeyError, OSError, TypeError, ValueError, json.JSONDecodeError) as error:
         raise IndexVersionError("manifest contains invalid index version metadata") from error
 
+    if type(version.schema_version) is not int:
+        raise IndexVersionError("schema_version must be an integer")
     if version.schema_version != 1:
         raise IndexVersionError("schema_version is not supported")
     if not isinstance(version.dimension, int) or isinstance(version.dimension, bool):
@@ -420,8 +428,13 @@ def _load_document_matrix(
 ) -> np.ndarray:
     try:
         matrix = np.load(vectors_path, allow_pickle=False)
-    except (OSError, ValueError) as error:
+    except (EOFError, OSError, TypeError, ValueError, pickle.UnpicklingError, zipfile.BadZipFile) as error:
         raise IndexVersionError("vectors.npy could not be loaded") from error
+    if not isinstance(matrix, np.ndarray):
+        close = getattr(matrix, "close", None)
+        if callable(close):
+            close()
+        raise IndexVersionError("vectors.npy must contain one ndarray matrix")
     if matrix.shape != (passage_count, dimension):
         raise IndexVersionError("vector matrix shape does not match the index version")
     if not np.issubdtype(matrix.dtype, np.number) or not np.all(np.isfinite(matrix)):

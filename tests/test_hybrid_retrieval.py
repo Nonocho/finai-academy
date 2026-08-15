@@ -1,5 +1,6 @@
 """Contract tests for provider-neutral hybrid retrieval indexes."""
 
+import json
 from dataclasses import replace
 
 import numpy as np
@@ -39,6 +40,19 @@ def build_offline_dense_index(corpus):
     )
 
 
+def write_empty_vectors(path):
+    """Replace a vector artifact with an empty invalid file."""
+
+    path.write_bytes(b"")
+
+
+def write_npz_vectors(path):
+    """Replace a vector artifact with an archive rather than one matrix."""
+
+    with path.open("wb") as vector_file:
+        np.savez(vector_file, vectors=np.zeros((1, 1)))
+
+
 def test_dense_index_round_trip_preserves_vectors_and_version(corpus, tmp_path):
     """Persisted vectors must serve the same corpus and version identity."""
 
@@ -54,6 +68,88 @@ def test_dense_index_round_trip_preserves_vectors_and_version(corpus, tmp_path):
 
     assert np.array_equal(restored.document_matrix, original.document_matrix)
     assert restored.version == original.version
+
+
+def test_dense_index_version_hash_distinguishes_delimiter_containing_fields(corpus):
+    """Corpus identity must not merge distinct fields containing old delimiters."""
+
+    first_passage = corpus[0]
+    first_corpus = (
+        replace(first_passage, passage_id="first\x1fsecond", company="third"),
+        *corpus[1:],
+    )
+    second_corpus = (
+        replace(first_passage, passage_id="first", company="second\x1fthird"),
+        *corpus[1:],
+    )
+
+    first_index = build_offline_dense_index(first_corpus)
+    second_index = build_offline_dense_index(second_corpus)
+
+    assert first_index.version.corpus_hash != second_index.version.corpus_hash
+
+
+def test_document_matrix_is_defensive_and_cannot_diverge_from_persisted_vectors(corpus, tmp_path):
+    """Public matrix mutation or reassignment must not alter index behavior or artifacts."""
+
+    index = build_offline_dense_index(corpus)
+    expected_matrix = index.document_matrix.copy()
+    expected_hits = index.search("data center revenue", top_k=2)
+
+    exposed_matrix = index.document_matrix
+    exposed_matrix.fill(0.0)
+
+    assert np.array_equal(index.document_matrix, expected_matrix)
+    with pytest.raises(AttributeError):
+        index.document_matrix = np.zeros_like(expected_matrix)
+
+    index.save(tmp_path)
+    restored = DenseIndex.from_artifact(
+        tmp_path,
+        corpus,
+        DeterministicTeachingEmbeddings(),
+        expected_version=index.version,
+    )
+
+    assert restored.search("data center revenue", top_k=2) == expected_hits
+    assert np.array_equal(restored.document_matrix, expected_matrix)
+
+
+@pytest.mark.parametrize("write_vectors", [write_empty_vectors, write_npz_vectors])
+def test_loading_rejects_non_matrix_vector_artifacts(corpus, tmp_path, write_vectors):
+    """Malformed and archive vector files must become domain-specific load errors."""
+
+    index = build_offline_dense_index(corpus)
+    index.save(tmp_path)
+    write_vectors(tmp_path / "vectors.npy")
+
+    with pytest.raises(IndexVersionError, match="vectors.npy"):
+        DenseIndex.from_artifact(
+            tmp_path,
+            corpus,
+            DeterministicTeachingEmbeddings(),
+            expected_version=index.version,
+        )
+
+
+@pytest.mark.parametrize("invalid_schema_version", [True, 1.0])
+def test_loading_rejects_non_integer_schema_version(corpus, tmp_path, invalid_schema_version):
+    """Schema versions must be literal integers, never equivalent JSON values."""
+
+    index = build_offline_dense_index(corpus)
+    index.save(tmp_path)
+    manifest_path = tmp_path / "manifest.json"
+    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    manifest["schema_version"] = invalid_schema_version
+    manifest_path.write_text(json.dumps(manifest), encoding="utf-8")
+
+    with pytest.raises(IndexVersionError, match="schema_version"):
+        DenseIndex.from_artifact(
+            tmp_path,
+            corpus,
+            DeterministicTeachingEmbeddings(),
+            expected_version=index.version,
+        )
 
 
 @pytest.mark.parametrize(
