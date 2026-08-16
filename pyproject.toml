@@ -46,6 +46,10 @@ finance = [
   "edgartools",
   "yfinance",
 ]
+evaluation = [
+  "mlflow>=3.15,<4",
+  "ragas>=0.4.3,<0.5",
+]
 dev = [
   "pytest",
   "ruff",
