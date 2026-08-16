@@ -7,6 +7,7 @@ from dataclasses import dataclass
 from os import environ as process_environment
 from typing import Any
 
+from finai_academy.measurement import TokenUsage
 from finai_academy.settings import Settings
 
 
@@ -18,10 +19,29 @@ class ModelRun:
     model: str
     text: str
     latency_ms: float
+    token_usage: TokenUsage | None = None
+    prompt_version: str | None = None
 
     def __post_init__(self) -> None:
         if self.latency_ms < 0:
             raise ValueError("latency_ms must be greater than or equal to zero")
+        if self.prompt_version is not None and not self.prompt_version.strip():
+            raise ValueError("prompt_version must not be empty when provided")
+
+
+def normalize_token_usage(usage_metadata: Mapping[str, Any] | None) -> TokenUsage | None:
+    """Normalize complete LangChain usage metadata without inventing missing counts."""
+
+    if usage_metadata is None:
+        return None
+    required_fields = ("input_tokens", "output_tokens", "total_tokens")
+    if any(field not in usage_metadata for field in required_fields):
+        return None
+    return TokenUsage(
+        input_tokens=usage_metadata["input_tokens"],
+        output_tokens=usage_metadata["output_tokens"],
+        total_tokens=usage_metadata["total_tokens"],
+    )
 
 
 def provider_summary(settings: Settings) -> dict[str, str]:
