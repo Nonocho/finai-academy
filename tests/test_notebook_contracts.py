@@ -598,3 +598,52 @@ def test_hybrid_retrieval_notebook_prepares_the_mlflow_trace_handoff() -> None:
     assert "MLflow span handoff" in source
     assert "stage_measurements" in executable
     assert "import mlflow" not in executable
+
+
+def test_rag_evaluation_notebook_is_output_free_and_complete() -> None:
+    notebook_path = ROOT / "notebooks" / "07_rag_evaluation.ipynb"
+    notebook = nbformat.read(notebook_path, as_version=4)
+    source = "\n".join(cell.source for cell in notebook.cells)
+
+    assert all(not cell.get("outputs") for cell in notebook.cells if cell.cell_type == "code")
+    assert all(cell.get("execution_count") is None for cell in notebook.cells if cell.cell_type == "code")
+    assert len({cell.id for cell in notebook.cells}) == len(notebook.cells)
+    for marker in (
+        "Versioned golden set",
+        "Retrieval metrics and answer metrics",
+        "MLflow trace",
+        "Compare two configurations",
+        "Failure analysis",
+        "Optional Ragas comparison",
+        "Knowledge check",
+        "Capstone integration",
+        "PASS — RAG evaluation and tracing verified",
+    ):
+        assert marker in source
+
+
+def test_rag_evaluation_notebook_offline_run_is_visual_and_verified(tmp_path: Path) -> None:
+    notebook_path = ROOT / "notebooks" / "07_rag_evaluation.ipynb"
+    output_dir = tmp_path / "executed"
+    result = subprocess.run(
+        [
+            sys.executable,
+            str(EXECUTOR),
+            str(notebook_path),
+            "--mode",
+            "offline",
+            "--output-dir",
+            str(output_dir),
+        ],
+        cwd=ROOT,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+
+    assert result.returncode == 0, result.stderr
+    executed = nbformat.read(output_dir / notebook_path.name, as_version=4)
+    assert count_png_outputs(executed) >= 8
+    output_text = stream_text(executed)
+    assert output_text.count("PASS — RAG evaluation and tracing verified") == 1
+    assert "MLflow traces recorded: 8" in output_text

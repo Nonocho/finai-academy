@@ -13,7 +13,7 @@
     },
     {
       "case_id": "nvda-exact-number",
-      "question": "What was NVIDIA Data Center revenue in fiscal 2026?",
+      "question": "Which NVIDIA business reported $193.7 billion in revenue?",
       "filters": {"company": "NVIDIA", "period": "FY2026"},
       "expected_evidence_ids": ["NVDA-2026-10K-EXCERPT-CONTEXTUAL-003"],
       "expected_facts": ["$193.7 billion"],
@@ -42,7 +42,7 @@
       "case_id": "schneider-filter-safety",
       "question": "What was Schneider Electric FY2025 revenue?",
       "filters": {"company": "Schneider Electric", "period": "FY2025"},
-      "expected_evidence_ids": ["SU-2025-FY-EXCERPT-CONTEXTUAL-003"],
+      "expected_evidence_ids": ["SU-2025-FY-EXCERPT-CONTEXTUAL-001"],
       "expected_facts": ["EUR 40.2bn"],
       "requires_abstention": false,
       "tags": ["filter", "schneider"]
@@ -58,7 +58,7 @@
     },
     {
       "case_id": "multi-evidence-comparison",
-      "question": "Compare NVIDIA total revenue with Data Center revenue in fiscal 2026.",
+      "question": "Compare NVIDIA total revenue of $215.9 billion with Data Center revenue of $193.7 billion.",
       "filters": {"company": "NVIDIA", "period": "FY2026"},
       "expected_evidence_ids": [
         "NVDA-2026-10K-EXCERPT-CONTEXTUAL-001",

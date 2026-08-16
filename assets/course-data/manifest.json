@@ -4,7 +4,7 @@
     {
       "dataset_version": "rag-cases-v1",
       "path": "assets/course-data/evaluation/rag_cases_v1.json",
-      "sha256": "506070a8739ff6de56ead5b8437715bb61d159cd18020652cd352068ed918d01"
+      "sha256": "7e1883481e3d6efe6c75b6cd0edc6c3d34b30da4d37db4f20770a28e32b1ecc3"
     }
   ],
   "sources": [
