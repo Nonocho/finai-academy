@@ -432,6 +432,25 @@ def test_naive_rag_notebook_offline_run_visualizes_and_verifies_baseline(
     assert "PASS — naive RAG baseline verified" in stream_text
 
 
+def test_naive_rag_notebook_compares_context_baselines_before_retrieval() -> None:
+    notebook = nbformat.read(
+        ROOT / "notebooks" / "04_rag_from_scratch.ipynb",
+        as_version=4,
+    )
+    source = "\n".join(cell.source for cell in notebook.cells)
+    executable = "\n".join(
+        cell.source for cell in notebook.cells if cell.cell_type == "code"
+    )
+
+    assert "No context → full context → naive RAG" in source
+    assert "naive paragraph split" in source
+    assert "Live answer grounding remains an observation" in source
+    assert "Path comparison:" in executable
+    assert "if not live_mode:" in executable
+    assert "assert all(grounding_checks.values())" in executable
+    assert "import mlflow" not in executable
+
+
 def test_document_chunking_notebook_offline_run_is_visual_and_verified(
     tmp_path: Path,
 ) -> None:

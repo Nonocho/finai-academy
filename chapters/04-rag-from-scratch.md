@@ -19,6 +19,16 @@ Schneider Electric passages. They can inspect the representation, ranking, selec
 context and answer, then identify whether a failure occurred before or after the model
 call.
 
+The lesson keeps one question fixed and compares three application paths:
+
+```text
+No context → full context → naive RAG
+```
+
+- no context exposes why a fluent model cannot recover missing company evidence;
+- full context supplies all six mixed-company passages and becomes the reference;
+- naive RAG selects two passages before generation and makes that decision inspectable.
+
 ## State the limitation before teaching the mechanism
 
 Call this a **naive RAG baseline** throughout the lesson. It is useful because every
@@ -48,6 +58,11 @@ raw document → parsing → structure → chunks → index → rank → context
 Lesson 04 deliberately begins at `chunks`. Once students can observe the index,
 ranking and prompt, Lesson 05 can change the chunks while keeping the downstream
 mechanism understandable.
+
+For one visible baseline only, the notebook joins the six prepared passages and
+applies a blank-line paragraph split. This is explicitly a **naive paragraph split**:
+it ignores headings, tables, semantic boundaries and hierarchy. Lesson 05 replaces
+that simplification rather than treating it as a production parser.
 
 ## Financial evidence pack
 
@@ -119,13 +134,14 @@ solve the problem; it proves that the baseline representation has a measurable l
 
 | Time | Activity | Instructor emphasis |
 |---:|---|---|
-| 0–3 min | Inspect the prepared corpus | Prepared passages are a deliberate simplification. |
-| 3–7 min | Build TF-IDF and inspect the matrix | Representation determines which similarity signals exist. |
-| 7–11 min | Rank every passage and apply top-k | The model has not been called yet. |
-| 11–15 min | Assemble and visualize the prompt budget | Retrieval controls what the model can see. |
-| 15–18 min | Generate with offline, Ollama or OpenAI | Only this step crosses the model boundary. |
-| 18–20 min | Run retrieval and grounding checks | Keep the two evaluation layers distinct. |
-| 20–22 min | Trigger the lexical failure | Map each weakness to the next lesson. |
+| 0–3 min | Compare no context and full context | Same question; different evidence boundary. |
+| 3–5 min | Inspect the prepared corpus and paragraph split | Prepared passages are a deliberate simplification. |
+| 5–9 min | Build TF-IDF and inspect the matrix | Representation determines which similarity signals exist. |
+| 9–13 min | Rank every passage and apply top-k | The model has not been called yet. |
+| 13–16 min | Assemble and visualize the prompt budget | Retrieval controls what the model can see. |
+| 16–19 min | Generate with offline, Ollama or OpenAI | Add naive RAG to the three-path table. |
+| 19–21 min | Run retrieval and grounding checks | Keep the two evaluation layers distinct. |
+| 21–22 min | Trigger the lexical failure | Map each weakness to the next lesson. |
 
 ## Visual teaching contract
 
@@ -188,6 +204,13 @@ grounding require separate evidence checks.
 They preserve provenance through prompt construction and allow the final application
 to emit traceable citations. A URL alone does not prove that the answer used the source
 correctly.
+
+### 6. Why compare no context, full context and RAG before tuning retrieval?
+
+The comparison makes the engineering job explicit. No context tests the missing-
+evidence boundary, full context tests whether the complete bounded corpus is usable,
+and RAG tests whether selective evidence can preserve the answer with less context.
+Without these references, a retrieval score has no application baseline.
 
 ## Challenge solution
 
