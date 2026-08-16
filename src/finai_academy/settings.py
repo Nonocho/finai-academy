@@ -2,6 +2,11 @@
 
 from dataclasses import dataclass
 from os import getenv
+from pathlib import Path
+
+from dotenv import load_dotenv
+
+PROJECT_ROOT = Path(__file__).resolve().parents[2]
 
 SUPPORTED_PROVIDERS = frozenset({"ollama", "openai"})
 
@@ -49,7 +54,11 @@ class Settings:
             raise ValueError(f"Unsupported {variable_name}={provider!r}; choose {choices}.")
 
     @classmethod
-    def from_environment(cls) -> "Settings":
+    def from_environment(cls, env_file: str | Path | None = None) -> "Settings":
+        load_dotenv(
+            dotenv_path=Path(env_file) if env_file is not None else PROJECT_ROOT / ".env",
+            override=False,
+        )
         provider = getenv("FINAI_MODEL_PROVIDER", "ollama")
         return cls(
             provider=provider,

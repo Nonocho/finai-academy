@@ -44,3 +44,39 @@ def test_unsupported_provider_is_rejected(monkeypatch: pytest.MonkeyPatch) -> No
 
     with pytest.raises(ValueError, match="FINAI_MODEL_PROVIDER"):
         Settings.from_environment()
+
+
+def test_settings_loads_an_explicit_env_file(
+    tmp_path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    env_file = tmp_path / ".env"
+    env_file.write_text(
+        "FINAI_MODEL_PROVIDER=ollama\n"
+        "FINAI_CHAT_MODEL=qwen3:4b\n"
+        "FINAI_EMBEDDING_MODEL=qwen3-embedding:0.6b\n",
+        encoding="utf-8",
+    )
+    for variable in (
+        "FINAI_MODEL_PROVIDER",
+        "FINAI_CHAT_MODEL",
+        "FINAI_EMBEDDING_PROVIDER",
+        "FINAI_EMBEDDING_MODEL",
+    ):
+        monkeypatch.delenv(variable, raising=False)
+
+    settings = Settings.from_environment(env_file=env_file)
+
+    assert settings.chat_model == "qwen3:4b"
+    assert settings.embedding_model == "qwen3-embedding:0.6b"
+
+
+def test_shell_environment_overrides_env_file(
+    tmp_path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    env_file = tmp_path / ".env"
+    env_file.write_text("FINAI_CHAT_MODEL=qwen3:4b\n", encoding="utf-8")
+    monkeypatch.setenv("FINAI_CHAT_MODEL", "qwen3:8b")
+
+    settings = Settings.from_environment(env_file=env_file)
+
+    assert settings.chat_model == "qwen3:8b"
