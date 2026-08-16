@@ -4,8 +4,10 @@ from __future__ import annotations
 
 import math
 from collections.abc import Mapping, Sequence
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
+from time import perf_counter
+from types import MappingProxyType
 
 from finai_academy.hybrid_retrieval import (
     DenseIndex,
@@ -14,6 +16,7 @@ from finai_academy.hybrid_retrieval import (
     RetrievalFilters,
     reciprocal_rank_fusion,
 )
+from finai_academy.measurement import NullStageObserver, RunMeasurement, StageObserver
 from finai_academy.reranking import RerankedHit, rerank_candidates
 from finai_academy.retrieval import RetrievalHit
 
@@ -30,7 +33,15 @@ class RetrievalResult:
     dense_hits: tuple[RetrievalHit, ...]
     fused_hits: tuple[FusedHit, ...]
     reranked_hits: tuple[RerankedHit, ...]
+    stage_measurements: Mapping[str, RunMeasurement] = field(default_factory=dict)
     abstention_reason: str | None = None
+
+    def __post_init__(self) -> None:
+        object.__setattr__(
+            self,
+            "stage_measurements",
+            MappingProxyType(dict(self.stage_measurements)),
+        )
 
 
 @dataclass(frozen=True)
@@ -55,6 +66,7 @@ def retrieve_evidence(
     candidate_k: int,
     final_k: int,
     weights: Mapping[str, float] | None = None,
+    observer: StageObserver | None = None,
 ) -> RetrievalResult:
     """Pre-filter, retrieve widely, fuse, and transparently rerank final evidence."""
 
@@ -63,8 +75,35 @@ def retrieve_evidence(
     normalized_query = query.strip()
     if not normalized_query:
         raise ValueError("query must not be empty")
+    active_observer = observer or NullStageObserver()
+    stage_measurements: dict[str, RunMeasurement] = {}
     eligible_passages = (*keyword_index.passages, *dense_index.passages)
-    if not any(filters.matches(passage) for passage in eligible_passages):
+    eligibility_started = perf_counter()
+    with active_observer.span(
+        "eligibility",
+        inputs={
+            "query": normalized_query,
+            "company": filters.company,
+            "period": filters.period,
+            "document_type": filters.document_type,
+            "section": filters.section,
+        },
+    ):
+        has_eligible_passage = any(
+            filters.matches(passage) for passage in eligible_passages
+        )
+    stage_measurements["eligibility"] = RunMeasurement(
+        stage="eligibility",
+        duration_ms=(perf_counter() - eligibility_started) * 1_000,
+        metadata={"status": "completed"},
+    )
+    if not has_eligible_passage:
+        for stage in ("keyword", "dense", "fusion", "rerank"):
+            stage_measurements[stage] = RunMeasurement(
+                stage=stage,
+                duration_ms=0.0,
+                metadata={"status": "skipped"},
+            )
         return RetrievalResult(
             query=normalized_query,
             filters=filters,
@@ -72,11 +111,33 @@ def retrieve_evidence(
             dense_hits=(),
             fused_hits=(),
             reranked_hits=(),
+            stage_measurements=stage_measurements,
             abstention_reason="No passages matched the requested metadata filters.",
         )
 
-    keyword_hits = tuple(keyword_index.search(normalized_query, candidate_k, filters))
-    dense_hits = tuple(dense_index.search(normalized_query, candidate_k, filters))
+    keyword_started = perf_counter()
+    with active_observer.span(
+        "keyword",
+        inputs={"query": normalized_query, "candidate_k": candidate_k},
+    ):
+        keyword_hits = tuple(keyword_index.search(normalized_query, candidate_k, filters))
+    stage_measurements["keyword"] = RunMeasurement(
+        stage="keyword",
+        duration_ms=(perf_counter() - keyword_started) * 1_000,
+        metadata={"status": "completed"},
+    )
+
+    dense_started = perf_counter()
+    with active_observer.span(
+        "dense",
+        inputs={"query": normalized_query, "candidate_k": candidate_k},
+    ):
+        dense_hits = tuple(dense_index.search(normalized_query, candidate_k, filters))
+    stage_measurements["dense"] = RunMeasurement(
+        stage="dense",
+        duration_ms=(perf_counter() - dense_started) * 1_000,
+        metadata={"status": "completed"},
+    )
     rankings = {
         channel: hits
         for channel, hits in (("keyword", keyword_hits), ("dense", dense_hits))
@@ -87,8 +148,35 @@ def retrieve_evidence(
         if weights is not None
         else None
     )
-    fused_hits = tuple(reciprocal_rank_fusion(rankings, weights=active_weights)) if rankings else ()
-    reranked_hits = tuple(rerank_candidates(normalized_query, fused_hits, top_k=final_k))
+    fusion_started = perf_counter()
+    with active_observer.span(
+        "fusion",
+        inputs={"keyword_hits": len(keyword_hits), "dense_hits": len(dense_hits)},
+    ):
+        fused_hits = (
+            tuple(reciprocal_rank_fusion(rankings, weights=active_weights))
+            if rankings
+            else ()
+        )
+    stage_measurements["fusion"] = RunMeasurement(
+        stage="fusion",
+        duration_ms=(perf_counter() - fusion_started) * 1_000,
+        metadata={"status": "completed"},
+    )
+
+    rerank_started = perf_counter()
+    with active_observer.span(
+        "rerank",
+        inputs={"candidate_count": len(fused_hits), "final_k": final_k},
+    ):
+        reranked_hits = tuple(
+            rerank_candidates(normalized_query, fused_hits, top_k=final_k)
+        )
+    stage_measurements["rerank"] = RunMeasurement(
+        stage="rerank",
+        duration_ms=(perf_counter() - rerank_started) * 1_000,
+        metadata={"status": "completed"},
+    )
     return RetrievalResult(
         query=normalized_query,
         filters=filters,
@@ -96,6 +184,7 @@ def retrieve_evidence(
         dense_hits=dense_hits,
         fused_hits=fused_hits,
         reranked_hits=reranked_hits,
+        stage_measurements=stage_measurements,
     )
 
 

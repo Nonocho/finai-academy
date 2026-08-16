@@ -551,6 +551,7 @@ def test_hybrid_retrieval_notebook_offline_run_is_visual_and_verified(tmp_path):
     assert "Dense exact-term failure reproduced" in output_text
     assert "Cross-company leakage blocked" in output_text
     assert "Hybrid retrieval improves maintained recall" in output_text
+    assert "Stage timings recorded" in output_text
     assert "PASS — hybrid retrieval laboratory verified" in output_text
 
 
@@ -579,3 +580,21 @@ def test_hybrid_retrieval_notebook_qualifies_offline_success_in_markdown():
     assert "deterministic offline laboratory success condition" in learning_objectives.source
     assert "Live OpenAI and Ollama runs report observed recall" in learning_objectives.source
     assert "provider-invariant structural behavior" in learning_objectives.source
+
+
+def test_hybrid_retrieval_notebook_prepares_the_mlflow_trace_handoff() -> None:
+    notebook = nbformat.read(
+        ROOT / "notebooks" / "06_hybrid_retrieval.ipynb",
+        as_version=4,
+    )
+    source = "\n".join(cell.source for cell in notebook.cells)
+    executable = "\n".join(
+        cell.source for cell in notebook.cells if cell.cell_type == "code"
+    )
+
+    assert "Stage timings" in source
+    assert "Local index versus pgvector/HNSW" in source
+    assert "documents → chunks → embeddings" in source
+    assert "MLflow span handoff" in source
+    assert "stage_measurements" in executable
+    assert "import mlflow" not in executable

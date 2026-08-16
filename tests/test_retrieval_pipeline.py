@@ -90,6 +90,51 @@ def test_pipeline_keeps_all_rankings_visible_after_pre_filtering(corpus):
     assert {hit.passage.company for hit in result.fused_hits} == {"Schneider Electric"}
 
 
+def test_retrieval_result_exposes_every_stage_measurement(corpus):
+    """Every executed retrieval stage must expose a finite non-negative duration."""
+
+    keyword_index, dense_index = build_indexes(corpus)
+
+    result = retrieve_evidence(
+        "What was revenue?",
+        keyword_index=keyword_index,
+        dense_index=dense_index,
+        filters=RetrievalFilters(company="Schneider Electric"),
+        candidate_k=4,
+        final_k=1,
+    )
+
+    assert tuple(result.stage_measurements) == (
+        "eligibility",
+        "keyword",
+        "dense",
+        "fusion",
+        "rerank",
+    )
+    assert all(item.duration_ms >= 0 for item in result.stage_measurements.values())
+    assert all(item.metadata.get("status") == "completed" for item in result.stage_measurements.values())
+
+
+def test_abstention_records_skipped_retrieval_stage_measurements(corpus):
+    """An eligibility abstention must not invent durations for stages that never ran."""
+
+    keyword_index, dense_index = build_indexes(corpus)
+
+    result = retrieve_evidence(
+        "What was revenue?",
+        keyword_index=keyword_index,
+        dense_index=dense_index,
+        filters=RetrievalFilters(company="Absent Company"),
+        candidate_k=4,
+        final_k=1,
+    )
+
+    assert result.stage_measurements["eligibility"].metadata["status"] == "completed"
+    for stage in ("keyword", "dense", "fusion", "rerank"):
+        assert result.stage_measurements[stage].duration_ms == 0.0
+        assert result.stage_measurements[stage].metadata == {"status": "skipped"}
+
+
 def test_pipeline_does_not_abstain_when_only_the_dense_index_has_eligible_passages(corpus):
     """Active dense retrieval must accept weights declared for both supported channels."""
 

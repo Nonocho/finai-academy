@@ -16,7 +16,8 @@ Students should leave with one operational principle:
 
 The notebook rebuilds the seven contextual structure-aware chunks from Lesson 05's
 versioned source manifest. It then embeds, pre-filters, retrieves, fuses and reranks those
-same chunks. Nothing is silently replaced with the smaller unit-test corpus.
+same chunks while measuring every executed stage. Nothing is silently replaced with the
+smaller unit-test corpus, and MLflow remains outside this lesson.
 
 ## Connection to Lessons 05 and 07
 
@@ -56,13 +57,14 @@ Do not borrow notebook time to finish the deck. At 15:00, move to the executable
 | 5:00–7:00 | Inspect Figure 2. | Seven passage points and four starred query points are visible; axes say “teaching view only.” |
 | 7:00–10:00 | Inspect Figure 3. | Four-by-seven matrix with raw cosine values, a “not confidence” colorbar and limits derived from the observed provider values, including negatives. |
 | 10:00–13:00 | Run all maintained questions and inspect Figure 4. | Keyword, dense and RRF ladders expose their own score types; green identifies expected evidence. |
-| 13:00–16:00 | Run the controlled exact-number failure, Figure 5. | The illustrative deterministic index finds `18.7%` lexically and ties at zero densely; `Dense exact-term failure reproduced` prints in every provider mode. |
-| 16:00–19:00 | Run controlled pre-filtering, Figure 6. | The illustrative unfiltered result is Schneider and every filtered candidate is NVIDIA; `Cross-company leakage blocked` prints in every provider mode. |
-| 19:00–22:00 | Inspect RRF contributions, Figure 7. | Each bar is the visible sum of keyword and dense reciprocal-rank terms. |
-| 22:00–25:00 | Inspect rerank features, Figure 8. | Weighted features sum to the displayed rerank score; exact numeric evidence leads. |
-| 25:00–27:00 | Run Figure 9 scorecard. | Offline: reranked hybrid reaches 4/4 and prints `Hybrid retrieval improves maintained recall`. Live: observed recall prints without a fixed rank threshold. |
-| 27:00–28:30 | Run verification. | Provider-invariant vector, filter, stage, score and provenance checks pass; offline additionally checks 4/4 maintained recall. Final line is `PASS — hybrid retrieval laboratory verified`. |
-| 28:30–30:00 | Run the weight challenge and debrief. | Offline asserts and prints moved ranks. Live prints either moved ranks or an explicit valid no-movement result. |
+| 13:00–15:00 | Inspect stage timings, Figure 5. | Eligibility, keyword, dense, fusion and rerank each expose one `RunMeasurement`. |
+| 15:00–18:00 | Run the controlled exact-number failure, Figure 6. | The illustrative deterministic index finds `18.7%` lexically and ties at zero densely. |
+| 18:00–21:00 | Run controlled pre-filtering, Figure 7. | The illustrative unfiltered result is Schneider and every filtered candidate is NVIDIA. |
+| 21:00–23:00 | Inspect RRF contributions, Figure 8. | Each bar is the visible sum of keyword and dense reciprocal-rank terms. |
+| 23:00–25:00 | Inspect rerank features, Figure 9. | Weighted features sum to the displayed rerank score. |
+| 25:00–27:00 | Run Figure 10 scorecard. | Offline: reranked hybrid reaches 4/4; live recall remains observational. |
+| 27:00–28:30 | Verify and inspect Figure 11. | PASS gates hold; local index and pgvector/HNSW share the same logical schema and IDs. |
+| 28:30–30:00 | Run the weight challenge and debrief. | A moved ranking is an observation, not proof of improvement. |
 
 ## Checkpoints and markers
 
@@ -127,6 +129,10 @@ requires every maintained evidence token to appear within the configured `final_
 Live mode does not require a particular ranking, tie, recall improvement or RRF weight
 response.
 
+Every run also exposes ordered `stage_measurements` for eligibility, keyword, dense,
+fusion and rerank. An abstention measures eligibility and marks downstream stages as
+skipped with zero duration rather than inventing work that did not happen.
+
 ## Core explanations
 
 ### Cosine similarity
@@ -173,6 +179,27 @@ Candidates arrive only after pre-filtering, so metadata eligibility is one in th
 The fixed weighted sum is a rerank score. It is bounded and inspectable, but it remains a
 ranking policy rather than confidence.
 
+### Measurements and trace handoff
+
+`RunMeasurement` stores one stage name, observed duration and small provider-neutral
+metadata. `retrieve_evidence(..., observer=...)` wraps the actual stage work with a shared
+`StageObserver` boundary. Lesson 06 uses the no-op observer and ordinary timing records;
+Lesson 07 supplies an MLflow observer to the same boundary. This keeps instrumentation
+outside retrieval logic and avoids an MLflow dependency in Lessons 01–06.
+
+### Local index versus pgvector/HNSW
+
+The classroom persists a manifest and NumPy vectors locally. A production implementation
+can move storage to PostgreSQL plus pgvector/HNSW while preserving the logical schema:
+
+```text
+documents → chunks → embeddings
+```
+
+Documents retain source identity and reporting metadata; chunks retain stable IDs,
+provenance and raw text; embedding rows retain provider, model, dimension and index
+version. Scaling the storage engine must not weaken eligibility, abstention or verification.
+
 ## Controlled failure debrief
 
 For the exact-number failure, do not fix the deterministic embedder by adding `18.7%` to a
@@ -217,7 +244,7 @@ The correct conclusion is:
 ## Provider modes
 
 The source manifest, parsers, chunking, filters, fusion and reranking remain the same in
-every mode. The active index uses the shared embedding gateway. Figures 5 and 6 deliberately
+every mode. The active index uses the shared embedding gateway. Figures 6 and 7 deliberately
 use a separate deterministic teaching index so their controlled failures remain reproducible
 without imposing offline rank assumptions on the live provider.
 
@@ -251,7 +278,7 @@ FINAI_EMBEDDING_MODEL=qwen3-embedding:0.6b \
 Ensure Ollama is running and the configured embedding model is available. The executor
 sets `FINAI_LIVE_MODE=1` and selects the provider through shared settings.
 
-Expected: Figures 5 and 6 still print their clearly labelled controlled markers. The live
+Expected: Figures 6 and 7 still print their clearly labelled controlled markers. The live
 scorecard prints observed recall without asserting 4/4 or improvement; provider vectors,
 dimensions, filtered companies, visible stages, finite scores and provenance are verified.
 The challenge may report moved rankings or no movement. Final verification must pass.
@@ -305,6 +332,9 @@ each run into a trace with at least:
 - RRF contributions;
 - rerank feature values and final evidence IDs; and
 - answer groundedness measured separately from retrieval recall.
+
+The `stage_measurements` mapping becomes the exact MLflow span handoff; context assembly
+and generation are added as later spans rather than hidden inside retrieval.
 
 End with: “We can now explain which evidence won. Next we measure whether it should have
 won, and whether the generated answer actually used it.”
