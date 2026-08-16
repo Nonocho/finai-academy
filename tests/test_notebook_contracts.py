@@ -311,7 +311,12 @@ def test_structured_outputs_offline_run_reaches_the_validation_target(
         if output.get("output_type") == "stream"
     )
     assert "Validation caught the unsupported candidate" in stream_text
-    assert "PASS — structured financial brief verified" in stream_text
+    assert (
+        "Prompt progression: vague -> six_part -> delimited -> few_shot -> "
+        "prompt_json -> schema_bound"
+    ) in stream_text
+    assert "Prompt injection remains source data: PASS" in stream_text
+    assert stream_text.count("PASS — structured financial brief verified") == 1
 
 
 def test_cag_notebook_offline_run_produces_visual_evidence_and_a_decision(
