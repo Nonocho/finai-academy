@@ -14,6 +14,7 @@ from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
 
 from finai_academy.documents import DocumentBlock
+from finai_academy.providers import EmbeddingModel
 
 ChunkRole = Literal["standalone", "parent", "child", "proposition"]
 
@@ -42,6 +43,7 @@ class DocumentChunk:
     role: ChunkRole = "standalone"
     parent_id: str | None = None
     raw_text: str | None = None
+    generated_context: str | None = None
 
     def __post_init__(self) -> None:
         required = {
@@ -60,6 +62,11 @@ class DocumentChunk:
             raise ValueError("source_block_ids must not be empty")
         if self.role == "child" and not self.parent_id:
             raise ValueError("child chunks must reference parent_id")
+        if self.generated_context is not None:
+            context = self.generated_context.strip()
+            if not context:
+                raise ValueError("generated_context must not be empty when provided")
+            object.__setattr__(self, "generated_context", context)
 
 
 def _dedupe(values: Sequence[str]) -> tuple[str, ...]:
@@ -249,6 +256,39 @@ def sentence_similarity_profile(
     return sentences, similarities
 
 
+def embedding_similarity_profile(
+    blocks: Sequence[DocumentBlock],
+    embeddings: EmbeddingModel,
+) -> tuple[list[str], list[float]]:
+    """Return adjacent-sentence cosine similarities from configured embeddings."""
+
+    sentences = [unit for block in blocks for unit in _sentence_units(block, 10_000)]
+    if len(sentences) < 2:
+        return sentences, []
+
+    vectors = embeddings.embed_documents(sentences)
+    if len(vectors) != len(sentences):
+        raise ValueError("embedding provider must return one vector per sentence")
+    if not vectors or any(not vector for vector in vectors):
+        raise ValueError("embedding vectors must not be empty")
+    dimensions = {len(vector) for vector in vectors}
+    if len(dimensions) != 1:
+        raise ValueError("embedding vectors must have equal dimensions")
+
+    matrix = np.asarray(vectors, dtype=float)
+    if not np.isfinite(matrix).all():
+        raise ValueError("embedding vectors must contain only finite values")
+    norms = np.linalg.norm(matrix, axis=1, keepdims=True)
+    normalized = np.divide(
+        matrix,
+        norms,
+        out=np.zeros_like(matrix),
+        where=norms > 0,
+    )
+    similarities = np.sum(normalized[:-1] * normalized[1:], axis=1)
+    return sentences, [float(value) for value in similarities]
+
+
 def semantic_chunks(
     blocks: Sequence[DocumentBlock],
     *,
@@ -348,6 +388,60 @@ def contextualize_chunks(chunks: Sequence[DocumentChunk]) -> list[DocumentChunk]
             )
         )
     return contextual
+
+
+def contextual_enrich_chunks(
+    *,
+    document_text: str,
+    chunks: Sequence[DocumentChunk],
+    model: ChunkingModel,
+) -> list[DocumentChunk]:
+    """Generate retrieval context while preserving raw evidence and provenance."""
+
+    normalized_document = document_text.strip()
+    if not normalized_document:
+        raise ValueError("document_text must not be empty")
+
+    enriched: list[DocumentChunk] = []
+    for chunk in chunks:
+        raw_text = chunk.raw_text or chunk.text
+        prompt_payload = json.dumps(
+            {
+                "chunk_id": chunk.chunk_id,
+                "document": normalized_document,
+                "chunk": raw_text,
+            }
+        )
+        response = model.invoke(
+            [
+                (
+                    "system",
+                    (
+                        "Return JSON with one context string that situates the chunk "
+                        "inside the supplied financial document. Do not rewrite the chunk."
+                    ),
+                ),
+                ("human", prompt_payload),
+            ]
+        )
+        try:
+            payload = json.loads(response.content)
+        except (json.JSONDecodeError, TypeError) as error:
+            raise ValueError("model response must contain valid JSON") from error
+        context = payload.get("context") if isinstance(payload, dict) else None
+        if not isinstance(context, str) or not context.strip():
+            raise ValueError("model response must contain a non-empty context string")
+        normalized_context = context.strip()
+        enriched.append(
+            replace(
+                chunk,
+                strategy="llm_contextual",
+                text=f"{normalized_context}\n\n{raw_text}",
+                raw_text=raw_text,
+                generated_context=normalized_context,
+            )
+        )
+    return enriched
 
 
 def proposition_chunks(

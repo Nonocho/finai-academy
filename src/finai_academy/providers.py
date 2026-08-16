@@ -5,10 +5,16 @@ from __future__ import annotations
 from collections.abc import Mapping
 from dataclasses import dataclass
 from os import environ as process_environment
-from typing import Any
+from typing import Any, Protocol
 
 from finai_academy.measurement import TokenUsage
 from finai_academy.settings import Settings
+
+
+class EmbeddingModel(Protocol):
+    """Provider-neutral embedding boundary used by retrieval and chunking."""
+
+    def embed_documents(self, texts: list[str]) -> list[list[float]]: ...
 
 
 @dataclass(frozen=True)
