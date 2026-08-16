@@ -264,7 +264,19 @@ def test_model_gateway_offline_run_reaches_the_grounding_target(tmp_path: Path) 
         if output.get("output_type") == "stream"
     )
     assert "Grounding score: 4/4" in stream_text
-    assert "PASS — provider-neutral model gateway verified" in stream_text
+    assert "Token usage: unavailable for this provider response" in stream_text
+    assert "Streaming demo:" in stream_text
+    assert stream_text.count("PASS — provider-neutral model gateway verified") == 1
+
+
+def test_model_gateway_keeps_mlflow_out_of_executable_lesson_code() -> None:
+    notebook = nbformat.read(ROOT / "notebooks" / "01_model_gateway.ipynb", as_version=4)
+    executable_code = "\n".join(
+        cell.source for cell in notebook.cells if cell.cell_type == "code"
+    )
+
+    assert "import mlflow" not in executable_code.casefold()
+    assert "from mlflow" not in executable_code.casefold()
 
 
 def test_structured_outputs_offline_run_reaches_the_validation_target(
