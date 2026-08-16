@@ -492,9 +492,37 @@ def test_document_chunking_notebook_offline_run_is_visual_and_verified(
     )
 
     assert len(visual_outputs) >= 8
+    assert "Provider-aware semantic boundaries verified" in stream_text
+    assert "Generated contextual enrichment verified" in stream_text
+    assert "Raw evidence preserved" in stream_text
+    assert "Token inflation measured" in stream_text
+    assert "Retrieval comparison complete" in stream_text
     assert "Table integrity failure reproduced" in stream_text
     assert "Seven strategies compared" in stream_text
     assert "PASS — document and chunking laboratory verified" in stream_text
+
+
+def test_document_chunking_notebook_teaches_the_contextual_progression() -> None:
+    notebook = nbformat.read(
+        ROOT / "notebooks" / "05_document_and_chunking_lab.ipynb",
+        as_version=4,
+    )
+    source = "\n".join(cell.source for cell in notebook.cells)
+    executable = "\n".join(
+        cell.source for cell in notebook.cells if cell.cell_type == "code"
+    )
+
+    assert "Parser ladder" in source
+    assert "Provider-aware semantic boundaries" in source
+    assert "LLM contextual enrichment" in source
+    assert "LLM contextual enrichment is not agentic chunking" in source
+    assert "Token inflation" in source
+    assert "Retrieval comparison" in source
+    assert "Optional extension: proposition chunking" in source
+    assert "embedding_similarity_profile" in executable
+    assert "contextual_enrich_chunks" in executable
+    assert "generated_context" in executable
+    assert "raw_text" in executable
 
 
 def test_hybrid_retrieval_notebook_offline_run_is_visual_and_verified(tmp_path):

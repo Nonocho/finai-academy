@@ -5,6 +5,7 @@ from itertools import pairwise
 import numpy as np
 
 from finai_academy.lesson_support import (
+    RecordedContextualChunkingModel,
     compact_manifest_labels,
     normalize_rows,
     spread_label_positions,
@@ -138,3 +139,31 @@ def test_recorded_rag_model_answers_only_from_labelled_evidence() -> None:
     assert "[NVDA-F2]" in response.content
     assert "193.7" in response.content
     assert "does not establish valuation" in response.content
+
+
+def test_recorded_contextual_chunking_model_uses_the_stable_chunk_id() -> None:
+    import json
+
+    model = RecordedContextualChunkingModel(
+        {"NVDA-STRUCTURE-001": "NVIDIA fiscal 2026 revenue context."}
+    )
+
+    response = model.invoke(
+        [
+            ("system", "Return JSON."),
+            (
+                "human",
+                json.dumps(
+                    {
+                        "chunk_id": "NVDA-STRUCTURE-001",
+                        "document": "NVIDIA fiscal 2026 filing.",
+                        "chunk": "Revenue was $215.9 billion.",
+                    }
+                ),
+            ),
+        ]
+    )
+
+    assert json.loads(response.content) == {
+        "context": "NVIDIA fiscal 2026 revenue context."
+    }

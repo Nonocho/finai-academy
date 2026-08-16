@@ -13,8 +13,10 @@ Students should leave with one operational principle:
 > Retrieval cannot recover a relationship that parsing or chunking has already destroyed.
 
 They parse compact real-source NVIDIA HTML and Schneider Electric PDF fixtures, normalize
-both into ordered `DocumentBlock` records, compare seven chunking strategies and reproduce
-a table-integrity failure before retrieval or generation begins.
+both into ordered `DocumentBlock` records, compare seven core chunking strategies and
+reproduce a table-integrity failure before retrieval or generation begins. Semantic
+boundaries use the configured embedding provider; LLM contextual enrichment remains a
+bounded, validated transformation rather than an autonomous agent.
 
 ## Connection to Lesson 04
 
@@ -63,8 +65,9 @@ Each block contains:
 
 ### `DocumentChunk`
 
-Adds strategy name, source block identifiers, optional parent link, role and contextual
-text. Every chunk remains traceable to the exact blocks from which it was constructed.
+Adds strategy name, source block identifiers, optional parent link, role and retrieval
+text. `raw_text` remains the source evidence; `generated_context` is stored separately.
+Every chunk remains traceable to the exact blocks from which it was constructed.
 
 ## Concept sequence for the slides
 
@@ -92,53 +95,54 @@ Tables stay atomic. Heading paths remain attached as metadata. Paragraphs are gr
 within compatible sections. A structure-aware policy is a strong initial production
 baseline for filings and annual reports.
 
-### 5. Semantic boundaries depend on a representation and threshold
+### 5. Semantic boundaries depend on an embedding provider and threshold
 
-The notebook uses adjacent TF-IDF sentence similarity to make the mechanism observable.
-The threshold is a versioned engineering parameter, not a universal constant. Lesson 06
-changes the representation to embeddings.
+The notebook embeds adjacent sentences with the provider selected by shared settings.
+Offline execution uses the versioned `financial-concepts-v1` fixture; Ollama and OpenAI
+use their configured embedding models. Provider, model, segmentation and threshold are
+versioned engineering parameters, not universal constants.
 
 ### 6. Hierarchical retrieval separates matching from reading
 
 Small children improve matching precision. Parent sections restore the evidence context
 after retrieval. The parent-child link must be created during chunk construction.
 
-### 7. Contextual and LLM-assisted representations add cost
+### 7. Deterministic and generated contexts are different policies
 
-Contextual prefixes can reduce ambiguous matches by adding company, period and section.
-LLM propositions can create atomic claims, but add latency, cost and a transformation that
-must be validated against the original evidence.
+A deterministic prefix copies trusted company, period and section metadata. LLM
+contextual enrichment generates a short explanation of where the chunk sits in the
+complete document, then indexes `generated_context + raw_text`. It never replaces raw
+evidence or provenance. Proposition chunking is a separate optional extension after the
+core PASS marker.
 
 ## Notebook pacing
 
 | Time | Activity | Instructor emphasis |
 |---:|---|---|
-| 0–5 min | Verify manifest and fixture hashes | Provenance begins before parsing. |
-| 5–12 min | Parse NVIDIA HTML and Schneider PDF | Different formats, same canonical block boundary. |
-| 12–20 min | Inspect block order and types | Parsing creates ordered evidence, not a text dump. |
-| 20–25 min | Compare raw PDF text with normalized table | Row-column relationships must survive. |
-| 25–35 min | Run fixed, recursive and structure-aware strategies | Predict where each boundary will occur. |
-| 35–43 min | Inspect boundary map | Chunk size alone does not express evidence safety. |
-| 43–48 min | Run semantic threshold experiment | Representation and threshold jointly create boundaries. |
-| 48–53 min | Inspect parent-child hierarchy | Retrieve a child, restore a verified parent. |
-| 53–57 min | Add contextual prefixes | Extra tokens must earn their place. |
-| 57–62 min | Generate propositions offline or live | Preserve numbers and source identifiers. |
-| 62–67 min | Compare scorecard and retrieval recall | Hold questions and retriever constant. |
-| 67–70 min | Reproduce failure and select policy | Diagnose the failed stage before changing models. |
+| 0–12 min | Parser ladder, fixture hashes and extraction failure | Extraction quality precedes chunk size. |
+| 12–20 min | Inspect canonical `DocumentBlock` records | Parsing creates ordered evidence, not a text dump. |
+| 20–30 min | Fixed, recursive and structure-aware chunks | Predict and inspect each boundary. |
+| 30–40 min | Provider-aware semantic boundaries | Provider, model and threshold define the policy. |
+| 40–48 min | Parent-child hierarchy | Retrieve a child, restore a verified parent. |
+| 48–58 min | Prefix versus LLM contextual enrichment | Keep raw and generated fields separate. |
+| 58–65 min | Token, latency, construction and retrieval comparison | Extra cost must earn measurable value. |
+| 65–70 min | Verification, knowledge check and capstone handoff | Diagnose the stage before changing models. |
 
 ## Visual teaching contract
 
-The notebook produces nine executable figures:
+The notebook produces eleven executable figures:
 
 1. source-to-retriever typed pipeline;
 2. ordered block timelines for HTML and PDF;
 3. raw PDF extraction versus canonical table block;
 4. fixed, recursive and structure-aware boundary patterns;
-5. semantic adjacent-similarity curve and threshold;
+5. embedding-based adjacent-similarity curve and threshold;
 6. parent-child hierarchy;
-7. chunk count and mean-size economics;
-8. multi-metric strategy scorecard; and
-9. fixed table split versus atomic structural table.
+7. raw evidence versus deterministic and generated context;
+8. token inflation and construction latency;
+9. chunk count and mean-size economics;
+10. multi-metric strategy and retrieval scorecard; and
+11. fixed table split versus atomic structural table.
 
 The deck uses the same visual grammar. Students should be able to name the notebook state
 that implements each deck diagram.
@@ -175,18 +179,23 @@ a table, heading-content pair or footnote reference must remain intact.
 A short prefix can add missing company, period, document and section terms to an otherwise
 ambiguous chunk. It also consumes index and context tokens, so its value must be measured.
 
-### 4. What is the purpose of parent-child chunking?
+### 4. Why is LLM contextual enrichment not agentic chunking?
+
+It is one bounded call with one validated JSON output per chunk. It does not plan, choose
+tools, iterate autonomously or decide when the task is complete.
+
+### 5. What is the purpose of parent-child chunking?
 
 Use a small representation for precise retrieval, then expand to a larger verified section
 for interpretation and generation.
 
-### 5. Why not use LLM propositions as the only evidence representation?
+### 6. Why not use LLM propositions as the only evidence representation?
 
 They are transformed claims rather than original evidence. The model may omit qualifiers,
 units or relationships. Keep source links and original blocks, validate outputs, and compare
 their retrieval benefit against cost and transformation risk.
 
-### 6. Does 100% retrieval recall prove a strategy is production-ready?
+### 7. Does 100% retrieval recall prove a strategy is production-ready?
 
 No. The maintained set is deliberately small. A release decision also needs table,
 provenance, citation, latency, cost and broader question coverage.
@@ -206,8 +215,9 @@ evaluation set and explicit integrity constraints.
 
 ## Provider modes
 
-The deterministic laboratory runs without a model. Only proposition construction crosses
-the provider boundary.
+The deterministic laboratory uses versioned offline embeddings and contextual responses.
+In live mode, semantic boundaries and contextual enrichment cross the shared provider
+boundary. Optional proposition construction runs only when `FINAI_RUN_OPTIONAL=1`.
 
 ### Offline
 
@@ -233,7 +243,7 @@ OPENAI_API_KEY=... FINAI_CHAT_MODEL=gpt-5-mini uv run --extra ai python \
   --mode live --provider openai
 ```
 
-If a live proposition response is malformed, keep the failure visible. The lesson is also
+If a live contextual response is malformed, keep the failure visible. The lesson is also
 about validating transformations, not hiding provider variance.
 
 ## Instructor notes
@@ -243,8 +253,9 @@ about validating transformations, not hiding provider variance.
 - Avoid saying that `pdfplumber` solves every PDF. OCR, scanned pages and complex layouts
   require additional extraction strategies.
 - Do not describe cosine similarity as probability or confidence.
-- Explain that semantic chunking in this notebook uses a lexical proxy so the mechanism is
-  visible; provider embeddings arrive in Lesson 06.
+- Record the selected embedding provider and model before interpreting the semantic curve.
+- Say explicitly that contextual enrichment is bounded context generation, not agentic
+  chunking. Agentic grouping belongs only in the optional extension discussion.
 - When reviewing the scorecard, ask which metrics are hard constraints and which are
   optimization targets.
 - End with: “We now trust the units. Next we improve how those units are represented and
@@ -252,8 +263,9 @@ about validating transformations, not hiding provider variance.
 
 ## Scope boundary and transition
 
-Lesson 05 does not implement OCR, XBRL fact reconciliation, a vector database, production
-embeddings, metadata filters, hybrid fusion or reranking.
+Lesson 05 does not implement OCR, XBRL fact reconciliation, a vector database, metadata
+filters, hybrid fusion or reranking. Docling, VLM parsing, proposition chunking and
+iterative agentic grouping remain optional extensions after the core PASS marker.
 
 Lesson 06 keeps the parsed blocks, chunks, provenance and maintained questions. It changes:
 
@@ -270,4 +282,5 @@ simple top-k            → reranked evidence set
 - [Schneider Electric 2025 full-year results](https://www.se.com/ww/en/assets/564/document/528237/release-fy-results-2025.pdf)
 - [pdfplumber documentation](https://github.com/jsvine/pdfplumber)
 - [Beautiful Soup documentation](https://www.crummy.com/software/BeautifulSoup/bs4/doc/)
-- [scikit-learn TF-IDF documentation](https://scikit-learn.org/stable/modules/generated/sklearn.feature_extraction.text.TfidfVectorizer.html)
+- [OpenAI embeddings guide](https://platform.openai.com/docs/guides/embeddings)
+- [Ollama embeddings documentation](https://docs.ollama.com/capabilities/embeddings)

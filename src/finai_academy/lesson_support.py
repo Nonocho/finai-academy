@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import json
 import re
-from collections.abc import Sequence
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from typing import Any, Protocol, TypeVar
 
@@ -231,6 +231,27 @@ class RecordedChunkingModel:
         return RecordedMessage(
             content=json.dumps({"propositions": propositions}),
             response_metadata={"mode": "offline chunking fixture"},
+        )
+
+
+class RecordedContextualChunkingModel:
+    """Return versioned contextual descriptions keyed by stable chunk identifier."""
+
+    def __init__(self, contexts: Mapping[str, str]) -> None:
+        self.contexts = {
+            chunk_id.strip(): context.strip()
+            for chunk_id, context in contexts.items()
+            if chunk_id.strip() and context.strip()
+        }
+
+    def invoke(self, messages: list[tuple[str, str]]) -> RecordedMessage:
+        payload = json.loads(messages[-1][1])
+        chunk_id = payload.get("chunk_id")
+        if not isinstance(chunk_id, str) or chunk_id not in self.contexts:
+            raise ValueError("recorded context is unavailable for the supplied chunk_id")
+        return RecordedMessage(
+            content=json.dumps({"context": self.contexts[chunk_id]}),
+            response_metadata={"mode": "offline contextual chunking fixture"},
         )
 
 
