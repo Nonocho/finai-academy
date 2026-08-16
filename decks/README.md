@@ -1,30 +1,23 @@
 # Course decks
 
-The live course uses one introduction deck and twelve technical micro-decks:
+## Completed Day 1 decks
 
-```text
-00-course-introduction.pptx
-01-model-gateway.pptx
-02-prompts-and-structured-outputs.pptx
-03-cag-financial-document.pptx
-04-rag-from-scratch.pptx
-05-document-and-chunking-lab.pptx
-06-hybrid-retrieval.pptx
-07-rag-evaluation.pptx
-08-langgraph-rag-workflow.pptx
-09-tools-and-workflows.pptx
-10-workflow-vs-agent.pptx
-11-reliable-agent.pptx
-12-financial-mcp.pptx
-```
+| Session | Deck |
+|---:|---|
+| 00 | [Course introduction](00-course-introduction.pptx) |
+| 01 | [Model gateway](01-model-gateway.pptx) |
+| 02 | [Prompts and structured outputs](02-prompts-and-structured-outputs.pptx) |
+| 03 | [Context engineering and CAG](03-cag-financial-document.pptx) |
+| 04 | [RAG from first principles](04-rag-from-scratch.pptx) |
+| 05 | [Financial documents and chunking](05-document-and-chunking-lab.pptx) |
+| 06 | [Embeddings and hybrid retrieval](06-hybrid-retrieval.pptx) |
+| 07 | [RAG evaluation and tracing](07-rag-evaluation.pptx) |
 
-Decks must follow the visual and authoring contracts documented in:
+Day 2 will add decks 08-12 for LangGraph workflows, tools, workflows versus agents,
+reliable agents, and MCP.
 
-- `assets/brand/finai-academy-style.md`
-- `docs/authoring-guide.md`
+Every completed deck is editable, includes speaker notes and sources, uses the
+footer `First Finance - Arnaud Demes`, and is accepted only after render and overflow
+checks.
 
-Every PowerPoint is editable and includes speaker notes. Files are accepted only
-after all slides are rendered, inspected at full size, and checked for overflow.
-
-`00-course-introduction.pptx` contains the learning promise, capstone mission,
-exact two-day schedule, provider strategy, and class acceptance contract.
+See the [Day 1 student guide](../docs/day-1-student-guide.md) for the delivery order.

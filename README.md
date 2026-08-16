@@ -1,101 +1,93 @@
 # AI Engineering for Asset Management
 
-**A FinAI Academy program by Arnaud Demes.**
+**First Finance - Arnaud Demes**
 
-Build trustworthy AI systems for financial research, from the first local model
-call to a deployed analyst copilot.
+A two-day, notebook-first technical course. Build a Financial Analyst Copilot that
+turns financial documents and market information into cited, evaluated analysis.
 
-FinAI Academy is an English-language learning path for finance professionals,
-analysts, data practitioners, and software engineers who want to understand and
-build modern AI applications with Python.
+## Day 1 outcome
 
-The course is designed as a reusable academy rather than a fixed two-day event.
-Each chapter combines:
+By 17:00, you will have built and measured a financial RAG pipeline:
 
-- a PowerPoint deck for concepts and architecture;
-- a guided Jupyter notebook for experiments;
-- checkpoint questions and practical exercises;
-- optional challenges for advanced learners;
-- one cumulative capstone: **Financial Analyst Copilot**.
+```text
+financial documents → parsing → chunks → hybrid retrieval → cited answer → evaluation trace
+```
 
-Every public asset in this repository is original FinAI Academy material.
+The course uses NVIDIA and Schneider Electric evidence so that each engineering
+choice is tested on a realistic analyst workflow.
 
-## Canonical program
+## Prerequisites
 
-The [program blueprint](docs/program-blueprint.md) is the source of truth for
-learning outcomes, lesson order, module missions, and scope.
+- macOS or Windows with at least 8 GB RAM; 16 GB is recommended for the tested model;
+- Git and an internet connection for the initial installation;
+- no paid API is required;
+- Python experience is useful, but the notebooks explain each course-specific step.
 
-| Module | Theme | Product milestone |
-|---:|---|---|
-| 00 | First financial AI app: models, prompts, structured outputs, memory | Financial Brief v1 |
-| 01 | Context engineering, chunking, retrieval, citations, and RAG evaluation | Filings Intelligence v2 |
-| 02 | Typed financial tools, Tavily news, and deterministic workflows | Research Workflow v3 |
-| 03 | Bounded agents, recovery, planning, MCP, and trajectory evaluation | Research Agent v4 |
-| 04 | Datasets, evaluation, optimization, security, cost, and observability | Reliability v5 |
-| 05 | API, UI, persistence, Docker, deployment, and monitoring | Deployed Copilot v6 |
-| Capstone | NVIDIA and Schneider Electric comparative research | Financial Analyst Copilot |
+## Quick start
 
-The existing chapter briefs and notebooks are seed assets. They will be refactored
-into this module sequence as lessons are produced.
+Run these commands from the repository root after completing the
+[installation guide](docs/getting-started.md):
+
+```bash
+uv sync --extra ai --extra rag --extra evaluation --extra dev
+uv run python scripts/setup_check.py --offline
+uv run python scripts/setup_check.py --provider ollama
+uv run jupyter lab
+```
+
+Then open `notebooks/01_model_gateway.ipynb`.
+
+## Execution modes
+
+| Mode | Use | Requirement |
+|---|---|---|
+| Offline | Deterministic checks and course verification | No external service |
+| Ollama | Official free live path | Local Ollama models |
+| OpenAI | Optional hosted comparison | API key and account credit |
+
+Docker is optional and is not required for Day 1.
+
+## Day 1 schedule
+
+| Time | Lesson | Capstone increment |
+|---|---|---|
+| 09:00-09:30 | Course introduction and architecture | Shared evidence contract |
+| 09:30-10:00 | 01 — Model gateway | Provider-neutral response |
+| 10:00-10:30 | 02 — Prompts and structured outputs | Validated analyst brief |
+| 10:30-10:45 | Break | |
+| 10:45-11:30 | 03 — Context engineering and CAG | Complete-document answer |
+| 11:30-12:00 | 04 — RAG from first principles | First retrieval-backed answer |
+| 12:00-13:30 | Lunch | |
+| 13:30-15:00 | 05 — Financial documents and chunking | Configurable ingestion pipeline |
+| 15:00-15:15 | Break | |
+| 15:15-16:00 | 06 — Embeddings and hybrid retrieval | Filtered retrieval and reranking |
+| 16:00-16:45 | 07 — RAG evaluation and tracing | Evaluation suite and traces |
+| 16:45-17:00 | Integration checkpoint | Complete Day 1 financial RAG pipeline |
+
+## Course guides
+
+- [Install and configure the course](docs/getting-started.md)
+- [Follow the Day 1 student guide](docs/day-1-student-guide.md)
+- [Resolve setup and notebook issues](docs/troubleshooting.md)
+- [Understand the course architecture](docs/course-architecture.md)
+- [Review the complete two-day blueprint](docs/program-blueprint.md)
 
 ## Repository map
 
 ```text
-finai-academy/
-├── assets/                 # Visual system and reusable non-logo assets
-├── chapters/               # Chapter briefs and learning contracts
-├── decks/                  # One PowerPoint deck per chapter
-├── notebooks/              # One guided notebook per chapter
-├── src/finai_academy/      # Reusable Python package
-├── final-project/          # Financial Analyst Copilot capstone and product spec
-├── docs/                   # Authoring, delivery, model, and content standards
-├── scripts/                # Repository validation and authoring helpers
-└── tests/                  # Tests for shared course code
+chapters/               Instructor learning contracts
+decks/                  Introduction and technical micro-decks
+notebooks/              Guided student labs
+src/finai_academy/      Reusable application components
+data/course/            Versioned teaching evidence
+final-project/          Financial Analyst Copilot capstone
+scripts/                Setup, execution, and validation commands
+tests/                  Engineering and course contracts
 ```
 
-## Delivery formats
-
-The same content can be assembled into different products:
-
-- **Two-day client workshop** - curated chapters, live demos, and a guided capstone;
-- **Five-day technical bootcamp** - the complete build sequence;
-- **Self-paced academy** - all chapters, solutions, challenges, and evaluation;
-- **Executive track** - concepts, architecture, governance, and demonstrations.
-
-The source curriculum is intentionally broader than any single delivery. A client
-version is created by selecting chapters and exercises, not by rebuilding the
-course from scratch.
-
-## Model strategy
-
-The learning path is provider-neutral:
-
-- Ollama is the local-first teaching baseline;
-- OpenAI and Gemini can be enabled through adapters;
-- the final demo always supports a cloud fallback;
-- notebooks label provider-specific behavior explicitly.
-
-See [docs/model-strategy.md](docs/model-strategy.md).
-
-## Visual identity
-
-The decks use the ScaleNow color system without the ScaleNow logo. Every deck is
-signed:
-
-> FinAI Academy - Arnaud Demes
-
-See [assets/brand/finai-academy-style.md](assets/brand/finai-academy-style.md).
-
-## Current status
-
-The canonical program and capstone specification are established. The first
-capstone vertical slice defines a provider-neutral, Pydantic-validated analyst
-brief and a CLI entry point. RAG, tools, agents, and MCP will be added in the same
-order in which learners encounter them.
+Day 1 consists of the introduction plus canonical Lessons 01-07. Day 2 adds
+workflows, tools, bounded agents, and MCP.
 
 ## Copyright
 
 Copyright © 2026 Arnaud Demes. All rights reserved.
-
-No redistribution or commercial reuse is granted unless stated otherwise in a
-future license.

@@ -1,18 +1,18 @@
-# Chapter briefs
+# Day 1 instructor chapters
 
-Each chapter brief defines the learning promise, deck narrative, notebook lab, and
-checkpoint questions before production begins.
+These chapters define the teaching contract, timing, failure lab, and capstone
+increment for the completed Day 1 course.
 
-| Chapter | Brief |
+| Session | Chapter |
 |---:|---|
-| 00 | [Product demo and system map](00-product-demo-and-system-map.md) |
-| 01 | [AI and LLM foundations](01-ai-and-llm-foundations.md) |
-| 02 | [Prompting and structured outputs](02-prompting-and-structured-outputs.md) |
-| 03 | [Retrieval from first principles](03-retrieval-from-first-principles.md) |
-| 04 | [Document ingestion and chunking](04-document-ingestion-and-chunking.md) |
-| 05 | [Embeddings and advanced retrieval](05-embeddings-and-advanced-retrieval.md) |
-| 06 | [RAG with evidence](06-rag-with-evidence.md) |
-| 07 | [Tools and deterministic workflows](07-tools-and-deterministic-workflows.md) |
-| 08 | [LangGraph agents and self-correction](08-langgraph-agents-and-self-correction.md) |
-| 09 | [Multi-agent financial research](09-multi-agent-financial-research.md) |
-| 10 | [Evaluation, observability, and LLMOps](10-evaluation-observability-and-llmops.md) |
+| 00 | [Course introduction](00-course-introduction.md) |
+| 01 | [Model gateway](01-model-gateway.md) |
+| 02 | [Prompts and structured outputs](02-prompts-and-structured-outputs.md) |
+| 03 | [Context engineering and CAG](03-cag-financial-document.md) |
+| 04 | [RAG from first principles](04-rag-from-scratch.md) |
+| 05 | [Financial documents and chunking](05-document-and-chunking-lab.md) |
+| 06 | [Embeddings and hybrid retrieval](06-hybrid-retrieval.md) |
+| 07 | [RAG evaluation and tracing](07-rag-evaluation.md) |
+
+Student order and timing are in the
+[Day 1 student guide](../docs/day-1-student-guide.md).
