@@ -61,24 +61,27 @@ integration, and recap. Each instructor chapter must contain exact pacing,
 checkpoint answers, provider commands, likely student errors, and transition
 logic.
 
-## Observability progression
+## Measurement and observability progression
 
-MLflow is introduced early and taught deeply later:
+Lessons 01–06 make their internal state observable with ordinary typed Python
+objects, tables, figures, and named verification markers. They do not import,
+configure, or require MLflow. Lesson 07 introduces MLflow only after students
+have built a pipeline complex enough to need experiment tracking and traces:
 
 | Lesson | Observable record |
 |---|---|
-| 01 | first provider-neutral model trace and normalized run metadata |
-| 02 | prompt version, schema version, validation outcome |
-| 03 | context budget, route, generation span |
-| 04 | retrieval and generation spans |
-| 05 | parser, chunking strategy, construction metrics |
-| 06 | filter, lexical, dense, fusion, and reranking spans |
-| 07 | datasets, complete traces, evaluation runs, comparisons, and analysis |
+| 01 | provider, model, latency, and normalized token metadata |
+| 02 | prompt version, schema version, and validation outcome |
+| 03 | context budget, selected route, and observed generation metadata |
+| 04 | separate retrieval, context, and generation result objects |
+| 05 | parser, chunking strategy, construction metrics, and cost table |
+| 06 | visible filter, lexical, dense, fusion, and reranking stage objects |
+| 07 | MLflow datasets, complete traces, evaluation runs, comparisons, and analysis |
 
-The core classroom setup uses a local MLflow tracking store. Docker deployment
-is an architecture extension, not a prerequisite. The shared tracing boundary
-must degrade explicitly and safely in deterministic offline tests; it must not
-silently claim a trace that was not created.
+Lesson 06 ends with a diagram showing which existing stage inputs and outputs
+will become trace spans. Lesson 07 then uses a local MLflow tracking store.
+Docker deployment is an architecture extension, not a prerequisite. MLflow is
+not a hidden cross-cutting dependency of the earlier notebooks.
 
 ## Lesson 01 — Local and hosted model gateway
 
@@ -94,7 +97,7 @@ silently claim a trace that was not created.
 - Normalized input, output, and total token usage when the provider supplies it.
 - Explicit temperature, seed, context-window, and output-budget explanations.
 - One small streaming demonstration in the core notebook.
-- A first local MLflow trace containing provider, model, latency, prompt
+- A visible normalized run record containing provider, model, latency, prompt
   version, token metadata, and outcome without secrets.
 - A visual roadmap placing structured output, memory, tools, LangGraph,
   evaluation, and MCP in later lessons.
@@ -134,7 +137,7 @@ work. Streaming is observable but not developed into an API or UI.
 - Positive, explicit instructions in place of ambiguous negative phrasing.
 - A short model-selection decision between high-volume worker tasks and tasks
   requiring stronger reasoning.
-- Prompt and schema versions in the MLflow record.
+- Prompt and schema versions in the visible application result metadata.
 - A visual comparison of output acceptance across the prompt stages.
 
 ### Reasoning-language boundary
@@ -157,7 +160,7 @@ the output and observable application state.
 - A minimal product architecture from source to complete-context answer.
 - A decision table distinguishing context, prompt cache, conversation memory,
   grounding, and retrieval.
-- MLflow attributes for estimated input allocation, route, provider, and
+- A typed decision record for estimated input allocation, route, provider, and
   observed latency.
 - An optional beginning/middle/end evidence-position experiment whose live
   output is reported as an observation, not a guaranteed ranking.
@@ -179,7 +182,8 @@ the output and observable application state.
 - A minimal, explicitly naive paragraph split so students see where the
   prepared evidence units originate.
 - A three-path comparison: no context, full context, and retrieval.
-- MLflow spans for retrieval, context assembly, and generation.
+- Separate timed result objects for retrieval, context assembly, and
+  generation, ready to be traced in Lesson 07.
 - A checkpoint that the student can explain Retrieve, Augment, Generate and
   name one failure in each stage.
 
@@ -254,7 +258,9 @@ contextual-enrichment understanding.
 - A minimal documents/chunks/embeddings schema diagram.
 - A conceptual explanation of exact search versus HNSW approximate search.
 - A conceptual comparison of TF-IDF, PostgreSQL full-text search, and BM25.
-- MLflow spans for every visible retrieval stage.
+- Structured timing and result metadata for every visible retrieval stage.
+- A final handoff diagram mapping those existing stages to the MLflow spans
+  introduced in Lesson 07.
 - Optional FlashRank comparison without replacing the transparent classroom
   reranker.
 - Optional HyDE query expansion that is evaluated in Lesson 07 rather than
@@ -435,11 +441,11 @@ must pass:
 
 ## Implementation sequence
 
-1. Add shared lesson-contract, tracing, and evaluation foundations.
+1. Add shared lesson-contract and provider-neutral measurement foundations.
 2. Align Lessons 01 and 02.
 3. Apply the smaller alignment changes to Lessons 03 and 04.
 4. Upgrade Lesson 05 semantic and contextual chunking.
-5. Add Lesson 06 production bridges and trace spans.
+5. Add Lesson 06 production bridges and structured stage measurements.
 6. Build Lesson 07 metrics, tracing, notebook, chapter, and deck.
 7. Perform a complete seven-lesson regression and beginner-readability review.
 8. Review the legacy-path cleanup separately.
