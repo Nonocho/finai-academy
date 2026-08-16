@@ -364,6 +364,28 @@ def test_cag_notebook_offline_run_produces_visual_evidence_and_a_decision(
     assert "PASS — CAG boundary verified" in stream_text
 
 
+def test_cag_notebook_distinguishes_context_cache_memory_grounding_and_rag() -> None:
+    notebook = nbformat.read(
+        ROOT / "notebooks" / "03_cag_financial_document.ipynb",
+        as_version=4,
+    )
+    source = "\n".join(cell.source for cell in notebook.cells)
+    executable = "\n".join(
+        cell.source for cell in notebook.cells if cell.cell_type == "code"
+    )
+
+    for concept in ("Context", "Cache", "Memory", "Grounding", "RAG"):
+        assert concept in source
+    assert "ContextDecision" in source
+    assert "Use only F1 and F2" in source
+    assert "square brackets [F1] and [F2]" in source
+    assert "round monetary values to one decimal place" in source
+    assert "Live grounding remains an observation" in source
+    assert "if not live_mode:" in executable
+    assert "assert grounding_result.passed" in executable
+    assert "import mlflow" not in executable
+
+
 def test_naive_rag_notebook_offline_run_visualizes_and_verifies_baseline(
     tmp_path: Path,
 ) -> None:

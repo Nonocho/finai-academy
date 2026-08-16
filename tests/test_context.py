@@ -3,6 +3,7 @@ import pytest
 from finai_academy.context import (
     ContextBudget,
     build_full_context_prompt,
+    decide_context_route,
     estimate_tokens,
     should_use_full_context,
 )
@@ -29,6 +30,20 @@ def test_full_context_decision_accounts_for_every_prompt_component() -> None:
         question_tokens=750,
         budget=budget,
     )
+
+
+def test_context_decision_records_route_and_budget_reason() -> None:
+    decision = decide_context_route(
+        document_tokens=7_000,
+        system_prompt_tokens=400,
+        question_tokens=100,
+        budget=ContextBudget(max_input_tokens=8_192, reserved_output_tokens=1_200),
+    )
+
+    assert decision.route == "rag"
+    assert decision.estimated_input_tokens == 7_500
+    assert decision.available_input_tokens == 6_992
+    assert "exceeds" in decision.reason
 
 
 def test_context_budget_rejects_an_output_reservation_that_fills_the_window() -> None:

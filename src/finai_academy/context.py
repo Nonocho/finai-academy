@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from math import ceil
+from typing import Literal
 
 
 @dataclass(frozen=True)
@@ -28,6 +29,37 @@ class ContextBudget:
         return self.max_input_tokens - self.reserved_output_tokens
 
 
+@dataclass(frozen=True)
+class ContextDecision:
+    """Auditable application decision between complete context and retrieval."""
+
+    route: Literal["cag", "rag"]
+    document_tokens: int
+    system_prompt_tokens: int
+    question_tokens: int
+    estimated_input_tokens: int
+    available_input_tokens: int
+    reason: str
+
+    def __post_init__(self) -> None:
+        if self.route not in {"cag", "rag"}:
+            raise ValueError("route must be 'cag' or 'rag'")
+        token_fields = (
+            self.document_tokens,
+            self.system_prompt_tokens,
+            self.question_tokens,
+            self.estimated_input_tokens,
+            self.available_input_tokens,
+        )
+        if any(
+            not isinstance(value, int) or isinstance(value, bool) or value < 0
+            for value in token_fields
+        ):
+            raise ValueError("context decision token counts must be non-negative integers")
+        if not self.reason.strip():
+            raise ValueError("reason must not be empty")
+
+
 def estimate_tokens(text: str) -> int:
     """Return a deterministic teaching estimate using four characters per token.
 
@@ -49,16 +81,59 @@ def should_use_full_context(
 ) -> bool:
     """Return whether all input components fit after reserving output capacity."""
 
+    return (
+        decide_context_route(
+            document_tokens=document_tokens,
+            budget=budget,
+            system_prompt_tokens=system_prompt_tokens,
+            question_tokens=question_tokens,
+        ).route
+        == "cag"
+    )
+
+
+def decide_context_route(
+    *,
+    document_tokens: int,
+    budget: ContextBudget,
+    system_prompt_tokens: int = 0,
+    question_tokens: int = 0,
+) -> ContextDecision:
+    """Return an explicit, explainable CAG-or-RAG budget decision."""
+
     components = {
         "document_tokens": document_tokens,
         "system_prompt_tokens": system_prompt_tokens,
         "question_tokens": question_tokens,
     }
     for name, value in components.items():
-        if value < 0:
-            raise ValueError(f"{name} must be greater than or equal to zero")
+        if not isinstance(value, int) or isinstance(value, bool) or value < 0:
+            raise ValueError(f"{name} must be a non-negative integer")
 
-    return sum(components.values()) <= budget.available_input_tokens
+    estimated_input_tokens = sum(components.values())
+    available_input_tokens = budget.available_input_tokens
+    if estimated_input_tokens <= available_input_tokens:
+        route: Literal["cag", "rag"] = "cag"
+        reason = (
+            f"Estimated input {estimated_input_tokens} fits within "
+            f"{available_input_tokens} available tokens."
+        )
+    else:
+        route = "rag"
+        reason = (
+            f"Estimated input {estimated_input_tokens} exceeds "
+            f"{available_input_tokens} available tokens."
+        )
+
+    return ContextDecision(
+        route=route,
+        document_tokens=document_tokens,
+        system_prompt_tokens=system_prompt_tokens,
+        question_tokens=question_tokens,
+        estimated_input_tokens=estimated_input_tokens,
+        available_input_tokens=available_input_tokens,
+        reason=reason,
+    )
 
 
 def build_full_context_prompt(

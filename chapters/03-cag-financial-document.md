@@ -17,6 +17,18 @@ They build the simplest document-grounded path first: place one bounded NVIDIA
 document pack in the prompt, keep it stable across questions, budget the complete
 request, and stop when the document no longer fits safely.
 
+They also leave with a vocabulary boundary that prevents common architecture errors:
+
+| Concept | Engineering responsibility |
+|---|---|
+| Context | information supplied to the current model call |
+| Cache | reuse of a stable prefix for efficiency |
+| Memory | state retained across interactions |
+| Grounding | evidence support for generated claims |
+| RAG | selection of evidence units before generation |
+
+These mechanisms can coexist. None is a synonym for another.
+
 ## Why this lesson comes before RAG
 
 Retrieval is additional infrastructure. It should solve a demonstrated constraint,
@@ -27,6 +39,10 @@ be evaluated.
 The lesson ends with a controlled failure. A synthetic neutral appendix pushes the
 same evidence pack beyond the application budget. The application chooses RAG before
 calling the model rather than truncating silently.
+
+That choice is returned as a typed `ContextDecision`: route, component token
+estimates, available input capacity, and a human-readable reason. The decision is
+observable application state rather than a hidden boolean.
 
 ## Concept sequence
 
@@ -75,13 +91,25 @@ source updates are frequent, or full-context latency and cost are no longer acce
 1. Load a curated teaching extract from NVIDIA's fiscal 2026 Form 10-K.
 2. Visualize the estimated token contribution of each source section.
 3. Allocate an 8,192-token teaching window across instructions, document, question and output.
-4. Build two prompts with the same exact document prefix.
-5. Run both through Ollama or OpenAI using the shared model boundary.
-6. Inspect actual latency and any provider metadata without inferring a cache hit.
-7. Validate the first answer against transparent grounding checks.
-8. Place the evidence in the middle of a longer synthetic document.
-9. Visualize the position and the CAG/RAG boundary.
-10. Record the route selected by the application.
+4. Inspect the resulting `ContextDecision`, including its route and reason.
+5. Build two prompts with the same exact document prefix.
+6. Run both through Ollama or OpenAI using the shared model boundary.
+7. Inspect actual latency and any provider metadata without inferring a cache hit.
+8. Validate the first answer against transparent grounding checks.
+9. Place the evidence in the middle of a longer synthetic document.
+10. Visualize the position and the CAG/RAG boundary, then record the reason.
+
+## Guided notebook pacing
+
+| Time | Activity | Expected evidence |
+|---:|---|---|
+| 0–5 min | Name Context, Cache, Memory, Grounding and RAG | five-row distinction table |
+| 5–10 min | Load the NVIDIA pack and estimate tokens | section token figure |
+| 10–15 min | Allocate the context window | complete component budget |
+| 15–19 min | Inspect `ContextDecision` | `route='cag'` and a fit reason |
+| 19–24 min | Ask two stable-prefix questions | measured calls, no invented cache claim |
+| 24–27 min | Run grounding checks | explicit evidence checklist |
+| 27–30 min | Stress the document and route to RAG | `Decision: RAG required` plus reason |
 
 ## Visual teaching contract
 
@@ -105,6 +133,11 @@ tests the same concept.
 4. What can fail even when the complete document fits the model window?
 5. Which application signal should trigger the route from CAG to RAG?
 
+Answers: reserve output so generation remains possible; put the changing question
+after the reusable prefix; latency alone cannot prove a cache hit; relevant evidence
+can be diluted even when the prompt fits; route to RAG when complete estimated input
+exceeds available capacity or when maintained evaluation favours selective retrieval.
+
 ## Challenge answer
 
 With a document estimate of 5,500 tokens, 650 tokens of prompt overhead and 1,500
@@ -121,6 +154,9 @@ document path must be rejected and routed to RAG or a larger verified context wi
 - Emphasize that the synthetic appendix contains no financial evidence.
 - If a live provider omits a citation, use the failure to reinforce the difference
   between prompt fit and groundedness.
+- Keep the maintained live question explicit: use only F1/F2, require bracketed
+  citations, round disclosed monetary values to one decimal place, and forbid derived
+  ratios. This stabilizes the evidence contract without forcing identical prose.
 - Show provider cache telemetry only when it is actually returned.
 - Keep PDF parsing and chunking out of this lesson; those are taught after the need for
   retrieval has been established.
