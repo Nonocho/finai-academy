@@ -5,6 +5,7 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import shutil
 import sys
 from dataclasses import dataclass
 from pathlib import Path
@@ -32,46 +33,66 @@ def check_python() -> CheckResult:
     return CheckResult("PASS", "Python", version)
 
 
-def check_core_imports() -> CheckResult:
+def check_dependencies() -> CheckResult:
     try:
         import nbformat  # noqa: F401
         import pandas  # noqa: F401
         import pydantic  # noqa: F401
         import sklearn  # noqa: F401
     except ImportError as error:
-        return CheckResult("FAIL", "Core imports", f"{error}. Run `uv sync --extra dev`.")
-    return CheckResult("PASS", "Core imports", "notebooks, data, validation, and retrieval")
+        command = "uv sync --extra ai --extra rag --extra evaluation --extra dev"
+        return CheckResult("FAIL", "Dependencies", f"{error}. Run `{command}`.")
+    return CheckResult("PASS", "Dependencies", "notebooks, data, validation, and retrieval")
 
 
 def check_openai_credentials() -> CheckResult:
     if not os.getenv("OPENAI_API_KEY"):
         return CheckResult(
             "FAIL",
-            "OpenAI credentials",
+            "OpenAI",
             "Set OPENAI_API_KEY before selecting the OpenAI provider.",
         )
-    return CheckResult("PASS", "OpenAI credentials", "OPENAI_API_KEY is configured")
+    return CheckResult("PASS", "OpenAI", "OPENAI_API_KEY is configured")
 
 
-def check_ollama(settings: Settings) -> CheckResult:
+def check_ollama(settings: Settings) -> list[CheckResult]:
     url = f"{settings.ollama_base_url.rstrip('/')}/api/tags"
     try:
         with urlopen(url, timeout=3) as response:
             payload = json.load(response)
     except (URLError, TimeoutError, OSError) as error:
-        return CheckResult(
-            "FAIL",
-            "Ollama",
-            f"Cannot reach {settings.ollama_base_url}: {error}. Start Ollama and retry.",
-        )
+        return [
+            CheckResult(
+                "FAIL",
+                "Ollama service",
+                f"Cannot reach {settings.ollama_base_url}: {error}. Start Ollama and retry.",
+            )
+        ]
 
-    available = {item.get("name") for item in payload.get("models", [])}
-    required = {settings.chat_model, settings.embedding_model}
-    missing = sorted(required - available)
-    if missing:
-        commands = " && ".join(f"ollama pull {model}" for model in missing)
-        return CheckResult("FAIL", "Ollama models", f"Missing {', '.join(missing)}. Run `{commands}`.")
-    return CheckResult("PASS", "Ollama", f"chat={settings.chat_model}, embeddings={settings.embedding_model}")
+    available = {
+        model_name
+        for item in payload.get("models", [])
+        for model_name in (item.get("name"), item.get("model"))
+        if model_name
+    }
+
+    def model_result(name: str, model: str) -> CheckResult:
+        if model in available:
+            return CheckResult("PASS", name, model)
+        return CheckResult("FAIL", name, f"Missing {model}. Run `ollama pull {model}`.")
+
+    return [
+        CheckResult("PASS", "Ollama service", settings.ollama_base_url),
+        model_result("Chat model", settings.chat_model),
+        model_result("Embedding model", settings.embedding_model),
+    ]
+
+
+def check_docker() -> CheckResult:
+    executable = shutil.which("docker")
+    if executable is None:
+        return CheckResult("OPTIONAL", "Docker", "Not required for Day 1.")
+    return CheckResult("PASS", "Docker", executable)
 
 
 def main() -> None:
@@ -85,18 +106,39 @@ def main() -> None:
         os.environ["FINAI_EMBEDDING_PROVIDER"] = args.provider
     settings = Settings.from_environment()
 
-    results = [check_python(), check_core_imports()]
+    results = [check_python(), check_dependencies()]
     if args.offline:
-        results.append(CheckResult("SKIP", "Live provider", "offline setup check requested"))
+        results.extend(
+            [
+                CheckResult("OPTIONAL", "Ollama", "Skipped by offline setup check."),
+                CheckResult("OPTIONAL", "OpenAI", "Not required for Day 1."),
+            ]
+        )
     elif settings.provider == "openai":
-        results.append(check_openai_credentials())
+        results.extend(
+            [
+                CheckResult("OPTIONAL", "Ollama", "Not selected."),
+                check_openai_credentials(),
+            ]
+        )
     else:
-        results.append(check_ollama(settings))
+        results.extend(check_ollama(settings))
+        results.append(CheckResult("OPTIONAL", "OpenAI", "Not required for Day 1."))
+
+    results.append(check_docker())
+    failed = any(result.status == "FAIL" for result in results)
+    results.append(
+        CheckResult(
+            "NOT READY" if failed else "READY",
+            "Course readiness",
+            "Resolve failed checks before class." if failed else "Environment is ready for Day 1.",
+        )
+    )
 
     for result in results:
         print(result.render())
 
-    if any(result.status == "FAIL" for result in results):
+    if failed:
         raise SystemExit(1)
 
 
