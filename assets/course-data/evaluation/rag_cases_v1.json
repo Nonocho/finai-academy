@@ -1,0 +1,81 @@
+{
+  "dataset_version": "rag-cases-v1",
+  "description": "Versioned NVIDIA and Schneider Electric financial RAG golden set.",
+  "cases": [
+    {
+      "case_id": "nvda-direct-fact",
+      "question": "Which NVIDIA business generated $193.7 billion?",
+      "filters": {"company": "NVIDIA", "period": "FY2026"},
+      "expected_evidence_ids": ["NVDA-2026-10K-EXCERPT-CONTEXTUAL-003"],
+      "expected_facts": ["Data Center", "$193.7 billion"],
+      "requires_abstention": false,
+      "tags": ["direct-fact", "nvidia"]
+    },
+    {
+      "case_id": "nvda-exact-number",
+      "question": "What was NVIDIA Data Center revenue in fiscal 2026?",
+      "filters": {"company": "NVIDIA", "period": "FY2026"},
+      "expected_evidence_ids": ["NVDA-2026-10K-EXCERPT-CONTEXTUAL-003"],
+      "expected_facts": ["$193.7 billion"],
+      "requires_abstention": false,
+      "tags": ["exact-number", "nvidia"]
+    },
+    {
+      "case_id": "nvda-semantic-paraphrase",
+      "question": "Which NVIDIA activity accounted for most of the reported expansion?",
+      "filters": {"company": "NVIDIA", "period": "FY2026"},
+      "expected_evidence_ids": ["NVDA-2026-10K-EXCERPT-CONTEXTUAL-004"],
+      "expected_facts": ["Data Center", "most of the reported year-on-year expansion"],
+      "requires_abstention": false,
+      "tags": ["semantic-paraphrase", "nvidia"]
+    },
+    {
+      "case_id": "nvda-filter-safety",
+      "question": "What were NVIDIA fiscal 2026 revenue and year-on-year growth?",
+      "filters": {"company": "NVIDIA", "period": "FY2026"},
+      "expected_evidence_ids": ["NVDA-2026-10K-EXCERPT-CONTEXTUAL-001"],
+      "expected_facts": ["$215.9 billion", "65%"],
+      "requires_abstention": false,
+      "tags": ["filter", "nvidia"]
+    },
+    {
+      "case_id": "schneider-filter-safety",
+      "question": "What was Schneider Electric FY2025 revenue?",
+      "filters": {"company": "Schneider Electric", "period": "FY2025"},
+      "expected_evidence_ids": ["SU-2025-FY-EXCERPT-CONTEXTUAL-003"],
+      "expected_facts": ["EUR 40.2bn"],
+      "requires_abstention": false,
+      "tags": ["filter", "schneider"]
+    },
+    {
+      "case_id": "cross-company-leakage",
+      "question": "What was NVIDIA Energy Management organic growth?",
+      "filters": {"company": "NVIDIA", "period": "FY2026"},
+      "expected_evidence_ids": [],
+      "expected_facts": [],
+      "requires_abstention": true,
+      "tags": ["negative", "cross-company-leakage"]
+    },
+    {
+      "case_id": "multi-evidence-comparison",
+      "question": "Compare NVIDIA total revenue with Data Center revenue in fiscal 2026.",
+      "filters": {"company": "NVIDIA", "period": "FY2026"},
+      "expected_evidence_ids": [
+        "NVDA-2026-10K-EXCERPT-CONTEXTUAL-001",
+        "NVDA-2026-10K-EXCERPT-CONTEXTUAL-003"
+      ],
+      "expected_facts": ["$215.9 billion", "$193.7 billion"],
+      "requires_abstention": false,
+      "tags": ["multi-evidence", "nvidia"]
+    },
+    {
+      "case_id": "insufficient-evidence",
+      "question": "What fair value should investors assign to NVIDIA?",
+      "filters": {"company": "NVIDIA", "period": "FY2026"},
+      "expected_evidence_ids": [],
+      "expected_facts": [],
+      "requires_abstention": true,
+      "tags": ["negative", "insufficient-evidence"]
+    }
+  ]
+}

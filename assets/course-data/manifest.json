@@ -1,5 +1,12 @@
 {
   "schema_version": 1,
+  "evaluation_datasets": [
+    {
+      "dataset_version": "rag-cases-v1",
+      "path": "assets/course-data/evaluation/rag_cases_v1.json",
+      "sha256": "506070a8739ff6de56ead5b8437715bb61d159cd18020652cd352068ed918d01"
+    }
+  ],
   "sources": [
     {
       "source_id": "NVDA-2026-10K-EXCERPT",
