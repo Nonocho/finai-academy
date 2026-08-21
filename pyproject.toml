@@ -12,6 +12,7 @@ dependencies = [
   "ipywidgets",
   "jupyterlab",
   "matplotlib",
+  "mcp[cli]>=2,<3",
   "nbclient",
   "nbformat",
   "numpy",

@@ -1,0 +1,47 @@
+{
+  "dataset_id": "lesson10-financial-mcp-v1",
+  "as_of": "2026-08-20",
+  "notice": "Controlled classroom evidence derived from tracked course fixtures; not live market data.",
+  "documents": [
+    {
+      "evidence_id": "NVDA-FY2026-DATA-CENTER-001",
+      "company": "NVIDIA",
+      "ticker": "NVDA",
+      "document_id": "NVDA-FY2026-EXCERPT",
+      "period": "FY2026",
+      "section": "Revenue",
+      "text": "NVIDIA reported fiscal 2026 total revenue of $215.9 billion, including $193.7 billion from Data Center.",
+      "source": "assets/course-data/fixtures/nvidia_fy2026_excerpt.html"
+    },
+    {
+      "evidence_id": "NVDA-FY2026-GAMING-001",
+      "company": "NVIDIA",
+      "ticker": "NVDA",
+      "document_id": "NVDA-FY2026-EXCERPT",
+      "period": "FY2026",
+      "section": "Gaming",
+      "text": "NVIDIA Gaming revenue grew 41% in fiscal 2026.",
+      "source": "assets/course-data/fixtures/nvidia_fy2026_excerpt.html"
+    },
+    {
+      "evidence_id": "SU-FY2025-ENERGY-MANAGEMENT-001",
+      "company": "Schneider Electric",
+      "ticker": "SU.PA",
+      "document_id": "SU-FY2025-EXCERPT",
+      "period": "FY2025",
+      "section": "Energy Management",
+      "text": "Schneider Electric reported FY2025 revenue of EUR 40.2 billion and an adjusted EBITA margin of 18.7%.",
+      "source": "assets/course-data/fixtures/schneider_fy2025_excerpt.pdf"
+    },
+    {
+      "evidence_id": "SU-FY2025-ENERGY-MANAGEMENT-002",
+      "company": "Schneider Electric",
+      "ticker": "SU.PA",
+      "document_id": "SU-FY2025-EXCERPT",
+      "period": "FY2025",
+      "section": "Energy Management",
+      "text": "The Schneider Electric FY2025 extract reports Energy Management organic revenue growth of 10%.",
+      "source": "assets/course-data/fixtures/schneider_fy2025_excerpt.pdf"
+    }
+  ]
+}

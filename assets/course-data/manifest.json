@@ -53,5 +53,19 @@
       "source_urls": [],
       "provenance_mode": "controlled-classroom-fixture"
     }
+  ],
+  "mcp_datasets": [
+    {
+      "dataset_id": "lesson10-financial-mcp-v1",
+      "path": "assets/course-data/mcp/lesson10_evidence_catalog_v1.json",
+      "sha256": "d5504294aa7e6836ff2b71efaccbf6b44c12677f352441b62ddc532c0929961c",
+      "as_of": "2026-08-20",
+      "notice": "Controlled classroom evidence derived from tracked course fixtures; not live market data.",
+      "source_paths": [
+        "assets/course-data/fixtures/nvidia_fy2026_excerpt.html",
+        "assets/course-data/fixtures/schneider_fy2025_excerpt.pdf"
+      ],
+      "provenance_mode": "controlled-classroom-fixture"
+    }
   ]
 }
