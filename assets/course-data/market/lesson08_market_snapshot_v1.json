@@ -1,0 +1,27 @@
+{
+  "dataset_id": "lesson08-market-snapshot-v1",
+  "fx": {
+    "USD_EUR": {
+      "as_of": "2026-08-21",
+      "rate": 0.8564,
+      "source": "https://finance.yahoo.com/quote/EURUSD%3DX/history/"
+    }
+  },
+  "notice": "Checked-in course snapshot; not a live quote or investment recommendation.",
+  "prices": {
+    "NVDA": {
+      "as_of": "2026-08-21",
+      "company": "NVIDIA",
+      "currency": "USD",
+      "price": 214.575,
+      "source": "https://finance.yahoo.com/quote/NVDA/history/"
+    },
+    "SU.PA": {
+      "as_of": "2026-08-21",
+      "company": "Schneider Electric",
+      "currency": "EUR",
+      "price": 296.65,
+      "source": "https://finance.yahoo.com/quote/SU.PA/history/"
+    }
+  }
+}

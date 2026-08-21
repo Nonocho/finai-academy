@@ -32,5 +32,18 @@
       "fixture_sha256": "b666d982d718d8b412f24868c7421e5fd3d3db66a3175216bdc4ca30e96dc0c2",
       "provenance_mode": "fixture"
     }
+  ],
+  "market_datasets": [
+    {
+      "dataset_id": "lesson08-market-snapshot-v1",
+      "path": "assets/course-data/market/lesson08_market_snapshot_v1.json",
+      "sha256": "2050e4c46498dfec8720689f99eb4c5b21835ca25a9e4260a42eb09715341dd4",
+      "retrieval_date": "2026-08-21",
+      "source_urls": [
+        "https://finance.yahoo.com/quote/NVDA/history/",
+        "https://finance.yahoo.com/quote/SU.PA/history/",
+        "https://finance.yahoo.com/quote/EURUSD%3DX/history/"
+      ]
+    }
   ]
 }
