@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import subprocess
 import sys
+from importlib.util import module_from_spec, spec_from_file_location
 from pathlib import Path
 
 import nbformat
@@ -11,6 +12,15 @@ import nbformat
 ROOT = Path(__file__).resolve().parents[1]
 NOTEBOOK = ROOT / "notebooks" / "10_financial_mcp.ipynb"
 EXECUTOR = ROOT / "scripts" / "execute_notebooks.py"
+BUILDER = ROOT / "scripts" / "build_lesson10_notebook.py"
+
+
+def _build_notebook():
+    spec = spec_from_file_location("lesson10_notebook_builder", BUILDER)
+    assert spec is not None and spec.loader is not None
+    module = module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module.build_notebook()
 
 
 def _png_output_count(notebook) -> int:
@@ -47,6 +57,7 @@ def test_lesson10_notebook_is_output_free_and_contains_the_teaching_contract() -
     )
     assert len({cell.id for cell in notebook.cells}) == len(notebook.cells)
     assert 22 <= len(notebook.cells) <= 26
+    assert nbformat.writes(_build_notebook()) == nbformat.writes(notebook)
     for heading in (
         "## Learning objectives",
         "## Where this fits",
@@ -69,8 +80,15 @@ def test_lesson10_notebook_is_output_free_and_contains_the_teaching_contract() -
         "Ollama",
         "OpenAI",
         "LESSON_10_PASS",
+        "DiscoveredToolSpec",
+        "FinancialCapabilityRegistry",
+        "registry_source",
+        "server_source",
+        "Knowledge check",
     ):
         assert marker in source
+    assert "tool_catalog = [" not in source
+    assert "mcp_run.tool_specs" in source
 
 
 def test_lesson10_notebook_executes_offline_with_visual_evidence(tmp_path: Path) -> None:

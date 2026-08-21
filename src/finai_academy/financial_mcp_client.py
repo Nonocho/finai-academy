@@ -34,6 +34,14 @@ class DiscoveredCapability(BaseModel):
     name: str
 
 
+class DiscoveredToolSpec(BaseModel):
+    """Tool metadata returned by the live MCP capability discovery response."""
+
+    name: str
+    description: str
+    input_schema: dict[str, Any]
+
+
 class McpOperationEvent(BaseModel):
     """One safe-to-display operation from the client lifecycle."""
 
@@ -54,6 +62,7 @@ class FinancialMcpRun(BaseModel):
     capabilities: tuple[DiscoveredCapability, ...]
     resource_names: tuple[str, ...]
     tool_names: tuple[str, ...]
+    tool_specs: tuple[DiscoveredToolSpec, ...]
     prompt_names: tuple[str, ...]
     coverage: CoverageSnapshot
     metric: MetricResult
@@ -103,13 +112,14 @@ async def discover_and_run_financial_mcp() -> FinancialMcpRun:
             capability_for=lambda name: name,
             attempt=lambda: client.server_info.name,
         )
-        tool_names = await _record_async_operation(
+        tool_specs = await _record_async_operation(
             trace,
             primitive="discovery",
             operation="list_tools",
             capability="tools",
-            attempt=lambda: _discover_tool_names(client),
+            attempt=lambda: _discover_tool_specs(client),
         )
+        tool_names = tuple(tool.name for tool in tool_specs)
         resource_names = await _record_async_operation(
             trace,
             primitive="discovery",
@@ -176,6 +186,7 @@ async def discover_and_run_financial_mcp() -> FinancialMcpRun:
         capabilities=capabilities,
         resource_names=resource_names,
         tool_names=tool_names,
+        tool_specs=tool_specs,
         prompt_names=prompt_names,
         coverage=coverage,
         metric=metric,
@@ -191,8 +202,15 @@ async def _read_coverage(client: Client) -> CoverageSnapshot:
     return CoverageSnapshot.model_validate(json.loads(_resource_text(result.contents)))
 
 
-async def _discover_tool_names(client: Client) -> tuple[str, ...]:
-    return tuple(tool.name for tool in (await client.list_tools()).tools)
+async def _discover_tool_specs(client: Client) -> tuple[DiscoveredToolSpec, ...]:
+    return tuple(
+        DiscoveredToolSpec(
+            name=tool.name,
+            description=tool.description or "",
+            input_schema=dict(tool.input_schema),
+        )
+        for tool in (await client.list_tools()).tools
+    )
 
 
 async def _discover_resource_names(client: Client) -> tuple[str, ...]:

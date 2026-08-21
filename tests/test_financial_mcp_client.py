@@ -27,6 +27,13 @@ def test_stdio_client_discovers_and_runs_course_capabilities(monkeypatch: pytest
     assert run.server_name == "First Finance Research"
     assert run.resource_names == ("finance://coverage",)
     assert run.tool_names == ("get_company_metric", "search_financial_documents")
+    assert [item.name for item in run.tool_specs] == list(run.tool_names)
+    assert [item.description for item in run.tool_specs] == [
+        "Return a controlled company metric with date and source.",
+        "Search controlled company financial evidence passages.",
+    ]
+    assert run.tool_specs[0].input_schema["required"] == ["ticker", "metric"]
+    assert run.tool_specs[1].input_schema["properties"]["top_k"]["maximum"] == 3
     assert run.prompt_names == ("compare_companies",)
     assert run.coverage.dataset_id == "lesson10-financial-mcp-v1"
     assert run.metric.status == "ok"

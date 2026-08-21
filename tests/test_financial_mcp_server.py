@@ -27,6 +27,11 @@ def test_server_discovers_the_course_capabilities() -> None:
         assert [item.name for item in prompts.prompts] == ["compare_companies"]
 
         tool_schemas = {item.name: item.input_schema for item in tools.tools}
+        tool_descriptions = {item.name: item.description for item in tools.tools}
+        assert tool_descriptions == {
+            "get_company_metric": "Return a controlled company metric with date and source.",
+            "search_financial_documents": "Search controlled company financial evidence passages.",
+        }
         assert tool_schemas["get_company_metric"] == {
             "properties": {
                 "metric": {"title": "Metric", "type": "string"},

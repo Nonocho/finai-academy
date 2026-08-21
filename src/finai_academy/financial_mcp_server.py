@@ -33,6 +33,7 @@ def build_financial_mcp_server(
 
     @server.tool()
     def get_company_metric(ticker: str, metric: str) -> dict[str, object]:
+        """Return a controlled company metric with date and source."""
         return active_registry.get_company_metric(ticker, metric).model_dump(mode="json")
 
     @server.tool()
@@ -41,6 +42,7 @@ def build_financial_mcp_server(
         query: str,
         top_k: Annotated[int, Field(ge=1, le=3)] = 2,
     ) -> dict[str, object]:
+        """Search controlled company financial evidence passages."""
         return active_registry.search_financial_documents(company, query, top_k).model_dump(
             mode="json"
         )

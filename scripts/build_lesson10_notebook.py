@@ -92,6 +92,7 @@ def build_notebook():
             from pydantic import BaseModel
 
             from finai_academy.financial_mcp_client import (
+                DiscoveredToolSpec,
                 call_allowlisted_tool,
                 discover_and_run_financial_mcp,
             )
@@ -148,24 +149,40 @@ def build_notebook():
         _markdown(
             "lesson10-006",
             """
-            ### The four registrations are intentionally small
+            ### Inspect the tracked contracts and registrations
 
-            The pure registry owns validation and evidence. The adapter registers one `finance://coverage` resource, two read-only tools, and one prompt. This focused source view uses `MCPServer` without copying the server implementation into the notebook.
+            The `FinancialCapabilityRegistry` owns validation and evidence. The adapter registers one `finance://coverage` resource, two read-only tools, and one prompt. This compact read-only view extracts the real method contracts and decorators from the tracked course modules without starting a second server or importing server business functions into the core run.
             """,
         ),
         _code(
             "lesson10-007",
             """
-            registration_view = pd.DataFrame(
-                [
-                    ("@server.resource", "finance://coverage", "application", "coverage and provenance"),
-                    ("@server.tool", "get_company_metric", "model request with host approval", "controlled metric"),
-                    ("@server.tool", "search_financial_documents", "model request with host approval", "evidence passages"),
-                    ("@server.prompt", "compare_companies", "user", "reusable comparison message"),
-                ],
-                columns=["MCPServer decorator", "capability", "controller", "result"],
-            )
-            display(registration_view)
+            registry_source = (
+                PROJECT_ROOT / "src/finai_academy/financial_mcp_capabilities.py"
+            ).read_text(encoding="utf-8")
+            server_source = (
+                PROJECT_ROOT / "src/finai_academy/financial_mcp_server.py"
+            ).read_text(encoding="utf-8")
+            registry_contracts = [
+                line.strip()
+                for line in registry_source.splitlines()
+                if line.strip().startswith("def ")
+                and any(
+                    name in line
+                    for name in (
+                        "coverage(",
+                        "get_company_metric(",
+                        "search_financial_documents(",
+                    )
+                )
+            ]
+            registrations = [
+                line.strip()
+                for line in server_source.splitlines()
+                if line.strip().startswith("@server.")
+            ]
+            display(pd.DataFrame({"registry method contract": registry_contracts}))
+            display(pd.DataFrame({"MCPServer registration": registrations}))
             """,
         ),
         _code(
@@ -225,7 +242,7 @@ def build_notebook():
                 ("client", "open stdio", "#00A2EB"),
                 ("server", "list capabilities", "#2E8B57"),
                 ("client", "read and call", "#00A2EB"),
-                ("host", "render prompt", "#1F40CB"),
+                ("client", "get prompt", "#00A2EB"),
                 ("client", "close stdio", "#00A2EB"),
             ]
             lanes = {"host": 2, "client": 1, "server": 0}
@@ -240,6 +257,7 @@ def build_notebook():
                 if index < len(sequence_steps):
                     next_lane = lanes[sequence_steps[index][0]]
                     ax.add_patch(FancyArrowPatch((index + 0.08, lane), (index + 0.92, next_lane), arrowstyle="-|>", mutation_scale=13, color="#4B6070", alpha=0.75))
+            ax.text(5, 2.32, "Host intent: user selects compare_companies", ha="center", fontsize=9, color="#1F40CB", weight="bold")
             ax.set(xlim=(0, 7), ylim=(-0.55, 2.55), xticks=range(1, 7), xlabel="Protocol phase")
             ax.set_yticks([])
             ax.set_title("Figure 3. The host owns the stdio lifecycle and the client carries requests", loc="left", weight="bold")
@@ -321,19 +339,21 @@ def build_notebook():
             trace_frame = pd.DataFrame([event.model_dump(mode="json") for event in mcp_run.trace])
             display(trace_frame)
 
-            trace_colors = trace_frame["status"].map({"ok": "#2E8B57", "error": "#F07D00"})
-            fig, ax = plt.subplots(figsize=(12, 4.5))
-            ax.plot(trace_frame["sequence"], [0] * len(trace_frame), color="#A0A7AE", linewidth=2, zorder=1)
-            ax.scatter(trace_frame["sequence"], [0] * len(trace_frame), s=260, color=trace_colors, zorder=3)
-            for _, row in trace_frame.iterrows():
-                label = f"{row['primitive']}\\n{row['operation']}"
-                if row["error_code"]:
-                    label += f"\\n{row['error_code']}"
-                ax.annotate(label, (row["sequence"], 0), xytext=(0, 24 if row["sequence"] % 2 else -50), textcoords="offset points", ha="center", fontsize=8, weight="bold")
+            milestones = trace_frame.loc[
+                (trace_frame["operation"].isin({"open_transport", "list_tools", "read_resource", "get_prompt", "close_transport"}))
+                | (trace_frame["status"] == "error")
+            ].copy()
+            milestones["label"] = ["Open", "Discover", "Coverage", "Prompt", "PE error", "Close"]
+            milestone_colors = milestones["status"].map({"ok": "#2E8B57", "error": "#F07D00"})
+            fig, ax = plt.subplots(figsize=(10.5, 4.2))
+            ax.plot(milestones["sequence"], [0] * len(milestones), color="#A0A7AE", linewidth=2, zorder=1)
+            ax.scatter(milestones["sequence"], [0] * len(milestones), s=260, color=milestone_colors, zorder=3)
+            for _, row in milestones.iterrows():
+                ax.annotate(row["label"], (row["sequence"], 0), xytext=(0, 24 if row["sequence"] % 2 else -35), textcoords="offset points", ha="center", fontsize=10, weight="bold")
             ax.scatter([], [], color="#2E8B57", label="successful lifecycle or call")
             ax.scatter([], [], color="#F07D00", label="typed tool error")
             ax.legend(loc="upper right", frameon=False)
-            ax.set(xlim=(0.5, len(trace_frame) + 0.5), ylim=(-0.85, 0.85), xlabel="Recorded operation sequence")
+            ax.set(xlim=(0.5, len(trace_frame) + 0.5), ylim=(-0.65, 0.65), xlabel="Recorded operation sequence")
             ax.set_yticks([])
             ax.set_title("Figure 5. Successful protocol calls and one typed validation error share one trace", loc="left", weight="bold")
             ax.grid(axis="x", alpha=0.15)
@@ -358,18 +378,10 @@ def build_notebook():
                 reason: str
 
 
-            tool_catalog = [
-                {
-                    "name": "get_company_metric",
-                    "description": "Return one controlled company metric with date and source.",
-                    "input_schema": {"ticker": "NVDA or SU.PA", "metric": "EPS or P/E"},
-                },
-                {
-                    "name": "search_financial_documents",
-                    "description": "Search versioned NVIDIA or Schneider Electric evidence.",
-                    "input_schema": {"company": "company name", "query": "non-blank text", "top_k": "1..3"},
-                },
-            ]
+            discovered_tool_catalog: tuple[DiscoveredToolSpec, ...] = mcp_run.tool_specs
+            tool_catalog = tuple(
+                tool.model_dump(mode="json") for tool in discovered_tool_catalog
+            )
             discovered_tool_names = set(mcp_run.tool_names)
             assert discovered_tool_names == {item["name"] for item in tool_catalog}
 
@@ -427,7 +439,15 @@ def build_notebook():
         _markdown(
             "lesson10-023",
             """
-            ## Challenge
+            ## Challenge and knowledge check
+
+            ### Knowledge check
+
+            1. Which component opens and closes the local `stdio` lifecycle?
+            2. Why must a discovered tool still pass an allowlist check?
+            3. Which primitive renders a reusable user-controlled comparison request?
+
+            **Answers:** the host through its MCP client; discovery is not permission or trust; the `compare_companies` prompt.
 
             Add a host policy that requires a user confirmation before any tool call, even a read-only call. Record the decision in the trace without sending credentials, local files, or personal data to the server.
 
