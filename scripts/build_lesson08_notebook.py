@@ -210,7 +210,8 @@ def build_notebook():
                 box = FancyBboxPatch((x, 0.36), 0.17, 0.28, boxstyle="round,pad=0.02", facecolor="#F5F5F5", edgecolor="#1F40CB", linewidth=2)
                 ax.add_patch(box)
                 ax.text(x + 0.085, 0.50, text, ha="center", va="center", weight="bold")
-            for left, right in zip(nodes[:-1], nodes[1:]):
+            for index in range(len(nodes) - 1):
+                left, right = nodes[index], nodes[index + 1]
                 ax.add_patch(FancyArrowPatch((left[0] + 0.17, 0.50), (right[0], 0.50), arrowstyle="-|>", mutation_scale=16, color="#00A2EB", linewidth=2))
             ax.text(0.5, 0.12, "No edge returns from the observation to planning", ha="center", color="#F07D00", weight="bold")
             ax.set_title(f"The workflow fixes its path before tool output · {runtime_label}", loc="left", weight="bold")

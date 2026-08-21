@@ -1,11 +1,32 @@
 from __future__ import annotations
 
+import re
+import zipfile
 from pathlib import Path
+from xml.etree import ElementTree
 
 import nbformat
 
 ROOT = Path(__file__).resolve().parents[1]
 NOTEBOOK = ROOT / "notebooks" / "08_workflows_vs_agents.ipynb"
+CHAPTER = ROOT / "chapters" / "08-workflows-vs-agents.md"
+DECK = ROOT / "decks" / "08-workflows-vs-agents.pptx"
+
+
+def _pptx_part_texts(prefix: str) -> list[str]:
+    with zipfile.ZipFile(DECK) as archive:
+        parts = sorted(
+            (
+                name
+                for name in archive.namelist()
+                if name.startswith(prefix) and name.endswith(".xml")
+            ),
+            key=lambda name: int(re.search(r"(\d+)\.xml$", name).group(1)),
+        )
+        return [
+            " ".join(node.text or "" for node in ElementTree.fromstring(archive.read(part)).iter() if node.tag.endswith("}t"))
+            for part in parts
+        ]
 
 
 def test_lesson08_notebook_is_output_free_and_contains_the_teaching_contract() -> None:
@@ -51,3 +72,49 @@ def test_lesson08_notebook_declares_the_provider_and_runtime_contract() -> None:
     assert "offline fixture" in source
     assert "Ollama" in source
     assert "OpenAI" in source
+
+
+def test_lesson08_chapter_and_asset_indexes_are_discoverable() -> None:
+    assert CHAPTER.is_file()
+    chapter = CHAPTER.read_text(encoding="utf-8")
+    notebook_index = (ROOT / "notebooks/README.md").read_text(encoding="utf-8")
+    chapter_index = (ROOT / "chapters/README.md").read_text(encoding="utf-8")
+    deck_index = (ROOT / "decks/README.md").read_text(encoding="utf-8")
+
+    for marker in (
+        "09:30–10:15",
+        "10-minute concept deck",
+        "30-minute notebook",
+        "MAX_STEPS",
+        "unsupported_dependency",
+        "Ollama",
+        "OpenAI",
+        "No-network fallback",
+        "Lesson 09",
+    ):
+        assert marker in chapter
+    assert "08_workflows_vs_agents.ipynb" in notebook_index
+    assert "08-workflows-vs-agents.md" in chapter_index
+    assert "08-workflows-vs-agents.pptx" in deck_index
+
+
+def test_lesson08_deck_teaches_the_required_decision_and_is_fully_sourced() -> None:
+    slide_texts = _pptx_part_texts("ppt/slides/slide")
+    note_texts = _pptx_part_texts("ppt/notesSlides/notesSlide")
+    joined = " ".join(slide_texts)
+
+    assert len(slide_texts) == 9
+    assert len(note_texts) == 9
+    assert all("First Finance - Arnaud Demes" in text for text in slide_texts)
+    assert all("[Sources]" in text and "[/Sources]" in text for text in note_texts)
+    for marker in (
+        "AUTONOMY SPECTRUM",
+        "TYPED TOOL BOUNDARY",
+        "get_market_price",
+        "convert_currency",
+        "unsupported_dependency",
+        "MAX_STEPS",
+        "lowest useful autonomy",
+        "LESSON 09",
+    ):
+        assert marker in joined
