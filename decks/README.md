@@ -13,8 +13,15 @@
 | 06 | [Embeddings and hybrid retrieval](06-hybrid-retrieval.pptx) |
 | 07 | [RAG evaluation and tracing](07-rag-evaluation.pptx) |
 
-Day 2 will add decks 08-12 for LangGraph workflows, tools, workflows versus agents,
-reliable agents, and MCP.
+## Day 2 decks
+
+| Session | Deck | Status |
+|---:|---|---|
+| 08 | [Workflows versus agents](08-workflows-vs-agents.pptx) | Completed |
+| 09 | Self-correcting financial agent | Planned |
+| 10 | Build a financial MCP | Planned |
+| 11 | Plan-and-execute financial analyst | Planned |
+| 12 | Evaluating agentic systems | Planned |
 
 Every completed deck is editable, includes speaker notes and sources, uses the
 footer `First Finance - Arnaud Demes`, and is accepted only after render and overflow

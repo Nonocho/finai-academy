@@ -1,4 +1,4 @@
-# Day 1 guided notebooks
+# Guided notebooks
 
 These are executable student labs. Start Jupyter from the repository root with
 `uv run jupyter lab`, run each notebook from top to bottom, and require its final
@@ -13,6 +13,9 @@ verification marker.
 | 05 | [Financial documents and chunking](05_document_and_chunking_lab.ipynb) |
 | 06 | [Embeddings and hybrid retrieval](06_hybrid_retrieval.ipynb) |
 | 07 | [RAG evaluation and tracing](07_rag_evaluation.ipynb) |
+| 08 | [Workflows versus agents](08_workflows_vs_agents.ipynb) |
 
-See the [Day 1 student guide](../docs/day-1-student-guide.md) for timings, slides,
-and capstone increments.
+Lessons 01–07 complete Day 1. Lesson 08 is the first completed Day 2 lab;
+Lessons 09–12 remain planned. See the
+[Day 1 student guide](../docs/day-1-student-guide.md) for the completed first-day
+timings and capstone increments.
