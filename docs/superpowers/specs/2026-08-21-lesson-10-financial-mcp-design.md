@@ -48,7 +48,7 @@ By the end of the lesson, a learner can:
 1. distinguish an MCP host, client, server, and transport;
 2. explain who controls resources, tools, and prompts;
 3. register one example of each primitive with the official Python SDK v2;
-4. connect through `stdio` and complete the MCP initialization lifecycle;
+4. connect through `stdio` and complete the MCP client lifecycle;
 5. discover capabilities instead of importing server functions;
 6. read a resource, call a tool, and render a prompt;
 7. inspect a typed validation error crossing the protocol boundary; and
@@ -85,7 +85,7 @@ Financial Analyst host
         v
 MCP client
         |
-        | initialization + discovery + stdio messages
+        | discovery + requests + stdio messages
         v
 Financial MCP server
         |
@@ -187,12 +187,17 @@ The guided run makes each protocol phase visible:
 
 1. the host starts the server subprocess;
 2. the client opens the `stdio` transport;
-3. client and server initialize and negotiate capabilities;
+3. the v2 client discovers server identity, protocol support, and capabilities;
 4. the client lists resources, tools, and prompts;
 5. the host reads `finance://coverage` into application context;
 6. the client calls both read-only tools;
 7. the user selects and renders `compare_companies`;
 8. the client exits its async context and closes the subprocess.
+
+The slide script notes the SDK-version difference explicitly: current MCP SDK
+v2 performs capability discovery without the v1 session handshake shown in
+older tutorials, while the v2 client can still fall back when it meets an older
+server.
 
 The notebook records one trace row per operation with:
 
@@ -230,7 +235,7 @@ The notebook is `notebooks/10_financial_mcp.ipynb` and follows this sequence:
 3. visual comparison of direct import and MCP discovery;
 4. inspect the pure capability contracts;
 5. inspect the four `MCPServer` registrations;
-6. start the `stdio` client and visualize initialization;
+6. start the `stdio` client and visualize capability discovery;
 7. display the discovered capability catalog;
 8. read `finance://coverage`;
 9. call the metric and document-search tools;
@@ -319,7 +324,7 @@ lesson, became `MCPServer` in v2; the `@mcp.tool()`, `@mcp.resource()`, and
 
 ### Transport test
 
-- a real `stdio` subprocess initializes, lists capabilities, performs one read
+- a real `stdio` subprocess connects, lists capabilities, performs one read
   and one tool call, then exits cleanly.
 
 ### Notebook and deck tests
