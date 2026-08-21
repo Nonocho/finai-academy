@@ -11,6 +11,14 @@ from typing import Any, Protocol, TypeVar
 import numpy as np
 from pydantic import BaseModel
 
+from finai_academy.agent_workflows import (
+    AgentDecision,
+    ToolObservation,
+    ToolRequest,
+    TraceStep,
+    WorkflowPlan,
+)
+
 ResponseT = TypeVar("ResponseT", bound=BaseModel)
 
 
@@ -252,6 +260,95 @@ class RecordedContextualChunkingModel:
         return RecordedMessage(
             content=json.dumps({"context": self.contexts[chunk_id]}),
             response_metadata={"mode": "offline contextual chunking fixture"},
+        )
+
+
+class RecordedLesson08Model:
+    """Provide stable workflow and agent decisions for offline Lesson 08 runs."""
+
+    mode = "offline fixture"
+
+    def plan_workflow(self, question: str) -> WorkflowPlan:
+        normalized = question.casefold()
+        if "convert" in normalized or "euro" in normalized:
+            return WorkflowPlan(
+                route="unsupported_dependency",
+                reason=(
+                    "The conversion amount depends on the unseen price observation; "
+                    "this one-pass workflow has no predefined second branch."
+                ),
+            )
+        if "nvidia" in normalized or "nvda" in normalized:
+            return WorkflowPlan(
+                route="tool",
+                request=ToolRequest(
+                    name="get_market_price",
+                    arguments={"ticker": "NVDA"},
+                ),
+                reason="A direct price lookup requires one predetermined tool call.",
+            )
+        return WorkflowPlan(
+            route="finish",
+            answer="The offline fixture supports NVIDIA and Schneider Electric only.",
+            reason="The question falls outside the maintained course snapshot.",
+        )
+
+    def write_workflow_answer(
+        self,
+        question: str,
+        observations: tuple[ToolObservation, ...],
+    ) -> str:
+        del question
+        observation = observations[0]
+        return (
+            f"{observation.payload['company']}: {observation.payload['price']:.4f} "
+            f"{observation.payload['currency']} as of {observation.payload['as_of']} "
+            f"[{observation.payload['source']}]."
+        )
+
+    def decide_agent(
+        self,
+        question: str,
+        trajectory: tuple[TraceStep, ...],
+    ) -> AgentDecision:
+        del question
+        tool_steps = [step for step in trajectory if step.phase == "tool"]
+        if not tool_steps:
+            return AgentDecision(
+                action="tool",
+                request=ToolRequest(
+                    name="get_market_price",
+                    arguments={"ticker": "NVDA"},
+                ),
+            )
+
+        latest = tool_steps[-1].observation
+        if latest is None:
+            raise ValueError("recorded policy requires visible tool observations")
+        if latest.status == "error":
+            return AgentDecision(
+                action="finish",
+                answer=f"The course tool returned an error: {latest.error}",
+            )
+        if latest.tool_name == "get_market_price":
+            return AgentDecision(
+                action="tool",
+                request=ToolRequest(
+                    name="convert_currency",
+                    arguments={
+                        "amount": latest.payload["price"],
+                        "from_currency": latest.payload["currency"],
+                        "to_currency": "EUR",
+                    },
+                ),
+            )
+        return AgentDecision(
+            action="finish",
+            answer=(
+                f"NVIDIA: EUR {latest.payload['output_amount']:.4f} "
+                f"using USD/EUR {latest.payload['rate']:.6f} "
+                f"as of {latest.payload['rate_as_of']} [{latest.payload['source']}]."
+            ),
         )
 
 

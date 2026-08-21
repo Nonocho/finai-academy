@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from itertools import pairwise
+from pathlib import Path
 
 import numpy as np
 
@@ -10,6 +11,8 @@ from finai_academy.lesson_support import (
     normalize_rows,
     spread_label_positions,
 )
+
+ROOT = Path(__file__).resolve().parents[1]
 
 
 def test_normalize_rows_scales_nonzero_queries_and_preserves_zero_rows() -> None:
@@ -167,3 +170,42 @@ def test_recorded_contextual_chunking_model_uses_the_stable_chunk_id() -> None:
     assert json.loads(response.content) == {
         "context": "NVIDIA fiscal 2026 revenue context."
     }
+
+
+def test_recorded_lesson08_model_exposes_the_workflow_dependency() -> None:
+    from finai_academy.lesson_support import RecordedLesson08Model
+
+    model = RecordedLesson08Model()
+
+    plan = model.plan_workflow("What is NVIDIA's share price converted to euros?")
+
+    assert plan.route == "unsupported_dependency"
+    assert plan.request is None
+    assert model.mode == "offline fixture"
+
+
+def test_recorded_lesson08_agent_uses_the_observed_price_for_conversion() -> None:
+    from finai_academy.agent_workflows import (
+        build_course_tool_registry,
+        load_course_market_snapshot,
+        run_bounded_agent,
+    )
+    from finai_academy.lesson_support import RecordedLesson08Model
+
+    snapshot = load_course_market_snapshot(
+        ROOT / "assets/course-data/market/lesson08_market_snapshot_v1.json"
+    )
+    registry = build_course_tool_registry(snapshot)
+    model = RecordedLesson08Model()
+
+    result = run_bounded_agent(
+        "What is NVIDIA's share price converted to euros?",
+        policy=model.decide_agent,
+        registry=registry,
+        max_steps=4,
+    )
+
+    tools = [step.tool_name for step in result.trajectory if step.phase == "tool"]
+    assert tools == ["get_market_price", "convert_currency"]
+    assert result.status == "completed"
+    assert "EUR" in result.answer

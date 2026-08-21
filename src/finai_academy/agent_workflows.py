@@ -6,9 +6,10 @@ import json
 import math
 from collections.abc import Callable, Mapping
 from pathlib import Path
+from time import perf_counter
 from typing import Any, Literal
 
-from pydantic import BaseModel, Field, ValidationError
+from pydantic import BaseModel, Field, ValidationError, model_validator
 
 
 class ToolRequest(BaseModel):
@@ -48,6 +49,62 @@ class CurrencyConversion(BaseModel):
     to_currency: str
     rate_as_of: str
     source: str
+
+
+class WorkflowPlan(BaseModel):
+    """One predetermined route selected before any tool observation exists."""
+
+    route: Literal["tool", "unsupported_dependency", "finish"]
+    request: ToolRequest | None = None
+    answer: str | None = None
+    reason: str
+
+    @model_validator(mode="after")
+    def validate_route_payload(self) -> WorkflowPlan:
+        if self.route == "tool" and self.request is None:
+            raise ValueError("tool route requires request")
+        if self.route == "finish" and not self.answer:
+            raise ValueError("finish route requires answer")
+        return self
+
+
+class AgentDecision(BaseModel):
+    """One externally visible action selected by the bounded agent policy."""
+
+    action: Literal["tool", "finish"]
+    request: ToolRequest | None = None
+    answer: str | None = None
+
+    @model_validator(mode="after")
+    def validate_action_payload(self) -> AgentDecision:
+        if self.action == "tool" and self.request is None:
+            raise ValueError("tool action requires request")
+        if self.action == "finish" and not self.answer:
+            raise ValueError("finish action requires answer")
+        return self
+
+
+class TraceStep(BaseModel):
+    """One inspectable planning, execution, completion, or guardrail event."""
+
+    index: int = Field(ge=1)
+    phase: Literal["plan", "tool", "finish", "guardrail"]
+    summary: str
+    tool_name: str | None = None
+    request: ToolRequest | None = None
+    observation: ToolObservation | None = None
+
+
+class OrchestrationResult(BaseModel):
+    """Normalized result used to compare workflow and agent execution."""
+
+    architecture: Literal["workflow", "agent"]
+    status: Literal[
+        "completed", "unsupported_dependency", "step_budget_exhausted", "error"
+    ]
+    answer: str | None
+    trajectory: tuple[TraceStep, ...]
+    latency_ms: float = Field(ge=0)
 
 
 ToolHandler = Callable[..., BaseModel]
@@ -156,4 +213,184 @@ def build_course_tool_registry(snapshot: Mapping[str, Any]) -> ToolRegistry:
             "convert_currency": convert_currency,
             "get_market_price": get_market_price,
         }
+    )
+
+
+WorkflowPlanner = Callable[[str], WorkflowPlan]
+AnswerWriter = Callable[[str, tuple[ToolObservation, ...]], str]
+AgentPolicy = Callable[[str, tuple[TraceStep, ...]], AgentDecision]
+
+
+def run_one_pass_workflow(
+    question: str,
+    *,
+    planner: WorkflowPlanner,
+    answer_writer: AnswerWriter,
+    registry: ToolRegistry,
+) -> OrchestrationResult:
+    """Execute a route fixed before observations can influence another tool choice."""
+
+    started = perf_counter()
+    plan = planner(question)
+    trajectory = [
+        TraceStep(index=1, phase="plan", summary=plan.reason, request=plan.request)
+    ]
+    if plan.route == "unsupported_dependency":
+        return OrchestrationResult(
+            architecture="workflow",
+            status="unsupported_dependency",
+            answer=None,
+            trajectory=tuple(trajectory),
+            latency_ms=(perf_counter() - started) * 1_000,
+        )
+    if plan.route == "finish":
+        trajectory.append(
+            TraceStep(index=2, phase="finish", summary="Workflow returned a direct answer.")
+        )
+        return OrchestrationResult(
+            architecture="workflow",
+            status="completed",
+            answer=plan.answer,
+            trajectory=tuple(trajectory),
+            latency_ms=(perf_counter() - started) * 1_000,
+        )
+
+    if plan.request is None:  # protected by validation; retained for static narrowing
+        raise RuntimeError("tool route is missing its validated request")
+    observation = registry.invoke(plan.request)
+    trajectory.append(
+        TraceStep(
+            index=2,
+            phase="tool",
+            summary=f"{plan.request.name} returned {observation.status}.",
+            tool_name=plan.request.name,
+            request=plan.request,
+            observation=observation,
+        )
+    )
+    if observation.status == "error":
+        return OrchestrationResult(
+            architecture="workflow",
+            status="error",
+            answer=None,
+            trajectory=tuple(trajectory),
+            latency_ms=(perf_counter() - started) * 1_000,
+        )
+
+    answer = answer_writer(question, (observation,))
+    trajectory.append(
+        TraceStep(index=3, phase="finish", summary="Answer written from one observation.")
+    )
+    return OrchestrationResult(
+        architecture="workflow",
+        status="completed",
+        answer=answer,
+        trajectory=tuple(trajectory),
+        latency_ms=(perf_counter() - started) * 1_000,
+    )
+
+
+def _question_requires_currency_conversion(question: str) -> bool:
+    normalized = question.casefold()
+    return "converted" in normalized or "convert" in normalized or "euro" in normalized
+
+
+def _has_grounded_conversion(trajectory: list[TraceStep]) -> bool:
+    successful_tools = [
+        step.tool_name
+        for step in trajectory
+        if step.phase == "tool"
+        and step.observation is not None
+        and step.observation.status == "ok"
+    ]
+    return "get_market_price" in successful_tools and "convert_currency" in successful_tools
+
+
+def run_bounded_agent(
+    question: str,
+    *,
+    policy: AgentPolicy,
+    registry: ToolRegistry,
+    max_steps: int = 4,
+) -> OrchestrationResult:
+    """Run a transparent reason-act-observe-stop loop with a hard step budget."""
+
+    if max_steps < 1:
+        raise ValueError("max_steps must be at least 1")
+    started = perf_counter()
+    trajectory: list[TraceStep] = []
+
+    for _agent_step in range(1, max_steps + 1):
+        decision = policy(question, tuple(trajectory))
+        trajectory.append(
+            TraceStep(
+                index=len(trajectory) + 1,
+                phase="plan",
+                summary=f"Agent selected {decision.action}.",
+                request=decision.request,
+            )
+        )
+        if decision.action == "finish":
+            if _question_requires_currency_conversion(question) and not _has_grounded_conversion(
+                trajectory
+            ):
+                trajectory.append(
+                    TraceStep(
+                        index=len(trajectory) + 1,
+                        phase="guardrail",
+                        summary=(
+                            "Converted answer rejected: successful price and conversion "
+                            "observations are required."
+                        ),
+                    )
+                )
+                return OrchestrationResult(
+                    architecture="agent",
+                    status="error",
+                    answer=None,
+                    trajectory=tuple(trajectory),
+                    latency_ms=(perf_counter() - started) * 1_000,
+                )
+            trajectory.append(
+                TraceStep(
+                    index=len(trajectory) + 1,
+                    phase="finish",
+                    summary="Agent returned a final answer.",
+                )
+            )
+            return OrchestrationResult(
+                architecture="agent",
+                status="completed",
+                answer=decision.answer,
+                trajectory=tuple(trajectory),
+                latency_ms=(perf_counter() - started) * 1_000,
+            )
+
+        if decision.request is None:  # protected by validation; retained for static narrowing
+            raise RuntimeError("tool action is missing its validated request")
+        observation = registry.invoke(decision.request)
+        trajectory.append(
+            TraceStep(
+                index=len(trajectory) + 1,
+                phase="tool",
+                summary=f"{decision.request.name} returned {observation.status}.",
+                tool_name=decision.request.name,
+                request=decision.request,
+                observation=observation,
+            )
+        )
+
+    trajectory.append(
+        TraceStep(
+            index=len(trajectory) + 1,
+            phase="guardrail",
+            summary=f"Stopped after MAX_STEPS={max_steps}.",
+        )
+    )
+    return OrchestrationResult(
+        architecture="agent",
+        status="step_budget_exhausted",
+        answer=None,
+        trajectory=tuple(trajectory),
+        latency_ms=(perf_counter() - started) * 1_000,
     )
