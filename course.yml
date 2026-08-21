@@ -131,54 +131,54 @@ lessons:
     capstone_increment: Corrected measured retrieval failure
 
   - id: "08"
-    title: Stateful RAG workflow with LangGraph
+    title: Workflows versus agents
     day: 2
     start: "09:30"
     end: "10:15"
-    deck: decks/08-langgraph-rag-workflow.pptx
-    notebook: notebooks/08_langgraph_rag_workflow.ipynb
-    chapter: chapters/08-langgraph-rag-workflow.md
-    capstone_increment: Stateful streaming RAG workflow
+    deck: decks/08-workflows-vs-agents.pptx
+    notebook: notebooks/08_workflows_vs_agents.ipynb
+    chapter: chapters/08-workflows-vs-agents.md
+    capstone_increment: Minimal bounded financial agent
 
   - id: "09"
-    title: Financial tools and deterministic workflows
+    title: Self-correcting financial agent
     day: 2
     start: "10:30"
     end: "11:15"
-    deck: decks/09-tools-and-workflows.pptx
-    notebook: notebooks/09_tools_and_workflows.ipynb
-    chapter: chapters/09-tools-and-workflows.md
-    capstone_increment: Typed multi-source research workflow
+    deck: decks/09-self-correcting-agent.pptx
+    notebook: notebooks/09_self_correcting_agent.ipynb
+    chapter: chapters/09-self-correcting-agent.md
+    capstone_increment: Bounded LangGraph recovery loop
 
   - id: "10"
-    title: Workflow versus agent
+    title: Build a financial MCP
     day: 2
     start: "11:15"
     end: "12:00"
-    deck: decks/10-workflow-vs-agent.pptx
-    notebook: notebooks/10_workflow_vs_agent.ipynb
-    chapter: chapters/10-workflow-vs-agent.md
-    capstone_increment: Minimal bounded agent loop
+    deck: decks/10-financial-mcp.pptx
+    notebook: notebooks/10_financial_mcp.ipynb
+    chapter: chapters/10-financial-mcp.md
+    capstone_increment: Discoverable financial MCP capabilities
 
   - id: "11"
-    title: Reliable agent and trajectory evaluation
+    title: Plan-and-execute financial analyst
     day: 2
     start: "13:30"
     end: "14:30"
-    deck: decks/11-reliable-agent.pptx
-    notebook: notebooks/11_reliable_agent.ipynb
-    chapter: chapters/11-reliable-agent.md
-    capstone_increment: Recovery, budgets, and trajectory evaluation
+    deck: decks/11-plan-and-execute-analyst.pptx
+    notebook: notebooks/11_plan_and_execute_analyst.ipynb
+    chapter: chapters/11-plan-and-execute-analyst.md
+    capstone_increment: Planned multi-source financial research
 
   - id: "12"
-    title: Model Context Protocol
+    title: Evaluating agentic systems
     day: 2
     start: "14:30"
     end: "15:30"
-    deck: decks/12-financial-mcp.pptx
-    notebook: notebooks/12_financial_mcp.ipynb
-    chapter: chapters/12-financial-mcp.md
-    capstone_increment: Financial MCP server and client
+    deck: decks/12-agent-evaluation.pptx
+    notebook: notebooks/12_agent_evaluation.ipynb
+    chapter: chapters/12-agent-evaluation.md
+    capstone_increment: Agent answer and trajectory evaluation suite
 
   - id: CAPSTONE
     title: Capstone integration challenge

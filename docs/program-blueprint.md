@@ -97,6 +97,33 @@ specification and scaffold, but not the complete solution.
 | 05 | Production and deployment | 8 | Deployed Copilot v6 |
 | Capstone | NVIDIA and Schneider research | — | Financial Analyst Copilot |
 
+## Two-day intensive path
+
+The delivered workshop compresses the broader academy map into twelve cumulative
+notebooks. Exact times and canonical asset paths are maintained in `course.yml`.
+
+| Day | Lesson | Classroom capability |
+|---:|---:|---|
+| 1 | 01 | Local and hosted model gateway |
+| 1 | 02 | Prompt engineering and structured outputs |
+| 1 | 03 | Context engineering and cache-augmented generation |
+| 1 | 04 | Naive RAG from first principles |
+| 1 | 05 | Financial document parsing and chunking strategies |
+| 1 | 06 | Embeddings, hybrid retrieval, and reranking |
+| 1 | 07 | RAG evaluation and tracing |
+| 2 | 08 | Workflows versus agents |
+| 2 | 09 | Self-correcting financial agent with LangGraph |
+| 2 | 10 | Financial MCP server and client |
+| 2 | 11 | Plan-and-execute financial analyst |
+| 2 | 12 | Agent answer and trajectory evaluation |
+
+Day 2 follows an autonomy ladder. A fixed workflow first exposes a dependency it
+cannot resolve without a new coded branch. A bounded agent then selects the next
+step from observations. Structured tool feedback motivates LangGraph recovery,
+MCP separates capabilities from the application, plan-and-execute handles
+multi-source research, and evaluation determines whether both the answer and the
+execution path are acceptable.
+
 ## Module 00 - Build your first financial AI app
 
 **Outcome:** build a working analyst assistant before introducing RAG or agents.
