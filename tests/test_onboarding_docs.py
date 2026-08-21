@@ -13,6 +13,30 @@ DAY_ONE_NOTEBOOKS = [
     "notebooks/06_hybrid_retrieval.ipynb",
     "notebooks/07_rag_evaluation.ipynb",
 ]
+LEGACY_PATHS = (
+    "notebooks/00-product-demo-and-system-map.ipynb",
+    "notebooks/01-ai-and-llm-foundations.ipynb",
+    "notebooks/02-prompting-and-structured-outputs.ipynb",
+    "notebooks/03-retrieval-from-first-principles.ipynb",
+    "notebooks/04-document-ingestion-and-chunking.ipynb",
+    "notebooks/05-embeddings-and-advanced-retrieval.ipynb",
+    "notebooks/06-rag-with-evidence.ipynb",
+    "notebooks/07-tools-and-deterministic-workflows.ipynb",
+    "notebooks/08-langgraph-agents-and-self-correction.ipynb",
+    "notebooks/09-multi-agent-financial-research.ipynb",
+    "notebooks/10-evaluation-observability-and-llmops.ipynb",
+    "chapters/00-product-demo-and-system-map.md",
+    "chapters/01-ai-and-llm-foundations.md",
+    "chapters/02-prompting-and-structured-outputs.md",
+    "chapters/03-retrieval-from-first-principles.md",
+    "chapters/04-document-ingestion-and-chunking.md",
+    "chapters/05-embeddings-and-advanced-retrieval.md",
+    "chapters/06-rag-with-evidence.md",
+    "chapters/07-tools-and-deterministic-workflows.md",
+    "chapters/08-langgraph-agents-and-self-correction.md",
+    "chapters/09-multi-agent-financial-research.md",
+    "chapters/10-evaluation-observability-and-llmops.md",
+)
 
 
 def test_readme_exposes_one_four_command_quick_start() -> None:
@@ -64,3 +88,7 @@ def test_local_markdown_links_resolve() -> None:
                 missing.append(f"{document.relative_to(ROOT)} -> {raw_target}")
 
     assert missing == []
+
+
+def test_legacy_seed_assets_are_absent_from_student_paths() -> None:
+    assert [path for path in LEGACY_PATHS if (ROOT / path).exists()] == []

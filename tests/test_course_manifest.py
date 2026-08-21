@@ -73,7 +73,7 @@ def test_lesson_windows_do_not_overlap() -> None:
         )
 
 
-def test_repository_validator_accepts_manifest_paths_alongside_legacy_material() -> None:
+def test_repository_validator_accepts_canonical_manifest_paths() -> None:
     result = subprocess.run(
         [sys.executable, str(ROOT / "scripts" / "validate_repo.py")],
         cwd=ROOT,
