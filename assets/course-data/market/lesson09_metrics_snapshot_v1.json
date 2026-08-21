@@ -1,0 +1,18 @@
+{
+  "dataset_id": "lesson09-metrics-snapshot-v1",
+  "notice": "Controlled course fixture for orchestration practice; values are not live market data or investment advice.",
+  "as_of": "2026-08-20",
+  "source": "First Finance controlled classroom fixture",
+  "metrics": {
+    "NVDA": {
+      "company": "NVIDIA",
+      "P/E": 52.4,
+      "EPS": 4.08
+    },
+    "SU.PA": {
+      "company": "Schneider Electric",
+      "P/E": 31.8,
+      "EPS": 9.12
+    }
+  }
+}

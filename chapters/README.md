@@ -14,7 +14,8 @@ increment for the completed Day 1 course.
 | 06 | [Embeddings and hybrid retrieval](06-hybrid-retrieval.md) |
 | 07 | [RAG evaluation and tracing](07-rag-evaluation.md) |
 | 08 | [Workflows versus agents](08-workflows-vs-agents.md) |
+| 09 | [Self-correcting financial agent](09-self-correcting-agent.md) |
 
-Lessons 01–07 complete Day 1. Lesson 08 is the first completed Day 2 chapter;
-Lessons 09–12 remain planned. Day 1 student order and timing are in the
+Lessons 01–07 complete Day 1. Lessons 08–09 begin the completed Day 2 chapters;
+Lessons 10–12 remain planned. Day 1 student order and timing are in the
 [Day 1 student guide](../docs/day-1-student-guide.md).

@@ -136,6 +136,18 @@ def test_implemented_lesson_eight_assets_exist() -> None:
     assert (ROOT / lesson["deck"]).is_file()
 
 
+def test_implemented_lesson_nine_assets_exist() -> None:
+    manifest = load_course_manifest()
+    lesson = next(item for item in manifest["lessons"] if item["id"] == "09")
+
+    assert lesson["title"] == "Self-correcting financial agent"
+    assert lesson["start"] == "10:30"
+    assert lesson["end"] == "11:15"
+    assert (ROOT / lesson["chapter"]).is_file()
+    assert (ROOT / lesson["notebook"]).is_file()
+    assert (ROOT / lesson["deck"]).is_file()
+
+
 def test_lesson_six_slide_three_uses_one_executed_query_and_traceable_manifest_ids() -> None:
     """The comparison slide must report real ranks from one maintained notebook run."""
 

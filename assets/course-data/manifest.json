@@ -44,6 +44,14 @@
         "https://finance.yahoo.com/quote/SU.PA/history/",
         "https://finance.yahoo.com/quote/EURUSD%3DX/history/"
       ]
+    },
+    {
+      "dataset_id": "lesson09-metrics-snapshot-v1",
+      "path": "assets/course-data/market/lesson09_metrics_snapshot_v1.json",
+      "sha256": "c8b9cf81417278c07f15654638a0c7bc3840a1b21d0867e92cebffcdf2519c34",
+      "retrieval_date": "2026-08-21",
+      "source_urls": [],
+      "provenance_mode": "controlled-classroom-fixture"
     }
   ]
 }
