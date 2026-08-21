@@ -3,14 +3,16 @@
 from __future__ import annotations
 
 import json
+import re
 import sys
-from collections.abc import Awaitable, Mapping, Sequence
+from collections.abc import AsyncIterator, Awaitable, Callable, Mapping, Sequence
+from contextlib import asynccontextmanager
 from time import perf_counter
 from typing import Any, Literal, TypeVar
 
 from mcp import Client, StdioServerParameters
 from mcp.client.stdio import stdio_client
-from mcp.types import CallToolResult, TextContent
+from mcp.types import CallToolResult, TextContent, TextResourceContents
 from pydantic import BaseModel
 
 from finai_academy.financial_mcp_capabilities import (
@@ -36,7 +38,7 @@ class McpOperationEvent(BaseModel):
     """One safe-to-display operation from the client lifecycle."""
 
     sequence: int
-    primitive: Literal["resource", "tool", "prompt", "discovery"]
+    primitive: Literal["resource", "tool", "prompt", "discovery", "lifecycle"]
     operation: str
     capability: str
     status: Literal["ok", "error"]
@@ -72,13 +74,10 @@ def financial_stdio_transport():
 
 async def call_allowlisted_tool(name: str, arguments: dict[str, Any]) -> CallToolResult:
     """Call a tool only after static and runtime discovery allowlist checks."""
-    if name not in ALLOWED_TOOLS:
-        raise ValueError(f"Tool {name!r} is not allowlisted.")
-
+    _validate_static_tool(name)
     async with Client(financial_stdio_transport()) as client:
-        discovered_names = {tool.name for tool in (await client.list_tools()).tools}
-        if name not in discovered_names:
-            raise ValueError(f"Tool {name!r} was not dynamically discovered.")
+        discovered_names = tuple(tool.name for tool in (await client.list_tools()).tools)
+        _validate_discovered_allowlisted_tool(name, discovered_names)
         return await client.call_tool(name, arguments)
 
 
@@ -86,112 +85,83 @@ async def discover_and_run_financial_mcp() -> FinancialMcpRun:
     """Discover every course primitive, then run its read-only learning flow."""
     trace: list[McpOperationEvent] = []
 
-    async with Client(financial_stdio_transport()) as client:
-        tools, duration_ms = await _measure(client.list_tools())
-        tool_names = tuple(tool.name for tool in tools.tools)
-        _append_event(
+    async with _traced_client_context(trace) as client:
+        _record_sync_operation(
+            trace,
+            primitive="discovery",
+            operation="discover_protocol_support",
+            capability="protocol",
+            capability_for=lambda version: f"mcp:{version}",
+            attempt=lambda: client.protocol_version,
+        )
+        server_name = _record_sync_operation(
+            trace,
+            primitive="discovery",
+            operation="discover_server_identity",
+            capability="server",
+            capability_for=lambda name: name,
+            attempt=lambda: client.server_info.name,
+        )
+        tool_names = await _record_async_operation(
             trace,
             primitive="discovery",
             operation="list_tools",
             capability="tools",
-            duration_ms=duration_ms,
+            attempt=lambda: _discover_tool_names(client),
         )
-
-        resources, duration_ms = await _measure(client.list_resources())
-        resource_names = tuple(str(resource.uri) for resource in resources.resources)
-        _append_event(
+        resource_names = await _record_async_operation(
             trace,
             primitive="discovery",
             operation="list_resources",
             capability="resources",
-            duration_ms=duration_ms,
+            attempt=lambda: _discover_resource_names(client),
         )
-
-        prompts, duration_ms = await _measure(client.list_prompts())
-        prompt_names = tuple(prompt.name for prompt in prompts.prompts)
-        _append_event(
+        prompt_names = await _record_async_operation(
             trace,
             primitive="discovery",
             operation="list_prompts",
             capability="prompts",
-            duration_ms=duration_ms,
+            attempt=lambda: _discover_prompt_names(client),
         )
 
-        coverage_result, duration_ms = await _measure(client.read_resource("finance://coverage"))
-        coverage = CoverageSnapshot.model_validate(json.loads(_resource_text(coverage_result.contents)))
-        _append_event(
+        coverage = await _record_async_operation(
             trace,
             primitive="resource",
             operation="read_resource",
             capability="finance://coverage",
-            duration_ms=duration_ms,
+            attempt=lambda: _read_coverage(client),
         )
-
-        metric_result, duration_ms = await _measure(
-            _call_discovered_allowlisted_tool(
-                client, tool_names, "get_company_metric", {"ticker": "NVDA", "metric": "P/E"}
-            )
-        )
-        metric = MetricResult.model_validate(_structured_content(metric_result))
-        _append_event(
+        metric = await _record_async_operation(
             trace,
             primitive="tool",
             operation="call_tool",
             capability="get_company_metric",
-            duration_ms=duration_ms,
+            attempt=lambda: _get_metric(client, tool_names),
+            evidence_count_for=lambda _: 1,
         )
-
-        search_result, duration_ms = await _measure(
-            _call_discovered_allowlisted_tool(
-                client,
-                tool_names,
-                "search_financial_documents",
-                {
-                    "company": "Schneider Electric",
-                    "query": "energy management",
-                    "top_k": 2,
-                },
-            )
-        )
-        search = DocumentSearchResult.model_validate(_structured_content(search_result))
-        _append_event(
+        search = await _record_async_operation(
             trace,
             primitive="tool",
             operation="call_tool",
             capability="search_financial_documents",
-            duration_ms=duration_ms,
-            evidence_count=len(search.hits),
+            attempt=lambda: _search_documents(client, tool_names),
+            evidence_count_for=lambda result: len(result.hits),
         )
-
-        prompt_result, duration_ms = await _measure(
-            client.get_prompt(
-                "compare_companies",
-                {"metric": "P/E", "question": "Compare valuation and operating evidence."},
-            )
-        )
-        rendered_prompt = _prompt_text(prompt_result.messages)
-        _append_event(
+        rendered_prompt = await _record_async_operation(
             trace,
             primitive="prompt",
             operation="get_prompt",
             capability="compare_companies",
-            duration_ms=duration_ms,
+            attempt=lambda: _render_prompt(client),
         )
-
-        failure_result, duration_ms = await _measure(
-            _call_discovered_allowlisted_tool(
-                client, tool_names, "get_company_metric", {"ticker": "NVDA", "metric": "PE"}
-            )
-        )
-        failure = _capability_error(failure_result)
-        _append_event(
+        failure = await _record_async_operation(
             trace,
             primitive="tool",
             operation="call_tool",
             capability="get_company_metric",
+            attempt=lambda: _get_invalid_metric_error(client, tool_names),
             status="error",
-            duration_ms=duration_ms,
-            error_code=failure.error_code,
+            error_code_for=lambda result: result.error_code,
         )
 
         capabilities = (
@@ -199,19 +169,79 @@ async def discover_and_run_financial_mcp() -> FinancialMcpRun:
             *(DiscoveredCapability(primitive="tool", name=name) for name in tool_names),
             *(DiscoveredCapability(primitive="prompt", name=name) for name in prompt_names),
         )
-        return FinancialMcpRun(
-            server_name=client.server_info.name,
-            capabilities=capabilities,
-            resource_names=resource_names,
-            tool_names=tool_names,
-            prompt_names=prompt_names,
-            coverage=coverage,
-            metric=metric,
-            search=search,
-            rendered_prompt=rendered_prompt,
-            failure=failure,
-            trace=tuple(trace),
-        )
+
+    return FinancialMcpRun(
+        server_name=server_name,
+        capabilities=capabilities,
+        resource_names=resource_names,
+        tool_names=tool_names,
+        prompt_names=prompt_names,
+        coverage=coverage,
+        metric=metric,
+        search=search,
+        rendered_prompt=rendered_prompt,
+        failure=failure,
+        trace=tuple(trace),
+    )
+
+
+async def _read_coverage(client: Client) -> CoverageSnapshot:
+    result = await client.read_resource("finance://coverage")
+    return CoverageSnapshot.model_validate(json.loads(_resource_text(result.contents)))
+
+
+async def _discover_tool_names(client: Client) -> tuple[str, ...]:
+    return tuple(tool.name for tool in (await client.list_tools()).tools)
+
+
+async def _discover_resource_names(client: Client) -> tuple[str, ...]:
+    return tuple(str(resource.uri) for resource in (await client.list_resources()).resources)
+
+
+async def _discover_prompt_names(client: Client) -> tuple[str, ...]:
+    return tuple(prompt.name for prompt in (await client.list_prompts()).prompts)
+
+
+async def _get_metric(client: Client, discovered_names: Sequence[str]) -> MetricResult:
+    result = await _call_discovered_allowlisted_tool(
+        client,
+        discovered_names,
+        "get_company_metric",
+        {"ticker": "NVDA", "metric": "P/E"},
+    )
+    return MetricResult.model_validate(_structured_content(result))
+
+
+async def _search_documents(
+    client: Client, discovered_names: Sequence[str]
+) -> DocumentSearchResult:
+    result = await _call_discovered_allowlisted_tool(
+        client,
+        discovered_names,
+        "search_financial_documents",
+        {"company": "Schneider Electric", "query": "energy management", "top_k": 2},
+    )
+    return DocumentSearchResult.model_validate(_structured_content(result))
+
+
+async def _render_prompt(client: Client) -> str:
+    result = await client.get_prompt(
+        "compare_companies",
+        {"metric": "P/E", "question": "Compare valuation and operating evidence."},
+    )
+    return _prompt_text(result.messages)
+
+
+async def _get_invalid_metric_error(
+    client: Client, discovered_names: Sequence[str]
+) -> CapabilityError:
+    result = await _call_discovered_allowlisted_tool(
+        client,
+        discovered_names,
+        "get_company_metric",
+        {"ticker": "NVDA", "metric": "PE"},
+    )
+    return _capability_error(result)
 
 
 async def _call_discovered_allowlisted_tool(
@@ -220,23 +250,204 @@ async def _call_discovered_allowlisted_tool(
     name: str,
     arguments: dict[str, Any],
 ) -> CallToolResult:
-    if name not in ALLOWED_TOOLS:
-        raise ValueError(f"Tool {name!r} is not allowlisted.")
-    if name not in discovered_names:
-        raise ValueError(f"Tool {name!r} was not dynamically discovered.")
+    _validate_discovered_allowlisted_tool(name, discovered_names)
     return await client.call_tool(name, arguments)
 
 
-async def _measure(operation: Awaitable[T]) -> tuple[T, float]:
+def _validate_static_tool(name: str) -> None:
+    if name not in ALLOWED_TOOLS:
+        raise ValueError(f"Tool {name!r} is not allowlisted.")
+
+
+def _validate_discovered_allowlisted_tool(name: str, discovered_names: Sequence[str]) -> None:
+    _validate_static_tool(name)
+    if name not in discovered_names:
+        raise ValueError(f"Tool {name!r} was not dynamically discovered.")
+
+
+@asynccontextmanager
+async def _traced_client_context(trace: list[McpOperationEvent]) -> AsyncIterator[Client]:
+    """Trace the v2 client context, which owns the stdio process lifecycle."""
+    context = Client(financial_stdio_transport())
     started_at = perf_counter()
-    result = await operation
-    return result, round((perf_counter() - started_at) * 1000, 3)
+    try:
+        value = await context.__aenter__()
+    except BaseException as error:
+        _append_event(
+            trace,
+            primitive="lifecycle",
+            operation="open_transport",
+            capability="stdio",
+            status="error",
+            duration_ms=_elapsed_ms(started_at),
+            error_code=_safe_error_code(error),
+        )
+        _append_event(
+            trace,
+            primitive="lifecycle",
+            operation="open_client_context",
+            capability="client",
+            status="error",
+            duration_ms=_elapsed_ms(started_at),
+            error_code=_safe_error_code(error),
+        )
+        raise
+
+    _append_event(
+        trace,
+        primitive="lifecycle",
+        operation="open_transport",
+        capability="stdio",
+        duration_ms=_elapsed_ms(started_at),
+    )
+    _append_event(
+        trace,
+        primitive="lifecycle",
+        operation="open_client_context",
+        capability="client",
+        duration_ms=_elapsed_ms(started_at),
+    )
+    try:
+        yield value
+    except BaseException as body_error:
+        suppressed = await _close_client_context(trace, context, body_error)
+        if not suppressed:
+            raise
+    else:
+        await _close_client_context(trace, context)
+
+
+async def _close_client_context(
+    trace: list[McpOperationEvent],
+    context: Client,
+    body_error: BaseException | None = None,
+) -> bool:
+    """Close the v2 client and its owned stdio transport with safe trace events."""
+    started_at = perf_counter()
+    try:
+        if body_error is None:
+            suppressed = await context.__aexit__(None, None, None)
+        else:
+            suppressed = await context.__aexit__(
+                type(body_error), body_error, body_error.__traceback__
+            )
+    except BaseException as error:
+        _append_event(
+            trace,
+            primitive="lifecycle",
+            operation="close_client_context",
+            capability="client",
+            status="error",
+            duration_ms=_elapsed_ms(started_at),
+            error_code=_safe_error_code(error),
+        )
+        _append_event(
+            trace,
+            primitive="lifecycle",
+            operation="close_transport",
+            capability="stdio",
+            status="error",
+            duration_ms=_elapsed_ms(started_at),
+            error_code=_safe_error_code(error),
+        )
+        raise
+
+    _append_event(
+        trace,
+        primitive="lifecycle",
+        operation="close_client_context",
+        capability="client",
+        duration_ms=_elapsed_ms(started_at),
+    )
+    _append_event(
+        trace,
+        primitive="lifecycle",
+        operation="close_transport",
+        capability="stdio",
+        duration_ms=_elapsed_ms(started_at),
+    )
+    return suppressed
+
+
+async def _record_async_operation(
+    trace: list[McpOperationEvent],
+    *,
+    primitive: Literal["resource", "tool", "prompt", "discovery"],
+    operation: str,
+    capability: str,
+    attempt: Callable[[], Awaitable[T]],
+    status: Literal["ok", "error"] = "ok",
+    evidence_count_for: Callable[[T], int] | None = None,
+    error_code_for: Callable[[T], str | None] | None = None,
+) -> T:
+    """Record safe success or error metadata for an awaited protocol operation."""
+    started_at = perf_counter()
+    try:
+        result = await attempt()
+    except BaseException as error:
+        _append_event(
+            trace,
+            primitive=primitive,
+            operation=operation,
+            capability=capability,
+            status="error",
+            duration_ms=_elapsed_ms(started_at),
+            error_code=_safe_error_code(error),
+        )
+        raise
+
+    _append_event(
+        trace,
+        primitive=primitive,
+        operation=operation,
+        capability=capability,
+        status=status,
+        duration_ms=_elapsed_ms(started_at),
+        evidence_count=0 if evidence_count_for is None else evidence_count_for(result),
+        error_code=None if error_code_for is None else error_code_for(result),
+    )
+    return result
+
+
+def _record_sync_operation(
+    trace: list[McpOperationEvent],
+    *,
+    primitive: Literal["resource", "tool", "prompt", "discovery"],
+    operation: str,
+    capability: str,
+    attempt: Callable[[], T],
+    capability_for: Callable[[T], str] | None = None,
+) -> T:
+    """Record safe success or error metadata for local result parsing/discovery."""
+    started_at = perf_counter()
+    try:
+        result = attempt()
+    except BaseException as error:
+        _append_event(
+            trace,
+            primitive=primitive,
+            operation=operation,
+            capability=capability,
+            status="error",
+            duration_ms=_elapsed_ms(started_at),
+            error_code=_safe_error_code(error),
+        )
+        raise
+
+    _append_event(
+        trace,
+        primitive=primitive,
+        operation=operation,
+        capability=capability if capability_for is None else capability_for(result),
+        duration_ms=_elapsed_ms(started_at),
+    )
+    return result
 
 
 def _append_event(
     trace: list[McpOperationEvent],
     *,
-    primitive: Literal["resource", "tool", "prompt", "discovery"],
+    primitive: Literal["resource", "tool", "prompt", "discovery", "lifecycle"],
     operation: str,
     capability: str,
     duration_ms: float,
@@ -259,12 +470,18 @@ def _append_event(
     )
 
 
+def _elapsed_ms(started_at: float) -> float:
+    return round((perf_counter() - started_at) * 1000, 3)
+
+
+def _safe_error_code(error: BaseException) -> str:
+    return re.sub(r"(?<!^)(?=[A-Z])", "_", type(error).__name__).lower()
+
+
 def _resource_text(contents: Sequence[Any]) -> str:
-    for content in contents:
-        text = getattr(content, "text", None)
-        if isinstance(text, str):
-            return text
-    raise ValueError("Coverage resource did not return text content.")
+    if len(contents) != 1 or not isinstance(contents[0], TextResourceContents):
+        raise TypeError("Coverage resource must contain exactly one text resource content block.")
+    return contents[0].text
 
 
 def _structured_content(result: CallToolResult) -> Mapping[str, Any]:
