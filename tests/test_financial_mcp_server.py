@@ -26,6 +26,33 @@ def test_server_discovers_the_course_capabilities() -> None:
         assert [str(item.uri) for item in resources.resources] == ["finance://coverage"]
         assert [item.name for item in prompts.prompts] == ["compare_companies"]
 
+        tool_schemas = {item.name: item.input_schema for item in tools.tools}
+        assert tool_schemas["get_company_metric"] == {
+            "properties": {
+                "metric": {"title": "Metric", "type": "string"},
+                "ticker": {"title": "Ticker", "type": "string"},
+            },
+            "required": ["ticker", "metric"],
+            "title": "get_company_metricArguments",
+            "type": "object",
+        }
+        assert tool_schemas["search_financial_documents"] == {
+            "properties": {
+                "company": {"title": "Company", "type": "string"},
+                "query": {"title": "Query", "type": "string"},
+                "top_k": {
+                    "default": 2,
+                    "maximum": 3,
+                    "minimum": 1,
+                    "title": "Top K",
+                    "type": "integer",
+                },
+            },
+            "required": ["company", "query"],
+            "title": "search_financial_documentsArguments",
+            "type": "object",
+        }
+
     asyncio.run(discover())
 
 
@@ -107,6 +134,9 @@ def test_compare_companies_prompt_returns_one_user_message() -> None:
         assert result.messages[0].role == "user"
         assert "NVIDIA" in result.messages[0].content.text
         assert "Schneider Electric" in result.messages[0].content.text
+        assert "finance://coverage" in result.messages[0].content.text
+        assert "get_company_metric" in result.messages[0].content.text
+        assert "search_financial_documents" in result.messages[0].content.text
         assert "Do not make an investment recommendation." in result.messages[0].content.text
 
     asyncio.run(render_prompt())

@@ -50,8 +50,9 @@ def build_financial_mcp_server(
         return (
             f"Compare NVIDIA and Schneider Electric using the metric {metric}.\n"
             f"Question: {question}\n"
-            "Use only MCP resource and tool results. Cite every evidence ID, date, "
-            "and source. State missing evidence. Do not make an investment recommendation."
+            "Use only finance://coverage, get_company_metric, and "
+            "search_financial_documents results. Cite every evidence ID, date, and "
+            "source. State missing evidence. Do not make an investment recommendation."
         )
 
     return server
