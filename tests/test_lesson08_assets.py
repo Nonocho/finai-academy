@@ -107,14 +107,32 @@ def test_lesson08_deck_teaches_the_required_decision_and_is_fully_sourced() -> N
     assert len(note_texts) == 9
     assert all("First Finance - Arnaud Demes" in text for text in slide_texts)
     assert all("[Sources]" in text and "[/Sources]" in text for text in note_texts)
+    assert "—" not in joined
+    for jargon in (
+        "failure surface",
+        "task prestige",
+        "orchestration policy",
+        "trajectory",
+        "grounded response",
+    ):
+        assert jargon not in joined.casefold()
     for marker in (
-        "AUTONOMY SPECTRUM",
+        "THREE SYSTEMS AT A GLANCE",
+        "Who chooses the next step?",
+        "Python code",
+        "One LLM",
+        "Several LLMs",
+        "WORKFLOW OR AGENT?",
+        "Is the path known?",
+        "Coded by you",
+        "Chosen after each result",
         "TYPED TOOL BOUNDARY",
         "get_market_price",
         "convert_currency",
         "unsupported_dependency",
         "MAX_STEPS",
-        "lowest useful autonomy",
+        "If you can draw every step before the run, use a workflow.",
+        "If the next step depends on a tool result, use an agent.",
         "LESSON 09",
     ):
         assert marker in joined
