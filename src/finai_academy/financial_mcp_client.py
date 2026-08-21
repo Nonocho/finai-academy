@@ -69,7 +69,8 @@ def financial_stdio_transport():
         command=sys.executable,
         args=["-m", "finai_academy.financial_mcp_server"],
     )
-    return stdio_client(parameters)
+    # Jupyter's active stderr wrapper has no file descriptor for subprocess pipes.
+    return stdio_client(parameters, errlog=sys.__stderr__)
 
 
 async def call_allowlisted_tool(name: str, arguments: dict[str, Any]) -> CallToolResult:

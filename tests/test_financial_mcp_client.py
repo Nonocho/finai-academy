@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import asyncio
+import sys
 
 import pytest
 from mcp.types import TextContent
@@ -13,6 +14,7 @@ from finai_academy.financial_mcp_client import (
     _validate_discovered_allowlisted_tool,
     call_allowlisted_tool,
     discover_and_run_financial_mcp,
+    financial_stdio_transport,
 )
 
 
@@ -87,6 +89,31 @@ def test_stdio_client_discovers_and_runs_course_capabilities(monkeypatch: pytest
     assert run.trace[11].error_code == "unsupported_metric"
     assert run.trace[-1].operation == "close_transport"
     assert "must-not-appear-in-trace" not in repr(run.trace)
+
+
+def test_stdio_transport_uses_real_stderr_when_notebook_stderr_has_no_fileno(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Breaks if a Jupyter output wrapper is passed to the server subprocess."""
+
+    class NotebookOutput:
+        def fileno(self) -> int:
+            raise OSError("Notebook output does not expose a process file descriptor.")
+
+    captured: dict[str, object] = {}
+
+    def capture_transport(*args, **kwargs):
+        captured["parameters"] = args[0]
+        captured.update(kwargs)
+        return object()
+
+    monkeypatch.setattr(financial_mcp_client.sys, "stderr", NotebookOutput())
+    monkeypatch.setattr(financial_mcp_client, "stdio_client", capture_transport)
+
+    financial_stdio_transport()
+
+    assert captured["errlog"] is sys.__stderr__
+    assert callable(getattr(captured["errlog"], "fileno", None))
 
 
 def test_allowlisted_tool_rejects_names_outside_the_static_allowlist(
