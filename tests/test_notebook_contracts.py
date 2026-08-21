@@ -647,3 +647,32 @@ def test_rag_evaluation_notebook_offline_run_is_visual_and_verified(tmp_path: Pa
     output_text = stream_text(executed)
     assert output_text.count("PASS — RAG evaluation and tracing verified") == 1
     assert "MLflow traces recorded: 8" in output_text
+
+
+def test_lesson08_notebook_offline_run_is_visual_and_verified(tmp_path: Path) -> None:
+    notebook_path = ROOT / "notebooks" / "08_workflows_vs_agents.ipynb"
+    output_dir = tmp_path / "executed"
+    result = subprocess.run(
+        [
+            sys.executable,
+            str(EXECUTOR),
+            str(notebook_path),
+            "--mode",
+            "offline",
+            "--output-dir",
+            str(output_dir),
+        ],
+        cwd=ROOT,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+
+    assert result.returncode == 0, result.stderr
+    executed = nbformat.read(output_dir / notebook_path.name, as_version=4)
+    assert count_png_outputs(executed) >= 4
+    output_text = stream_text(executed)
+    assert output_text.count("LESSON_08_PASS") == 1
+    assert "get_market_price" in output_text
+    assert "convert_currency" in output_text
+    assert "unsupported_dependency" in output_text
