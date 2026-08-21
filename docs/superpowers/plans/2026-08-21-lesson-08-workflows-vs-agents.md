@@ -32,7 +32,7 @@
 - `src/finai_academy/agent_workflows.py` — typed tools, observations, workflow results, bounded agent loop, and live model adapter boundary.
 - `tests/test_agent_workflows.py` — unit contracts for validation, dependency failure, tool order, budgets, and grounded completion.
 - `scripts/refresh_lesson08_market_snapshot.py` — reproducibly capture the last complete Yahoo Finance observations used by the lab.
-- `data/course/lesson08_market_snapshot_v1.json` — labelled deterministic NVIDIA, Schneider Electric, and FX course observations with provenance.
+- `assets/course-data/market/lesson08_market_snapshot_v1.json` — labelled deterministic NVIDIA, Schneider Electric, and FX course observations with provenance.
 - `notebooks/08_workflows_vs_agents.ipynb` — complete guided student lab with executable diagrams.
 - `chapters/08-workflows-vs-agents.md` — instructor pacing, answers, provider guidance, and recovery paths.
 - `decks/08-workflows-vs-agents.pptx` — nine-slide concept deck.
@@ -42,6 +42,7 @@
 ### Modify
 
 - `src/finai_academy/lesson_support.py` — add the labelled recorded policy used only by the offline notebook path.
+- `assets/course-data/manifest.json` — register the market snapshot path, hash, retrieval date, and public source URLs.
 - `tests/test_notebook_contracts.py` — execute Lesson 08 offline and assert its visuals, trace, and exact PASS marker.
 - `tests/test_course_manifest.py` — require canonical Lesson 08 assets and timing.
 - `notebooks/README.md` — list Lesson 08 as the first completed Day 2 lab.
@@ -56,11 +57,12 @@
 - Create: `src/finai_academy/agent_workflows.py`
 - Create: `tests/test_agent_workflows.py`
 - Create: `scripts/refresh_lesson08_market_snapshot.py`
-- Create: `data/course/lesson08_market_snapshot_v1.json`
+- Create: `assets/course-data/market/lesson08_market_snapshot_v1.json`
+- Modify: `assets/course-data/manifest.json`
 
 **Interfaces:**
 - Produces: `ToolRequest`, `ToolObservation`, `MarketPrice`, `CurrencyConversion`, `ToolRegistry`, `load_course_market_snapshot`, `build_course_tool_registry`.
-- Consumes: Pydantic 2 and a versioned JSON snapshot below `data/course`.
+- Consumes: Pydantic 2 and a versioned JSON snapshot below `assets/course-data`.
 
 - [ ] **Step 1: Write failing contracts for typed observations and registry errors**
 
@@ -136,7 +138,7 @@ snapshot = {
 }
 ```
 
-Round stored prices to four decimals and the FX rate to six decimals. Sort JSON keys, use UTF-8, and end the file with a newline. Reject empty series, non-finite values, non-positive closes, and dates that differ by more than seven calendar days across the three observations. Run the script once and commit its generated snapshot; notebook execution reads the checked-in file and never fetches the network implicitly.
+Round stored prices to four decimals and the FX rate to six decimals. Sort JSON keys, use UTF-8, and end the file with a newline. Reject empty series, non-finite values, non-positive closes, and dates that differ by more than seven calendar days across the three observations. Run the script once and commit its generated snapshot; notebook execution reads the checked-in file and never fetches the network implicitly. The script also computes SHA-256 and updates a `market_datasets` entry in `assets/course-data/manifest.json` with dataset ID, path, hash, retrieval date, and all three public source URLs.
 
 - [ ] **Step 4: Implement the typed boundary**
 
@@ -199,7 +201,7 @@ Expected: zero errors.
 - [ ] **Step 6: Commit the typed tool boundary**
 
 ```bash
-git add src/finai_academy/agent_workflows.py tests/test_agent_workflows.py scripts/refresh_lesson08_market_snapshot.py data/course/lesson08_market_snapshot_v1.json
+git add src/finai_academy/agent_workflows.py tests/test_agent_workflows.py scripts/refresh_lesson08_market_snapshot.py assets/course-data/market/lesson08_market_snapshot_v1.json assets/course-data/manifest.json
 git commit -m "feat: add typed financial agent tools"
 ```
 
