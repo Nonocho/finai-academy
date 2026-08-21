@@ -47,7 +47,7 @@ By the end of the lesson, a learner can:
 
 1. distinguish an MCP host, client, server, and transport;
 2. explain who controls resources, tools, and prompts;
-3. register one example of each primitive with the official Python SDK;
+3. register one example of each primitive with the official Python SDK v2;
 4. connect through `stdio` and complete the MCP initialization lifecycle;
 5. discover capabilities instead of importing server functions;
 6. read a resource, call a tool, and render a prompt;
@@ -229,7 +229,7 @@ The notebook is `notebooks/10_financial_mcp.ipynb` and follows this sequence:
 2. provider and deterministic fallback setup;
 3. visual comparison of direct import and MCP discovery;
 4. inspect the pure capability contracts;
-5. inspect the four FastMCP registrations;
+5. inspect the four `MCPServer` registrations;
 6. start the `stdio` client and visualize initialization;
 7. display the discovered capability catalog;
 8. read `finance://coverage`;
@@ -294,9 +294,11 @@ The implementation adds focused units:
 - the chapter and nine-slide deck;
 - tests and a delivery-readiness report.
 
-The implementation adds the official MCP Python SDK as an explicit project
-dependency. The exact supported version range is chosen after verifying the
-current SDK API and is locked in `uv.lock`.
+The implementation adds the official MCP Python SDK v2 as an explicit project
+dependency with the range `mcp[cli]>=2,<3`, locked in `uv.lock`. The deck and
+chapter note that the earlier SDK name `FastMCP`, used by the reviewed MLExpert
+lesson, became `MCPServer` in v2; the `@mcp.tool()`, `@mcp.resource()`, and
+`@mcp.prompt()` teaching pattern remains unchanged.
 
 ## Verification strategy
 
