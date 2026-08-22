@@ -13,6 +13,7 @@ ROOT = Path(__file__).resolve().parents[1]
 NOTEBOOK = ROOT / "notebooks" / "10_financial_mcp.ipynb"
 EXECUTOR = ROOT / "scripts" / "execute_notebooks.py"
 BUILDER = ROOT / "scripts" / "build_lesson10_notebook.py"
+CHAPTER = ROOT / "chapters" / "10-financial-mcp.md"
 
 
 def _build_notebook():
@@ -115,3 +116,47 @@ def test_lesson10_notebook_executes_offline_with_visual_evidence(tmp_path: Path)
     executed = nbformat.read(output_dir / NOTEBOOK.name, as_version=4)
     assert _png_output_count(executed) >= 5
     assert "LESSON_10_PASS" in _stream_text(executed)
+
+
+def test_lesson10_chapter_and_discoverable_indexes_expose_the_classroom_contract() -> None:
+    assert CHAPTER.is_file()
+    chapter = CHAPTER.read_text(encoding="utf-8")
+
+    for marker in (
+        "11:15–12:00",
+        "10-minute concept deck",
+        "30-minute notebook",
+        "5-minute verification and debrief",
+        "finance://coverage",
+        "get_company_metric",
+        "search_financial_documents",
+        "compare_companies",
+        "MCPServer",
+        "FastMCP",
+        "stdio",
+        "Streamable HTTP",
+        "Ollama",
+        "OpenAI",
+        "No-network fallback",
+        "Skip if late",
+        "Lesson 11",
+        "LESSON_10_PASS",
+        "lesson10-003",
+        "lesson10-010",
+        "lesson10-016",
+        "lesson10-018",
+        "lesson10-022",
+    ):
+        assert marker in chapter
+
+    assert "notebooks/10_financial_mcp.ipynb" in chapter
+    assert "decks/10-financial-mcp.pptx" in chapter
+    assert "[Financial MCP](10-financial-mcp.md)" in (
+        ROOT / "chapters" / "README.md"
+    ).read_text(encoding="utf-8")
+    assert "[Financial MCP](10_financial_mcp.ipynb)" in (
+        ROOT / "notebooks" / "README.md"
+    ).read_text(encoding="utf-8")
+    assert "[Build a financial MCP](10-financial-mcp.pptx)" in (
+        ROOT / "decks" / "README.md"
+    ).read_text(encoding="utf-8")

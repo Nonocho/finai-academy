@@ -15,7 +15,8 @@ increment for the completed Day 1 course.
 | 07 | [RAG evaluation and tracing](07-rag-evaluation.md) |
 | 08 | [Workflows versus agents](08-workflows-vs-agents.md) |
 | 09 | [Self-correcting financial agent](09-self-correcting-agent.md) |
+| 10 | [Financial MCP](10-financial-mcp.md) |
 
 Lessons 01–07 complete Day 1. Lessons 08–09 begin the completed Day 2 chapters;
-Lessons 10–12 remain planned. Day 1 student order and timing are in the
+Lesson 10 is ready for instructor delivery; Lessons 11–12 remain planned. Day 1 student order and timing are in the
 [Day 1 student guide](../docs/day-1-student-guide.md).

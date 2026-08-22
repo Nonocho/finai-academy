@@ -15,8 +15,9 @@ verification marker.
 | 07 | [RAG evaluation and tracing](07_rag_evaluation.ipynb) |
 | 08 | [Workflows versus agents](08_workflows_vs_agents.ipynb) |
 | 09 | [Self-correcting financial agent](09_self_correcting_agent.ipynb) |
+| 10 | [Financial MCP](10_financial_mcp.ipynb) |
 
 Lessons 01–07 complete Day 1. Lessons 08–09 begin the completed Day 2 labs;
-Lessons 10–12 remain planned. See the
+Lesson 10 is ready for instructor delivery; Lessons 11–12 remain planned. See the
 [Day 1 student guide](../docs/day-1-student-guide.md) for the completed first-day
 timings and capstone increments.
