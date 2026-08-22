@@ -13,9 +13,25 @@ Provider credit is awarded only for commands executed during this review.
 ## Environment
 
 macOS on Apple Silicon; repository virtual environment with Python 3.13; local
-Jupyter kernel permission was approved for notebook-execution tests. The source
-notebook is built deterministically: two consecutive builder runs produced the
-same SHA-256, `fbaac48b4f9e643e552e0d640e4320790cf5fba042b9869eb28b4f252f9cd710`.
+Jupyter kernel permission was approved for notebook-execution tests. After the
+claim-level provenance fix, two consecutive builder runs produced the same source
+notebook SHA-256,
+`1ac441c19c4dd0f123680e804ce27a27bd41354c67c24f72a9d6c173fb5ab7e5`.
+
+## Post-certification provenance and display review
+
+The final whole-lesson review added a typed `CitedFact` boundary. Every reported
+fact now carries non-empty source references and optional evidence IDs. The graph
+validates each source, evidence ID, and document source/evidence pairing against
+successful observations before it can return `completed`; aggregate briefing
+sources must exactly match the stable first-seen union of cited-fact sources.
+Metric evidence cannot satisfy the evidence gate without source references, and
+document evidence additionally requires evidence IDs.
+
+Notebook cell `lesson11-022` now prints every complete factual claim with its
+source references and evidence IDs, followed by cross-company observations,
+interpretation, limitations, and aggregate sources. The 40-minute notebook and
+12 + 40 + 8 lesson timebox are unchanged.
 
 ## Unit and integration tests
 
@@ -23,7 +39,7 @@ The required targeted package passed with approved local-kernel permission:
 
 ```bash
 .venv/bin/pytest -q tests/test_research_planning.py tests/test_planning_mcp_executor.py tests/test_plan_execute_graph.py tests/test_plan_execute_policies.py tests/test_lesson11_assets.py tests/test_course_manifest.py
-# 73 passed in 6.70s
+# 83 passed in 6.69s
 ```
 
 The full repository regression passed after a failure-driven correction to the
@@ -33,7 +49,7 @@ statement:
 
 ```bash
 .venv/bin/pytest -q
-# 314 passed in 52.04s
+# 324 passed in 50.08s
 
 .venv/bin/ruff check .
 # All checks passed!
@@ -55,18 +71,21 @@ remove only those imports; whole-repository Ruff and the targeted package pass.
 
 ## Offline notebook
 
-Fresh execution used a new explicit output directory:
+Fresh post-fix execution used a new explicit output directory:
 
 ```bash
-.venv/bin/python scripts/execute_notebooks.py notebooks/11_plan_and_execute_analyst.ipynb --mode offline --output-dir /private/tmp/finai-lesson11-offline-task8-20260822
-# PASS notebooks/11_plan_and_execute_analyst.ipynb -> /private/tmp/finai-lesson11-offline-task8-20260822/11_plan_and_execute_analyst.ipynb
+.venv/bin/python scripts/execute_notebooks.py notebooks/11_plan_and_execute_analyst.ipynb --mode offline --output-dir /private/tmp/finai-lesson11-final-fix-0bL558
+# PASS notebooks/11_plan_and_execute_analyst.ipynb -> /private/tmp/finai-lesson11-final-fix-0bL558/11_plan_and_execute_analyst.ipynb
 ```
 
 Observed runtime evidence: `offline fixture · deterministic planner and
 replanner · real local MCP execution`; server `First Finance Research`; permitted
 tools `get_company_metric` and `search_financial_documents`; attempted step IDs
 `1, 2, 3, 5, 6`; one retained `unsupported_metric` error; one revision; evidence
-gate `True`; six PNG outputs; and exactly one `LESSON_11_PASS` marker.
+gate `True`; six PNG outputs; and exactly one `LESSON_11_PASS` marker. The cited
+briefing visibly contains two sourced metric claims and four document claims with
+their exact evidence IDs, one cross-company observation, two interpretation
+statements, three limitations, and the three aggregate source references.
 
 ## Ollama live route
 
@@ -83,7 +102,7 @@ credit is claimed.
 
 ## Notebook visual review
 
-All six PNG outputs from the fresh offline artifact were extracted and inspected
+All six PNG outputs from the post-fix offline artifact were extracted and inspected
 at full size: control-pattern comparison, initial-plan dependencies, ownership
 graph, logarithmic execution timeline, tail-only replan, and evidence-coverage
 matrix. Labels, connector direction, short-duration visibility, retained failure,
@@ -92,7 +111,14 @@ was observed.
 
 ## Deck automated and visual review
 
-The bundled presentation runtime produced these current checks:
+The final provenance round did not modify the deck. A fresh structural regression
+of the two Lesson 11 deck contracts passed. A fresh invocation of the bundled
+overflow helper could not start because the workspace dependency loader was not
+available in this agent context and the project environment does not include
+`pdf2image`; no new overflow result is claimed. The prior certification evidence
+below remains applicable to the byte-unchanged deck.
+
+The original certification produced these retained checks:
 
 ```bash
 slides_test.py decks/11-plan-and-execute-analyst.pptx
@@ -134,17 +160,19 @@ execution.
 - Ollama live evidence is unavailable because the daemon was unavailable; `qwen3:8b` was not pulled or run.
 - OpenAI live evidence is unavailable because `OPENAI_API_KEY` is not configured.
 - No timed learner rehearsal was performed.
+- The fresh deck overflow helper could not start without the unavailable bundled
+  dependency loader; the deck is byte-unchanged and its structural regression passed.
 
 ## Weighted score
 
 | Dimension | Weight | Score | Basis |
 | --- | ---: | ---: | --- |
 | Learner usability | 25% | 9.2/10 | Deterministic 40-minute offline notebook, visible artifacts, complete instructor route; no timed learner rehearsal. |
-| Technical correctness and safety | 20% | 9.7/10 | 314 passing tests, real local MCP lifecycle, typed failure/replan/evidence gates, repository validation. |
+| Technical correctness and safety | 20% | 9.7/10 | 324 passing tests, real local MCP lifecycle, typed failure/replan/evidence/provenance gates, repository validation. |
 | Conceptual progression | 20% | 9.5/10 | Deck, chapter, and notebook move from proposal to host control, retained failure, evidence gate, and Lesson 12 handoff. |
 | Live delivery | 15% | 4.0/10 | Offline delivery is observed; neither live provider was available/configured, so no live-provider pass is awarded. |
 | Visuals | 10% | 9.7/10 | Six current notebook figures and the nine-slide deck pass full-size review, overflow, template-plan, fidelity, placeholder, and theme checks. |
-| Repository quality | 10% | 9.7/10 | Full tests, Ruff, notebook validator, repository validator, whitespace, deterministic build, and refreshed deck QA pass. |
+| Repository quality | 10% | 9.7/10 | Full tests, Ruff, notebook validator, repository validator, whitespace, deterministic build, and unchanged certified deck artifacts. |
 
 Weighted readiness score: `(9.2 × 0.25) + (9.7 × 0.20) + (9.5 × 0.20) + (4.0 × 0.15) + (9.7 × 0.10) + (9.7 × 0.10) =` **8.68/10**.
 
