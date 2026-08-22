@@ -315,25 +315,29 @@ receive an unrestricted filesystem, raw MCP client, or write-capable tool.
 
 ## Maintained replanning failure lab
 
-The deterministic classroom plan deliberately proposes:
+The deterministic classroom plan deliberately proposes a schema-valid but
+domain-invalid metric request:
 
 ```text
-search_financial_documents(company="NVIDIA", query="growth", top_k=4)
+get_company_metric(ticker="NVDA", metric="Revenue")
 ```
 
-The server returns the typed `invalid_top_k` error. The replanner must:
+The server returns the typed `unsupported_metric` error and identifies `EPS` and `P/E`
+as the metric tool's valid values. The replanner must:
 
 1. keep every successfully executed step unchanged;
 2. retain the failed attempt in the immutable trajectory;
 3. supersede the failed step and replace only the unfinished tail;
 4. assign new monotonic IDs to every replacement step;
-5. correct `top_k` to an allowed value;
+5. replace the failed metric lookup with
+   `search_financial_documents(company="NVIDIA", query="revenue growth", top_k=2)`;
 6. keep the original research goal;
 7. increment `replan_count` exactly once; and
 8. continue without duplicating successful tool calls.
 
-This differs from Lesson 09's metric-alias correction. Lesson 09 teaches local action
-recovery. Lesson 11 teaches plan revision while preserving completed work.
+This differs from Lesson 09's metric-alias correction. Lesson 09 retries the same tool
+with a corrected alias. Lesson 11 changes the research strategy from a structured metric
+lookup to document evidence while preserving completed work.
 
 If revised steps still fail, the graph stops with a typed bounded status. It does not
 silently omit missing evidence or generate a complete-looking report.
@@ -389,7 +393,7 @@ Required sequence:
 10. plan policy validation;
 11. deterministic step execution through the real MCP lifecycle;
 12. evidence scratchpad growth;
-13. maintained `invalid_top_k` failure;
+13. maintained `unsupported_metric` planning failure;
 14. tail-only plan replacement;
 15. completion of the corrected plan;
 16. evidence gate;
@@ -481,7 +485,7 @@ The chapter records:
 | 5:00-10:00 | Discover MCP tools and inspect contracts | Catalog table and ownership map |
 | 10:00-16:00 | Create and validate the plan | Plan table, Figure 2, policy result |
 | 16:00-23:00 | Execute initial steps | Scratchpad entries and Figures 3-4 |
-| 23:00-29:00 | Trigger and repair `invalid_top_k` | Typed error and Figure 5 |
+| 23:00-29:00 | Replace the failed `Revenue` metric step | Typed error and Figure 5 |
 | 29:00-34:00 | Complete the corrected plan | No duplicated successful calls |
 | 34:00-37:00 | Run evidence gate and report writer | Figure 6 and cited briefing |
 | 37:00-40:00 | Verify, challenge, and handoff | `LESSON_11_PASS` and Lesson 12 fields |
@@ -523,7 +527,7 @@ Learners must answer:
 - maximum step and replan budgets;
 - append-only observations;
 - successful sequential execution;
-- `invalid_top_k` tail revision;
+- `unsupported_metric` strategy revision from metric tool to document search;
 - no duplicate successful calls after replanning;
 - evidence-gate success and failure;
 - cited briefing inputs; and
