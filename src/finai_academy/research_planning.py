@@ -44,7 +44,7 @@ class ReplanDecision(BaseModel):
 
 
 class ResearchObservation(BaseModel):
-    """Immutable result of one attempted plan step."""
+    """Typed result of one attempted plan step."""
 
     attempt_id: int = Field(ge=1)
     step_id: int = Field(ge=1)
@@ -87,10 +87,30 @@ class TrajectoryEvent(BaseModel):
     duration_ms: float = Field(default=0, ge=0)
 
 
+class CitedFact(BaseModel):
+    """One factual report claim with explicit observation-backed provenance."""
+
+    claim: str = Field(min_length=1)
+    source_references: tuple[str, ...]
+    evidence_ids: tuple[str, ...] = ()
+
+    @model_validator(mode="after")
+    def validate_provenance(self) -> CitedFact:
+        if not self.claim.strip():
+            raise ValueError("claim must not be blank")
+        if not self.source_references or any(
+            not source.strip() for source in self.source_references
+        ):
+            raise ValueError("source_references must contain non-blank values")
+        if any(not evidence_id.strip() for evidence_id in self.evidence_ids):
+            raise ValueError("evidence_ids must contain non-blank values")
+        return self
+
+
 class AnalystBriefing(BaseModel):
     """Report sections that keep facts, comparison, interpretation, and limits separate."""
 
-    reported_facts: tuple[str, ...]
+    reported_facts: tuple[CitedFact, ...]
     cross_company_observations: tuple[str, ...]
     interpretation: tuple[str, ...]
     limitations: tuple[str, ...]
@@ -104,6 +124,23 @@ class AnalystBriefing(BaseModel):
             raise ValueError("limitations must not be empty")
         if not self.source_references:
             raise ValueError("source_references must not be empty")
+        for field_name in (
+            "cross_company_observations",
+            "interpretation",
+            "limitations",
+            "source_references",
+        ):
+            if any(not value.strip() for value in getattr(self, field_name)):
+                raise ValueError(f"{field_name} must contain only non-blank values")
+        cited_sources = tuple(
+            dict.fromkeys(
+                source
+                for fact in self.reported_facts
+                for source in fact.source_references
+            )
+        )
+        if self.source_references != cited_sources:
+            raise ValueError("source_references must exactly match cited facts")
         return self
 
 
@@ -113,6 +150,77 @@ class EvidenceGateResult(BaseModel):
     passed: bool
     coverage: dict[str, tuple[str, ...]]
     missing_requirements: tuple[str, ...] = ()
+
+
+def validate_briefing_support(
+    briefing: AnalystBriefing,
+    successful_observations: Sequence[ResearchObservation],
+) -> AnalystBriefing:
+    """Reject a briefing whose claim provenance is absent from successful observations."""
+
+    checked = AnalystBriefing.model_validate(briefing.model_dump(mode="python"))
+    supported_sources = {
+        source
+        for observation in successful_observations
+        if observation.status == "ok"
+        for source in observation.source_references
+    }
+    supported_evidence_ids = {
+        evidence_id
+        for observation in successful_observations
+        if observation.status == "ok"
+        for evidence_id in observation.evidence_ids
+    }
+    supported_pairs: set[tuple[str, str]] = set()
+    for observation in successful_observations:
+        if observation.status != "ok":
+            continue
+        result = observation.result
+        hits = result.get("hits") if isinstance(result, Mapping) else None
+        if observation.capability == "search_financial_documents" and isinstance(
+            hits, Sequence
+        ) and not isinstance(hits, (str, bytes)):
+            supported_pairs.update(
+                (source, evidence_id)
+                for hit in hits
+                if isinstance(hit, Mapping)
+                and isinstance((source := hit.get("source")), str)
+                and isinstance((evidence_id := hit.get("evidence_id")), str)
+                and source in observation.source_references
+                and evidence_id in observation.evidence_ids
+            )
+        else:
+            supported_pairs.update(
+                (source, evidence_id)
+                for source in observation.source_references
+                for evidence_id in observation.evidence_ids
+            )
+    for fact in checked.reported_facts:
+        for source in fact.source_references:
+            if source not in supported_sources:
+                raise ValueError(f"unsupported source reference: {source}")
+        for evidence_id in fact.evidence_ids:
+            if evidence_id not in supported_evidence_ids:
+                raise ValueError(f"unsupported evidence ID: {evidence_id}")
+        if fact.evidence_ids:
+            paired_sources = {
+                source
+                for source in fact.source_references
+                if any((source, evidence_id) in supported_pairs for evidence_id in fact.evidence_ids)
+            }
+            paired_evidence_ids = {
+                evidence_id
+                for evidence_id in fact.evidence_ids
+                if any(
+                    (source, evidence_id) in supported_pairs
+                    for source in fact.source_references
+                )
+            }
+            if paired_sources != set(fact.source_references) or paired_evidence_ids != set(
+                fact.evidence_ids
+            ):
+                raise ValueError("unsupported source/evidence pairing")
+    return checked
 
 
 def validate_plan(
@@ -188,9 +296,18 @@ def evaluate_evidence_gate(
         company = observation.result.get("company")
         if company not in evidence:
             continue
-        if observation.capability == "get_company_metric":
+        has_sources = bool(observation.source_references) and all(
+            source.strip() for source in observation.source_references
+        )
+        if observation.capability == "get_company_metric" and has_sources:
             evidence[company].add("metric")
-        elif observation.capability == "search_financial_documents" and observation.result.get("hits"):
+        elif (
+            observation.capability == "search_financial_documents"
+            and observation.result.get("hits")
+            and has_sources
+            and observation.evidence_ids
+            and all(evidence_id.strip() for evidence_id in observation.evidence_ids)
+        ):
             evidence[company].add("document")
 
     coverage = {
@@ -254,7 +371,7 @@ def _validate_schema_value(value: Any, schema: Mapping[str, Any], path: str) -> 
             if name not in value:
                 raise ValueError(f"arguments_not_accepted: missing required argument {name}")
         additional_properties = schema.get("additionalProperties")
-        if additional_properties is not None and not isinstance(
+        if "additionalProperties" in schema and not isinstance(
             additional_properties, (bool, Mapping)
         ):
             raise ValueError(

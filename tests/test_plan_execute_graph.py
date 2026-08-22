@@ -10,6 +10,7 @@ import pytest
 from finai_academy.plan_execute_graph import build_plan_execute_graph, run_plan_execute
 from finai_academy.research_planning import (
     AnalystBriefing,
+    CitedFact,
     PlannerToolSpec,
     PlanStep,
     ReplanDecision,
@@ -137,9 +138,10 @@ class FakeExecutor:
         )
         is_document = step.capability == "search_financial_documents"
         evidence_id = f"evidence-{step.step_id}"
+        source = f"source-{step.step_id}"
         result: dict[str, Any] = {"company": company, "evidence_id": evidence_id}
         if is_document:
-            result["hits"] = [{"evidence_id": evidence_id}]
+            result["hits"] = [{"evidence_id": evidence_id, "source": source}]
         return ResearchObservation(
             attempt_id=attempt_id,
             step_id=step.step_id,
@@ -149,7 +151,7 @@ class FakeExecutor:
             status="ok",
             result=result,
             evidence_ids=(evidence_id,),
-            source_references=(f"source-{step.step_id}",),
+            source_references=(source,),
             duration_ms=2,
         )
 
@@ -184,13 +186,26 @@ async def recorded_report_writer(
     observations: tuple[ResearchObservation, ...],
 ) -> AnalystBriefing:
     assert question == MISSION
+    facts = tuple(
+        CitedFact(
+            claim=f"Evidence from successful step {item.step_id}.",
+            source_references=item.source_references,
+            evidence_ids=item.evidence_ids,
+        )
+        for item in observations
+        if item.status == "ok" and item.source_references
+    )
     return AnalystBriefing(
-        reported_facts=tuple(f"Evidence {item.evidence_ids[0]}." for item in observations if item.evidence_ids),
+        reported_facts=facts,
         cross_company_observations=("The reporting periods differ.",),
         interpretation=("The controlled evidence is descriptive, not investment advice.",),
         limitations=("Currencies, periods, and business definitions differ.",),
         source_references=tuple(
-            source for item in observations for source in item.source_references
+            dict.fromkeys(
+                source
+                for fact in facts
+                for source in fact.source_references
+            )
         ),
     )
 
@@ -696,6 +711,62 @@ def test_report_malformed_return_becomes_provider_error_without_a_briefing() -> 
     assert result.status == "provider_error"
     assert result.evidence_gate.passed is True
     assert result.briefing is None
+
+
+def test_report_with_unsupported_provenance_is_redacted_and_rejected() -> None:
+    """Breaks if an otherwise typed provider report can invent citations at completion."""
+
+    async def complete_planner(
+        question: str,
+        catalog: tuple[PlannerToolSpec, ...],
+    ) -> ResearchPlan:
+        del question, catalog
+        return ResearchPlan(
+            goal="Collect complete evidence.",
+            steps=(
+                metric_step(1, "NVDA"),
+                metric_step(2, "SU.PA"),
+                document_step(3, "NVIDIA"),
+                document_step(4, "Schneider Electric"),
+            ),
+        )
+
+    async def unsupported_report_writer(
+        question: str,
+        observations: tuple[ResearchObservation, ...],
+    ) -> AnalystBriefing:
+        del question, observations
+        return AnalystBriefing(
+            reported_facts=(
+                CitedFact(
+                    claim="Unsupported provider claim.",
+                    source_references=("OPENAI_API_KEY=invented-source",),
+                    evidence_ids=("invented-evidence",),
+                ),
+            ),
+            cross_company_observations=("Different periods.",),
+            interpretation=("No advice.",),
+            limitations=("Periods differ.",),
+            source_references=("OPENAI_API_KEY=invented-source",),
+        )
+
+    result = asyncio.run(
+        run_plan_execute(
+            question=MISSION,
+            executor=FakeExecutor(),
+            planner=complete_planner,
+            replanner=finish_after_last_step,
+            report_writer=unsupported_report_writer,
+        )
+    )
+
+    serialized = json.dumps(result.model_dump(mode="json"))
+    assert result.status == "provider_error"
+    assert result.evidence_gate.passed is True
+    assert result.briefing is None
+    assert "invented-source" not in serialized
+    assert "invented-evidence" not in serialized
+    assert "OPENAI_API_KEY" not in serialized
 
 
 @pytest.mark.parametrize("max_steps", [1, 6])

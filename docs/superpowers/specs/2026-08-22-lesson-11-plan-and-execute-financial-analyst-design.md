@@ -295,20 +295,28 @@ evidence_id, document_id, section, period, trace_id
 
 The evidence gate requires:
 
-- at least one successful metric observation for each company;
-- at least one document evidence hit for each company;
+- at least one successful metric observation with a source reference for each company;
+- at least one document evidence hit with source references and evidence IDs for each company;
 - no factual report claim whose source cannot be traced to a successful observation; and
 - explicit limitations for incompatible periods, currencies, and business definitions.
 
-The final `AnalystBriefing` separates:
+Each reported fact is a typed `CitedFact` containing non-blank claim text, one or
+more source references, and optional evidence IDs. The pure
+`validate_briefing_support()` boundary rejects sources, evidence IDs, and
+source/evidence pairings absent from successful observations. The final
+`AnalystBriefing` separates:
 
 ```text
-reported_facts
+reported_facts: tuple[CitedFact, ...]
 cross_company_observations
 interpretation
 limitations
 source_references
 ```
+
+The aggregate `source_references` tuple is the stable first-seen union of the
+sources cited by `reported_facts`; extra, missing, duplicated, or reordered
+aggregate references are invalid.
 
 The report writer receives only the user mission and verified scratchpad. It does not
 receive an unrestricted filesystem, raw MCP client, or write-capable tool.

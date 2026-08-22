@@ -415,7 +415,7 @@ def build_notebook():
             """
             ### Evidence gate and cited briefing
 
-            The evidence gate requires one successful metric observation and one document evidence hit for each company. A fluent report cannot bypass this check.
+            The evidence gate requires one sourced metric observation and one document evidence hit with source references and evidence IDs for each company. Every reported fact then carries its own validated provenance. A fluent report cannot bypass these checks.
             """,
         ),
         _code(
@@ -427,12 +427,26 @@ def build_notebook():
                 for company, evidence in result.evidence_gate.coverage.items()
             ], columns=["company", "verified evidence"]))
             assert result.briefing is not None
-            display(pd.DataFrame([
-                ("reported facts", len(result.briefing.reported_facts)),
-                ("comparison observations", len(result.briefing.cross_company_observations)),
-                ("limitations", len(result.briefing.limitations)),
-                ("source references", len(result.briefing.source_references)),
-            ], columns=["briefing field", "count"]))
+            print("\\nCITED FACTS")
+            for index, fact in enumerate(result.briefing.reported_facts, start=1):
+                print(f"{index}. {fact.claim}")
+                print(f"   Sources: {', '.join(fact.source_references)}")
+                evidence = ", ".join(fact.evidence_ids) or "none (metric observation)"
+                print(f"   Evidence IDs: {evidence}")
+
+            briefing_sections = (
+                ("CROSS-COMPANY OBSERVATIONS", result.briefing.cross_company_observations),
+                ("INTERPRETATION", result.briefing.interpretation),
+                ("LIMITATIONS", result.briefing.limitations),
+            )
+            for heading, items in briefing_sections:
+                print(f"\\n{heading}")
+                for item in items:
+                    print(f"- {item}")
+
+            print("\\nAggregate sources:")
+            for source in result.briefing.source_references:
+                print(f"- {source}")
             """,
         ),
         _markdown(

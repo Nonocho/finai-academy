@@ -19,6 +19,7 @@ from finai_academy.research_planning import (
     ResearchPlan,
     TrajectoryEvent,
     evaluate_evidence_gate,
+    validate_briefing_support,
     validate_plan,
     validate_replacement,
 )
@@ -392,6 +393,10 @@ def build_plan_execute_graph(
             briefing = await report_writer(state["question"], observations)
             if not isinstance(briefing, AnalystBriefing):
                 raise TypeError("report writer returned an invalid briefing")
+            briefing = validate_briefing_support(
+                briefing,
+                tuple(item for item in observations if item.status == "ok"),
+            )
         except Exception:  # noqa: BLE001 - provider boundary must fail closed
             return {
                 "briefing": None,

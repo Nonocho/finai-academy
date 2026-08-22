@@ -17,6 +17,7 @@ from finai_academy.plan_execute_policies import (
 )
 from finai_academy.research_planning import (
     AnalystBriefing,
+    CitedFact,
     PlannerToolSpec,
     PlanStep,
     ReplanDecision,
@@ -106,6 +107,7 @@ def successful_observations() -> tuple[ResearchObservation, ...]:
                 "company": "Schneider Electric",
                 "hits": [
                     {
+                        "evidence_id": "se-h1",
                         "text": "Energy Management revenue grew 8% in the period.",
                         "period": "H1 2026",
                         "source": "Schneider public report",
@@ -127,6 +129,7 @@ def successful_observations() -> tuple[ResearchObservation, ...]:
                 "company": "NVIDIA",
                 "hits": [
                     {
+                        "evidence_id": "nvda-q2",
                         "text": "Data Center revenue grew 56% year over year.",
                         "period": "Q2 2026",
                         "source": "NVIDIA public filing",
@@ -213,8 +216,20 @@ def test_recorded_report_uses_verified_facts_and_states_comparison_limits() -> N
     """Breaks if the offline briefing omits public provenance or material comparison limits."""
     report = asyncio.run(recorded_report_writer(MISSION, successful_observations()))
 
-    assert any("NVIDIA" in fact for fact in report.reported_facts)
-    assert any("Schneider Electric" in fact for fact in report.reported_facts)
+    assert any("NVIDIA" in fact.claim for fact in report.reported_facts)
+    assert any("Schneider Electric" in fact.claim for fact in report.reported_facts)
+    assert CitedFact(
+        claim="NVIDIA (Q2 2026): Data Center revenue grew 56% year over year.",
+        source_references=("NVIDIA public filing",),
+        evidence_ids=("nvda-q2",),
+    ) in report.reported_facts
+    assert report.source_references == tuple(
+        dict.fromkeys(
+            source
+            for fact in report.reported_facts
+            for source in fact.source_references
+        )
+    )
     assert len(report.source_references) >= 2
     assert any("currency" in limitation.casefold() for limitation in report.limitations)
     assert any("period" in limitation.casefold() for limitation in report.limitations)
@@ -248,7 +263,12 @@ class FakeModelFactory:
             ResearchPlan(goal=MISSION, steps=INITIAL_RECORDED_STEPS),
             ReplanDecision(action="finish", reasoning="The supplied observations are complete."),
             AnalystBriefing(
-                reported_facts=("NVIDIA P/E is 47.2x.",),
+                reported_facts=(
+                    CitedFact(
+                        claim="NVIDIA P/E is 47.2x.",
+                        source_references=("NVIDIA metrics snapshot",),
+                    ),
+                ),
                 cross_company_observations=("The observations have different periods.",),
                 interpretation=("This is descriptive evidence, not investment advice.",),
                 limitations=("Currencies differ.",),
@@ -315,6 +335,9 @@ def test_live_policies_use_lazy_structured_output_and_safe_prompt_context() -> N
         "unsupported_metric",
         "NVIDIA public filing",
         "Data Center revenue grew 56% year over year.",
+        "nvda-q2",
+        "source_references",
+        "evidence_ids",
     ):
         assert safe_text in rendered_prompts
 

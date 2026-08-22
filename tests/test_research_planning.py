@@ -1,9 +1,12 @@
 from __future__ import annotations
 
 import pytest
+from pydantic import ValidationError
 
+from finai_academy import research_planning
 from finai_academy.research_planning import (
     AnalystBriefing,
+    CitedFact,
     EvidenceGateResult,
     PlannerToolSpec,
     PlanStep,
@@ -202,6 +205,24 @@ def test_plan_rejects_schema_valued_additional_property_with_wrong_type() -> Non
         validate_plan(plan, schema_catalog, max_steps=6)
 
 
+def test_plan_rejects_explicit_null_additional_properties_schema() -> None:
+    """Breaks if malformed explicit null is treated like an omitted schema keyword."""
+    malformed_catalog = (
+        tool_catalog()[0].model_copy(
+            update={
+                "input_schema": {
+                    **tool_catalog()[0].input_schema,
+                    "additionalProperties": None,
+                }
+            }
+        ),
+        tool_catalog()[1],
+    )
+
+    with pytest.raises(ValueError, match="invalid additionalProperties"):
+        validate_plan(valid_plan(), malformed_catalog, max_steps=6)
+
+
 def test_plan_rejects_invalid_schema_types_and_bounds() -> None:
     bad_type = valid_plan().model_copy(
         update={
@@ -260,7 +281,45 @@ def test_observation_requires_result_for_success_and_code_for_error() -> None:
         )
 
 
-def test_briefing_requires_facts_limitations_and_sources() -> None:
+def test_cited_fact_requires_a_claim_and_non_empty_provenance() -> None:
+    """Breaks if a factual claim can exist without a usable source reference."""
+    cited_fact_type = getattr(research_planning, "CitedFact", None)
+    assert cited_fact_type is not None
+
+    fact = cited_fact_type(
+        claim="NVIDIA P/E was 47.2 x as of 2026-08-15.",
+        source_references=("NVIDIA metrics snapshot",),
+    )
+    assert fact.evidence_ids == ()
+
+    for payload in (
+        {"claim": " ", "source_references": ("NVIDIA metrics snapshot",)},
+        {"claim": "NVIDIA P/E was 47.2 x.", "source_references": ()},
+        {"claim": "NVIDIA P/E was 47.2 x.", "source_references": ("  ",)},
+        {
+            "claim": "NVIDIA Data Center revenue grew 56% year over year.",
+            "source_references": ("NVIDIA public filing",),
+            "evidence_ids": (" ",),
+        },
+    ):
+        with pytest.raises(ValidationError):
+            cited_fact_type(**payload)
+
+
+def _fact(
+    claim: str = "NVIDIA P/E is available.",
+    *,
+    source_references: tuple[str, ...] = ("metric-1",),
+    evidence_ids: tuple[str, ...] = (),
+) -> CitedFact:
+    return CitedFact(
+        claim=claim,
+        source_references=source_references,
+        evidence_ids=evidence_ids,
+    )
+
+
+def test_briefing_requires_facts_limitations_and_exact_aggregate_sources() -> None:
     with pytest.raises(ValueError, match="reported_facts"):
         AnalystBriefing(
             reported_facts=(),
@@ -271,7 +330,7 @@ def test_briefing_requires_facts_limitations_and_sources() -> None:
         )
     with pytest.raises(ValueError, match="limitations"):
         AnalystBriefing(
-            reported_facts=("NVIDIA P/E is available.",),
+            reported_facts=(_fact(),),
             cross_company_observations=(),
             interpretation=(),
             limitations=(),
@@ -279,16 +338,180 @@ def test_briefing_requires_facts_limitations_and_sources() -> None:
         )
     with pytest.raises(ValueError, match="source_references"):
         AnalystBriefing(
-            reported_facts=("NVIDIA P/E is available.",),
+            reported_facts=(_fact(),),
             cross_company_observations=(),
             interpretation=(),
             limitations=("Periods differ.",),
             source_references=(),
         )
 
+    with pytest.raises(ValueError, match="exactly match cited facts"):
+        AnalystBriefing(
+            reported_facts=(_fact(),),
+            cross_company_observations=("Different periods.",),
+            interpretation=("No advice.",),
+            limitations=("Periods differ.",),
+            source_references=("metric-1", "unused-source"),
+        )
+
+
+@pytest.mark.parametrize(
+    ("field", "value"),
+    [
+        ("cross_company_observations", (" ",)),
+        ("interpretation", ("\t",)),
+        ("limitations", ("\n",)),
+        ("source_references", ("  ",)),
+    ],
+)
+def test_briefing_rejects_whitespace_only_tuple_entries(
+    field: str, value: tuple[str, ...]
+) -> None:
+    """Breaks if visible report sections can contain blank-looking content."""
+    payload = {
+        "reported_facts": (_fact(),),
+        "cross_company_observations": ("Different periods.",),
+        "interpretation": ("No advice.",),
+        "limitations": ("Periods differ.",),
+        "source_references": ("metric-1",),
+    }
+    payload[field] = value
+
+    with pytest.raises(ValidationError):
+        AnalystBriefing(**payload)
+
+
+def test_briefing_reported_facts_are_typed_cited_claims() -> None:
+    """Breaks if provenance can drift away from the factual claim it supports."""
+    briefing = AnalystBriefing(
+        reported_facts=(_fact(),),
+        cross_company_observations=("Different periods.",),
+        interpretation=("No advice.",),
+        limitations=("Periods differ.",),
+        source_references=("metric-1",),
+    )
+
+    assert briefing.reported_facts[0].claim == "NVIDIA P/E is available."
+    assert briefing.reported_facts[0].source_references == ("metric-1",)
+
+
+def test_validate_briefing_support_rejects_unknown_sources_and_evidence_ids() -> None:
+    """Breaks if a provider can cite provenance absent from successful observations."""
+    observations = (
+        ResearchObservation(
+            attempt_id=1,
+            step_id=1,
+            plan_revision=0,
+            capability="get_company_metric",
+            arguments={"ticker": "NVDA", "metric": "P/E"},
+            status="ok",
+            result={"company": "NVIDIA"},
+            source_references=("metric-source",),
+            duration_ms=1,
+        ),
+        ResearchObservation(
+            attempt_id=2,
+            step_id=2,
+            plan_revision=0,
+            capability="search_financial_documents",
+            arguments={"company": "NVIDIA", "query": "growth"},
+            status="ok",
+            result={
+                "company": "NVIDIA",
+                "hits": (
+                    {"source": "document-source", "evidence_id": "doc-1"},
+                    {"source": "second-document-source", "evidence_id": "doc-2"},
+                ),
+            },
+            source_references=("document-source", "second-document-source"),
+            evidence_ids=("doc-1", "doc-2"),
+            duration_ms=1,
+        ),
+    )
+    valid = AnalystBriefing(
+        reported_facts=(
+            _fact(source_references=("metric-source",)),
+            _fact(
+                "NVIDIA revenue grew.",
+                source_references=("document-source",),
+                evidence_ids=("doc-1",),
+            ),
+        ),
+        cross_company_observations=("Different periods.",),
+        interpretation=("No advice.",),
+        limitations=("Periods differ.",),
+        source_references=("metric-source", "document-source"),
+    )
+    validate_support = getattr(research_planning, "validate_briefing_support", None)
+    assert validate_support is not None
+    assert validate_support(valid, observations) == valid
+
+    unknown_source = AnalystBriefing(
+        reported_facts=(_fact(source_references=("invented-source",)),),
+        cross_company_observations=("Different periods.",),
+        interpretation=("No advice.",),
+        limitations=("Periods differ.",),
+        source_references=("invented-source",),
+    )
+    with pytest.raises(ValueError, match="unsupported source reference"):
+        validate_support(unknown_source, observations)
+
+    unknown_evidence = AnalystBriefing(
+        reported_facts=(
+            _fact(
+                "NVIDIA revenue grew.",
+                source_references=("document-source",),
+                evidence_ids=("invented-evidence",),
+            ),
+        ),
+        cross_company_observations=("Different periods.",),
+        interpretation=("No advice.",),
+        limitations=("Periods differ.",),
+        source_references=("document-source",),
+    )
+    with pytest.raises(ValueError, match="unsupported evidence ID"):
+        validate_support(unknown_evidence, observations)
+
+    mismatched_pair = AnalystBriefing(
+        reported_facts=(
+            _fact(
+                "NVIDIA revenue grew.",
+                source_references=("metric-source",),
+                evidence_ids=("doc-1",),
+            ),
+        ),
+        cross_company_observations=("Different periods.",),
+        interpretation=("No advice.",),
+        limitations=("Periods differ.",),
+        source_references=("metric-source",),
+    )
+    with pytest.raises(ValueError, match="unsupported source/evidence pairing"):
+        validate_support(mismatched_pair, observations)
+
+    mismatched_hit_pair = AnalystBriefing(
+        reported_facts=(
+            _fact(
+                "NVIDIA revenue grew.",
+                source_references=("second-document-source",),
+                evidence_ids=("doc-1",),
+            ),
+        ),
+        cross_company_observations=("Different periods.",),
+        interpretation=("No advice.",),
+        limitations=("Periods differ.",),
+        source_references=("second-document-source",),
+    )
+    with pytest.raises(ValueError, match="unsupported source/evidence pairing"):
+        validate_support(mismatched_hit_pair, observations)
+
 
 def _observation(
-    *, company: str, capability: str, evidence_ids: tuple[str, ...] = (), hits: tuple[str, ...] = ()
+    *,
+    company: str,
+    capability: str,
+    evidence_ids: tuple[str, ...] = (),
+    hits: tuple[str, ...] = (),
+    source_references: tuple[str, ...] | None = None,
 ) -> ResearchObservation:
     result = {"company": company}
     if capability == "search_financial_documents":
@@ -302,6 +525,11 @@ def _observation(
         status="ok",
         result=result,
         evidence_ids=evidence_ids,
+        source_references=(
+            (f"{company} public source",)
+            if source_references is None
+            else source_references
+        ),
         duration_ms=1,
     )
 
@@ -349,6 +577,46 @@ def test_evidence_gate_reports_missing_document_evidence() -> None:
 
     assert gate.passed is False
     assert "Schneider Electric document evidence" in gate.missing_requirements
+
+
+def test_evidence_gate_rejects_untraceable_metric_and_document_observations() -> None:
+    """Breaks if result shape alone can satisfy coverage without reportable provenance."""
+    untraceable = (
+        _observation(
+            company="NVIDIA",
+            capability="get_company_metric",
+            source_references=(),
+        ),
+        _observation(
+            company="NVIDIA",
+            capability="search_financial_documents",
+            evidence_ids=("d-nvda",),
+            hits=("hit-1",),
+            source_references=(),
+        ),
+        _observation(
+            company="Schneider Electric",
+            capability="get_company_metric",
+            source_references=(),
+        ),
+        _observation(
+            company="Schneider Electric",
+            capability="search_financial_documents",
+            hits=("hit-2",),
+            source_references=(),
+        ),
+    )
+
+    gate = evaluate_evidence_gate(untraceable)
+
+    assert gate.passed is False
+    assert gate.coverage == {"NVIDIA": (), "Schneider Electric": ()}
+    assert set(gate.missing_requirements) == {
+        "NVIDIA metric evidence",
+        "NVIDIA document evidence",
+        "Schneider Electric metric evidence",
+        "Schneider Electric document evidence",
+    }
 
 
 def test_evidence_gate_ignores_unsuccessful_observations() -> None:

@@ -58,6 +58,21 @@ def _stream_text(notebook) -> str:
     )
 
 
+def _cell_output_text(notebook, cell_id: str) -> str:
+    cell = next(item for item in notebook.cells if item.id == cell_id)
+    rendered: list[str] = []
+    for output in cell.get("outputs", []):
+        if output.get("output_type") == "stream":
+            rendered.append(output.get("text", ""))
+            continue
+        data = output.get("data", {})
+        for mime_type in ("text/plain", "text/markdown", "text/html"):
+            value = data.get(mime_type)
+            if isinstance(value, str):
+                rendered.append(value)
+    return "\n".join(rendered)
+
+
 def test_lesson11_notebook_is_output_free_and_contains_the_teaching_contract() -> None:
     assert NOTEBOOK.is_file()
     notebook = nbformat.read(NOTEBOOK, as_version=4)
@@ -99,6 +114,18 @@ def test_lesson11_notebook_is_output_free_and_contains_the_teaching_contract() -
     ):
         assert marker in source
     assert "async def run_lesson11(*, live_mode: bool)" in source
+    briefing_cell = next(cell for cell in notebook.cells if cell.id == "lesson11-022")
+    for marker in (
+        "fact.claim",
+        "fact.source_references",
+        "fact.evidence_ids",
+        "cross_company_observations",
+        "interpretation",
+        "limitations",
+        "source_references",
+    ):
+        assert marker in briefing_cell.source
+    assert "len(result.briefing" not in briefing_cell.source
 
 
 def test_lesson11_notebook_executes_offline_with_visual_evidence(tmp_path: Path) -> None:
@@ -123,11 +150,24 @@ def test_lesson11_notebook_executes_offline_with_visual_evidence(tmp_path: Path)
     assert result.returncode == 0, result.stderr
     executed = nbformat.read(output_dir / NOTEBOOK.name, as_version=4)
     text = _stream_text(executed)
+    briefing_text = _cell_output_text(executed, "lesson11-022")
     assert _png_output_count(executed) >= 6
     assert "Real MCP server:" in text
     assert "offline fixture · deterministic planner and replanner · real local MCP execution" in text
     assert "Plan revisions: 1" in text
     assert "Evidence gate passed: True" in text
+    for marker in (
+        "CITED FACTS",
+        "NVIDIA P/E was 52.4 x as of 2026-08-20.",
+        "Sources: First Finance controlled classroom fixture",
+        "Evidence IDs: NVDA-FY2026-DATA-CENTER-001",
+        "CROSS-COMPANY OBSERVATIONS",
+        "INTERPRETATION",
+        "LIMITATIONS",
+        "Aggregate sources:",
+        "assets/course-data/fixtures/nvidia_fy2026_excerpt.html",
+    ):
+        assert marker in briefing_text
     assert text.count("LESSON_11_PASS") == 1
 
 

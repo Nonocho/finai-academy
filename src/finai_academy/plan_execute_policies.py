@@ -10,6 +10,7 @@ from typing import Any
 from finai_academy.providers import create_chat_model
 from finai_academy.research_planning import (
     AnalystBriefing,
+    CitedFact,
     PlannerToolSpec,
     PlanStep,
     ReplanDecision,
@@ -118,19 +119,15 @@ async def recorded_report_writer(
 ) -> AnalystBriefing:
     """Create the offline briefing from successful typed MCP observations only."""
     successful = tuple(item for item in observations if item.status == "ok")
-    sources = tuple(
-        dict.fromkeys(source for item in successful for source in item.source_references)
-    )
-    return briefing_from_verified_observations(question, successful, sources)
+    return briefing_from_verified_observations(question, successful)
 
 
 def briefing_from_verified_observations(
     question: str,
     observations: Sequence[ResearchObservation],
-    sources: tuple[str, ...],
 ) -> AnalystBriefing:
-    """Extract plain factual claims from successful metric and document observations."""
-    facts: list[str] = []
+    """Extract cited factual claims from successful metric and document observations."""
+    facts: list[CitedFact] = []
     for observation in observations:
         if observation.status != "ok" or observation.result is None:
             continue
@@ -141,10 +138,18 @@ def briefing_from_verified_observations(
             value = result.get("value")
             unit = result.get("unit")
             as_of = result.get("as_of")
-            if all(isinstance(value_, str) for value_ in (company, metric, unit, as_of)) and isinstance(
-                value, (int, float)
+            if (
+                all(isinstance(value_, str) for value_ in (company, metric, unit, as_of))
+                and isinstance(value, (int, float))
+                and observation.source_references
             ):
-                facts.append(f"{company} {metric} was {value:g} {unit} as of {as_of}.")
+                facts.append(
+                    CitedFact(
+                        claim=f"{company} {metric} was {value:g} {unit} as of {as_of}.",
+                        source_references=observation.source_references,
+                        evidence_ids=observation.evidence_ids,
+                    )
+                )
         elif observation.capability == "search_financial_documents":
             company = result.get("company")
             hits = result.get("hits")
@@ -157,8 +162,27 @@ def briefing_from_verified_observations(
                     continue
                 text = hit.get("text")
                 period = hit.get("period")
-                if isinstance(text, str) and isinstance(period, str):
-                    facts.append(f"{company} ({period}): {text}")
+                source = hit.get("source")
+                evidence_id = hit.get("evidence_id")
+                if (
+                    all(
+                        isinstance(value, str) and value.strip()
+                        for value in (text, period, source, evidence_id)
+                    )
+                    and source in observation.source_references
+                    and evidence_id in observation.evidence_ids
+                ):
+                    facts.append(
+                        CitedFact(
+                            claim=f"{company} ({period}): {text}",
+                            source_references=(source,),
+                            evidence_ids=(evidence_id,),
+                        )
+                    )
+
+    sources = tuple(
+        dict.fromkeys(source for fact in facts for source in fact.source_references)
+    )
 
     return AnalystBriefing(
         reported_facts=tuple(facts),
@@ -261,9 +285,11 @@ class LiveReportWriter(_LivePolicy):
         observations: tuple[ResearchObservation, ...],
     ) -> AnalystBriefing:
         result = await self._respond(
-            "Write a concise factual briefing with no investment advice. Every reported fact must map "
-            "to a supplied public source reference. State explicit comparison limitations for currency, "
-            "reporting period, and business mix.",
+            "Write a concise factual briefing with no investment advice. Every reported_facts item "
+            "must be a CitedFact with a claim and non-empty source_references selected exactly from "
+            "the supplied successful observations. Include evidence_ids only when they are supplied "
+            "with that evidence; never invent provenance. State explicit comparison limitations for "
+            "currency, reporting period, and business mix.",
             {
                 "mission": question,
                 "successful_observations": _safe_successful_observations(observations),
