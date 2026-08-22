@@ -498,15 +498,41 @@ def test_live_replanner_uses_a_stricter_graph_step_limit_for_remaining_capacity(
     assert failure_context["remaining_step_capacity"] == 0
 
 
-def test_live_replanner_fails_closed_without_a_valid_graph_step_limit() -> None:
-    """Breaks if direct callers receive an invented replacement budget."""
-    factory = CapacityAwareFactory()
-    _, replanner, _ = build_live_plan_execute_policies(
-        Settings(provider="ollama"), model_factory=factory
+def test_live_replanner_accepts_only_exact_safe_graph_progress() -> None:
+    """Breaks if malformed direct IDs are filtered into a misleading replacement budget."""
+    cases: tuple[tuple[str, dict[str, Any], bool, int], ...] = (
+        ("valid default", {"all_step_ids": (1, 2, 3, 4), "max_steps": 6}, True, 2),
+        ("valid stricter", {"all_step_ids": (1, 2, 3, 4), "max_steps": 4}, True, 0),
+        ("missing", {"max_steps": 4}, False, 0),
+        ("none", {"all_step_ids": None, "max_steps": 4}, False, 0),
+        ("string", {"all_step_ids": "1,2", "max_steps": 4}, False, 0),
+        ("bytes", {"all_step_ids": b"1,2", "max_steps": 4}, False, 0),
+        ("bool", {"all_step_ids": (1, True), "max_steps": 4}, False, 0),
+        ("non integer", {"all_step_ids": (1, "bad"), "max_steps": 4}, False, 0),
+        ("below one", {"all_step_ids": (0,), "max_steps": 4}, False, 0),
+        ("duplicate", {"all_step_ids": (1, 1), "max_steps": 4}, False, 0),
+        ("non monotonic", {"all_step_ids": (2, 1), "max_steps": 4}, False, 0),
+        ("empty direct state", {"all_step_ids": (), "max_steps": 4}, False, 0),
+        ("more reserved IDs than the graph allows", {"all_step_ids": (1, 2, 3, 4, 5), "max_steps": 4}, False, 0),
+        ("missing graph limit", {"all_step_ids": (1, 2, 3, 4)}, False, 0),
     )
 
-    asyncio.run(replanner({"all_step_ids": (1, 2, 3, 4), "observations": ()}))
+    for label, state, valid, expected_capacity in cases:
+        factory = CapacityAwareFactory()
+        _, replanner, _ = build_live_plan_execute_policies(
+            Settings(provider="ollama"), model_factory=factory
+        )
 
-    direct_context = json.loads(factory.prompts[0][1][1])
-    assert direct_context["reserved_step_ids"] == [1, 2, 3, 4]
-    assert direct_context["remaining_step_capacity"] == 0
+        asyncio.run(replanner({**state, "observations": ()}))
+
+        context = json.loads(factory.prompts[0][1][1])
+        assert context["replanning_state_valid"] is valid, label
+        assert context["remaining_step_capacity"] == expected_capacity, label
+        if valid:
+            assert context["reserved_step_ids"] == [1, 2, 3, 4], label
+            assert context["next_replacement_step_id"] == 5, label
+            assert context["max_step_budget"] == state["max_steps"], label
+        else:
+            assert context["reserved_step_ids"] == [], label
+            assert "next_replacement_step_id" not in context, label
+            assert "max_step_budget" not in context, label

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 from collections.abc import Callable, Mapping, Sequence
+from itertools import pairwise
 from typing import Any
 
 from finai_academy.providers import create_chat_model
@@ -233,7 +234,7 @@ class LiveReplanner(_LivePolicy):
             "Choose whether to continue, replace remaining steps, finish, or stop. Respect the "
             "supplied graph step limit, reserved IDs, and remaining capacity. Use only allowlisted "
             "research steps, no investment advice, and observable concise reasons, not hidden "
-            "reasoning. Do not repeat successful calls.",
+            "reasoning. Do not repeat successful calls. If replanning_state_valid is false, stop.",
             {
                 "allowlisted_catalog": _safe_catalog_from_state(state),
                 **_safe_replanning_progress(state),
@@ -301,30 +302,45 @@ def _safe_catalog_from_state(state: Mapping[str, Any]) -> list[dict[str, Any]]:
     return []
 
 
-def _safe_replanning_progress(state: Mapping[str, Any]) -> dict[str, int | list[int]]:
+def _safe_replanning_progress(state: Mapping[str, Any]) -> dict[str, bool | int | list[int]]:
+    """Expose only exact graph-owned progress; unknown direct state cannot authorize work.
+
+    A validated graph can call its replanner only after a non-empty initial plan has
+    populated ordered ``all_step_ids``. Empty or malformed direct-call state therefore
+    receives no replacement ID or budget signal and a zero remaining capacity.
+    """
     reserved = state.get("all_step_ids")
-    if not isinstance(reserved, Sequence) or isinstance(reserved, (str, bytes)):
-        reserved_ids: list[int] = []
-    else:
-        reserved_ids = [
-            step_id
-            for step_id in reserved
-            if isinstance(step_id, int) and not isinstance(step_id, bool) and step_id >= 1
-        ]
     graph_step_limit = state.get("max_steps")
     valid_limit = (
         isinstance(graph_step_limit, int)
         and not isinstance(graph_step_limit, bool)
         and 1 <= graph_step_limit <= MAX_RESEARCH_STEPS
     )
+    valid_reserved_ids = (
+        isinstance(reserved, Sequence)
+        and not isinstance(reserved, (str, bytes))
+        and len(reserved) > 0
+        and all(
+            isinstance(step_id, int) and not isinstance(step_id, bool) and step_id >= 1
+            for step_id in reserved
+        )
+        and all(before < after for before, after in pairwise(reserved))
+    )
+    if not valid_limit or not valid_reserved_ids or len(reserved) > graph_step_limit:
+        return {
+            "replanning_state_valid": False,
+            "reserved_step_ids": [],
+            "remaining_step_capacity": 0,
+        }
+
+    reserved_ids = list(reserved)
     highest_reserved_id = max(reserved_ids, default=0)
     return {
+        "replanning_state_valid": True,
         "reserved_step_ids": reserved_ids,
         "next_replacement_step_id": highest_reserved_id + 1,
-        "max_step_budget": graph_step_limit if valid_limit else 0,
-        "remaining_step_capacity": max(0, graph_step_limit - len(reserved_ids))
-        if valid_limit
-        else 0,
+        "max_step_budget": graph_step_limit,
+        "remaining_step_capacity": graph_step_limit - len(reserved_ids),
     }
 
 
