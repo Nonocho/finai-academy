@@ -117,6 +117,7 @@ def test_lesson11_notebook_is_output_free_and_contains_the_teaching_contract() -
     briefing_cell = next(cell for cell in notebook.cells if cell.id == "lesson11-022")
     for marker in (
         "fact.claim",
+        "fact.provenance_kind",
         "fact.source_references",
         "fact.evidence_ids",
         "cross_company_observations",
@@ -158,6 +159,8 @@ def test_lesson11_notebook_executes_offline_with_visual_evidence(tmp_path: Path)
     assert "Evidence gate passed: True" in text
     for marker in (
         "CITED FACTS",
+        "Kind: metric",
+        "Kind: document",
         "NVIDIA P/E was 52.4 x as of 2026-08-20.",
         "Sources: First Finance controlled classroom fixture",
         "Evidence IDs: NVDA-FY2026-DATA-CENTER-001",

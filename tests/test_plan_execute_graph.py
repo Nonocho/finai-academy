@@ -189,6 +189,11 @@ async def recorded_report_writer(
     facts = tuple(
         CitedFact(
             claim=f"Evidence from successful step {item.step_id}.",
+            provenance_kind=(
+                "document"
+                if item.capability == "search_financial_documents"
+                else "metric"
+            ),
             source_references=item.source_references,
             evidence_ids=(
                 item.evidence_ids
@@ -792,6 +797,7 @@ def test_report_with_unsupported_provenance_is_redacted_and_rejected() -> None:
             reported_facts=(
                 CitedFact(
                     claim="Unsupported provider claim.",
+                    provenance_kind="document",
                     source_references=("OPENAI_API_KEY=invented-source",),
                     evidence_ids=("invented-evidence",),
                 ),

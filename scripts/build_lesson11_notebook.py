@@ -415,7 +415,7 @@ def build_notebook():
             """
             ### Evidence gate and cited briefing
 
-            The evidence gate requires one sourced metric observation and one document evidence hit with source references and evidence IDs for each company. Every reported fact then carries its own validated provenance. A fluent report cannot bypass these checks.
+            The evidence gate requires one sourced metric observation and one document evidence hit with source references and evidence IDs for each company. Every reported fact declares `provenance_kind="metric"` or `provenance_kind="document"`: a metric fact cites one metric-tool source and no evidence ID, while a document fact cites one exact returned source/evidence-ID pair. A fluent report cannot bypass these checks.
             """,
         ),
         _code(
@@ -430,6 +430,7 @@ def build_notebook():
             print("\\nCITED FACTS")
             for index, fact in enumerate(result.briefing.reported_facts, start=1):
                 print(f"{index}. {fact.claim}")
+                print(f"   Kind: {fact.provenance_kind}")
                 print(f"   Sources: {', '.join(fact.source_references)}")
                 evidence = ", ".join(fact.evidence_ids) or "none (metric observation)"
                 print(f"   Evidence IDs: {evidence}")

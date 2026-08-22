@@ -16,24 +16,27 @@ macOS on Apple Silicon; repository virtual environment with Python 3.13; local
 Jupyter kernel permission was approved for notebook-execution tests. After the
 claim-level provenance fix, two consecutive builder runs produced the same source
 notebook SHA-256,
-`1ac441c19c4dd0f123680e804ce27a27bd41354c67c24f72a9d6c173fb5ab7e5`.
+`6c71234d394b6508c5247af774bcb1317a72b7581e7740d306bd6042b40b481d`.
 
 ## Post-certification provenance and display review
 
 The final whole-lesson review added a typed `CitedFact` boundary. Every reported
-fact now carries non-empty source references and optional evidence IDs. The graph
-validates each source, evidence ID, and document source/evidence pairing against
-successful observations before it can return `completed`; aggregate briefing
-sources must exactly match the stable first-seen union of cited-fact sources.
-Metric facts retain source provenance without document evidence IDs. Each
-document-backed fact is constrained to one source and one evidence ID, preventing
-aggregate cross-pairing. Metric evidence cannot satisfy the evidence gate without
-source references, and document evidence counts only when at least one returned
-hit exactly matches the observation's declared source/evidence-ID pair.
+fact now carries a required `provenance_kind` (`metric` or `document`), non-empty
+source references, and the evidence-ID shape required by that kind. The graph
+validates capability-specific provenance before it can return `completed`:
+metric facts cite exactly one source from a successful `get_company_metric`
+observation and no evidence ID; document facts cite exactly one source and one
+evidence ID whose exact pair occurs in a returned hit from a successful
+`search_financial_documents` observation. A source-only document claim and a
+metric claim citing document-only provenance are both rejected. Aggregate
+briefing sources must exactly match the stable first-seen union of cited-fact
+sources. Metric evidence cannot satisfy the evidence gate without source
+references, and document evidence counts only when at least one returned hit
+exactly matches the observation's declared source/evidence-ID pair.
 
 Notebook cell `lesson11-022` now prints every complete factual claim with its
-source references and evidence IDs, followed by cross-company observations,
-interpretation, limitations, and aggregate sources. The 40-minute notebook and
+provenance kind, source references, and evidence IDs, followed by cross-company
+observations, interpretation, limitations, and aggregate sources. The 40-minute notebook and
 12 + 40 + 8 lesson timebox are unchanged.
 
 ## Unit and integration tests
@@ -42,7 +45,7 @@ The required targeted package passed with approved local-kernel permission:
 
 ```bash
 .venv/bin/pytest -q tests/test_research_planning.py tests/test_planning_mcp_executor.py tests/test_plan_execute_graph.py tests/test_plan_execute_policies.py tests/test_lesson11_assets.py tests/test_course_manifest.py
-# 87 passed in 7.71s
+# 89 passed in 7.00s
 ```
 
 The full repository regression passed after a failure-driven correction to the
@@ -52,7 +55,7 @@ statement:
 
 ```bash
 .venv/bin/pytest -q
-# 328 passed in 56.06s
+# 330 passed in 51.80s
 
 .venv/bin/ruff check .
 # All checks passed!
@@ -171,7 +174,7 @@ execution.
 | Dimension | Weight | Score | Basis |
 | --- | ---: | ---: | --- |
 | Learner usability | 25% | 9.2/10 | Deterministic 40-minute offline notebook, visible artifacts, complete instructor route; no timed learner rehearsal. |
-| Technical correctness and safety | 20% | 9.7/10 | 328 passing tests, real local MCP lifecycle, exact returned-hit citation pairing, typed failure/replan/evidence/provenance gates, repository validation. |
+| Technical correctness and safety | 20% | 9.7/10 | 330 passing tests, real local MCP lifecycle, capability-specific fact provenance, exact returned-hit citation pairing, typed failure/replan/evidence/provenance gates, repository validation. |
 | Conceptual progression | 20% | 9.5/10 | Deck, chapter, and notebook move from proposal to host control, retained failure, evidence gate, and Lesson 12 handoff. |
 | Live delivery | 15% | 4.0/10 | Offline delivery is observed; neither live provider was available/configured, so no live-provider pass is awarded. |
 | Visuals | 10% | 9.7/10 | Six current notebook figures and the nine-slide deck pass full-size review, overflow, template-plan, fidelity, placeholder, and theme checks. |

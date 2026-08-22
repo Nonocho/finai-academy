@@ -288,16 +288,30 @@ def test_cited_fact_requires_a_claim_and_non_empty_provenance() -> None:
 
     fact = cited_fact_type(
         claim="NVIDIA P/E was 47.2 x as of 2026-08-15.",
+        provenance_kind="metric",
         source_references=("NVIDIA metrics snapshot",),
     )
     assert fact.evidence_ids == ()
 
     for payload in (
-        {"claim": " ", "source_references": ("NVIDIA metrics snapshot",)},
-        {"claim": "NVIDIA P/E was 47.2 x.", "source_references": ()},
-        {"claim": "NVIDIA P/E was 47.2 x.", "source_references": ("  ",)},
+        {
+            "claim": " ",
+            "provenance_kind": "metric",
+            "source_references": ("NVIDIA metrics snapshot",),
+        },
+        {
+            "claim": "NVIDIA P/E was 47.2 x.",
+            "provenance_kind": "metric",
+            "source_references": (),
+        },
+        {
+            "claim": "NVIDIA P/E was 47.2 x.",
+            "provenance_kind": "metric",
+            "source_references": ("  ",),
+        },
         {
             "claim": "NVIDIA Data Center revenue grew 56% year over year.",
+            "provenance_kind": "document",
             "source_references": ("NVIDIA public filing",),
             "evidence_ids": (" ",),
         },
@@ -311,9 +325,11 @@ def _fact(
     *,
     source_references: tuple[str, ...] = ("metric-1",),
     evidence_ids: tuple[str, ...] = (),
+    provenance_kind: str = "metric",
 ) -> CitedFact:
     return CitedFact(
         claim=claim,
+        provenance_kind=provenance_kind,
         source_references=source_references,
         evidence_ids=evidence_ids,
     )
@@ -400,15 +416,86 @@ def test_document_cited_fact_requires_one_exact_source_and_evidence_pair() -> No
     with pytest.raises(ValidationError, match="exactly one source reference and one evidence ID"):
         CitedFact(
             claim="Two document claims were incorrectly merged.",
+            provenance_kind="document",
             source_references=("document-a", "document-b"),
             evidence_ids=("doc-1", "doc-2"),
         )
 
     metric_fact = CitedFact(
         claim="NVIDIA P/E is available.",
+        provenance_kind="metric",
         source_references=("metric-source",),
     )
     assert metric_fact.evidence_ids == ()
+
+
+def test_cited_fact_kind_enforces_metric_and_document_shapes() -> None:
+    """Breaks if source-only document provenance can masquerade as a metric fact."""
+    with pytest.raises(ValidationError, match="document fact requires exactly one source"):
+        CitedFact(
+            claim="NVIDIA revenue grew.",
+            provenance_kind="document",
+            source_references=("document-source",),
+        )
+
+    with pytest.raises(ValidationError, match="metric fact requires exactly one source"):
+        CitedFact(
+            claim="NVIDIA P/E is available.",
+            provenance_kind="metric",
+            source_references=("metric-source", "second-metric-source"),
+        )
+
+    schema = CitedFact.model_json_schema()
+    assert schema["properties"]["provenance_kind"]["enum"] == ["metric", "document"]
+    assert "provenance_kind" in schema["required"]
+
+
+def test_validate_briefing_support_rejects_cross_capability_provenance() -> None:
+    """Breaks if a fact kind can cite provenance produced by the wrong MCP capability."""
+    observations = (
+        ResearchObservation(
+            attempt_id=1,
+            step_id=1,
+            plan_revision=0,
+            capability="get_company_metric",
+            arguments={"ticker": "NVDA", "metric": "P/E"},
+            status="ok",
+            result={"company": "NVIDIA"},
+            source_references=("metric-source",),
+            duration_ms=1,
+        ),
+        ResearchObservation(
+            attempt_id=2,
+            step_id=2,
+            plan_revision=0,
+            capability="search_financial_documents",
+            arguments={"company": "NVIDIA", "query": "growth"},
+            status="ok",
+            result={
+                "company": "NVIDIA",
+                "hits": ({"source": "document-source", "evidence_id": "doc-1"},),
+            },
+            source_references=("document-source",),
+            evidence_ids=("doc-1",),
+            duration_ms=1,
+        ),
+    )
+    document_source_as_metric = AnalystBriefing(
+        reported_facts=(
+            CitedFact(
+                claim="NVIDIA revenue grew.",
+                provenance_kind="metric",
+                source_references=("document-source",),
+            ),
+        ),
+        cross_company_observations=("Different periods.",),
+        interpretation=("No advice.",),
+        limitations=("Periods differ.",),
+        source_references=("document-source",),
+    )
+
+    with pytest.raises(ValueError, match="unsupported metric source reference"):
+        research_planning.validate_briefing_support(document_source_as_metric, observations)
 
 
 def test_validate_briefing_support_rejects_unknown_sources_and_evidence_ids() -> None:
@@ -449,6 +536,7 @@ def test_validate_briefing_support_rejects_unknown_sources_and_evidence_ids() ->
             _fact(source_references=("metric-source",)),
             _fact(
                 "NVIDIA revenue grew.",
+                provenance_kind="document",
                 source_references=("document-source",),
                 evidence_ids=("doc-1",),
             ),
@@ -469,13 +557,14 @@ def test_validate_briefing_support_rejects_unknown_sources_and_evidence_ids() ->
         limitations=("Periods differ.",),
         source_references=("invented-source",),
     )
-    with pytest.raises(ValueError, match="unsupported source reference"):
+    with pytest.raises(ValueError, match="unsupported metric source reference"):
         validate_support(unknown_source, observations)
 
     unknown_evidence = AnalystBriefing(
         reported_facts=(
             _fact(
                 "NVIDIA revenue grew.",
+                provenance_kind="document",
                 source_references=("document-source",),
                 evidence_ids=("invented-evidence",),
             ),
@@ -485,13 +574,14 @@ def test_validate_briefing_support_rejects_unknown_sources_and_evidence_ids() ->
         limitations=("Periods differ.",),
         source_references=("document-source",),
     )
-    with pytest.raises(ValueError, match="unsupported evidence ID"):
+    with pytest.raises(ValueError, match="unsupported document source/evidence pairing"):
         validate_support(unknown_evidence, observations)
 
     mismatched_pair = AnalystBriefing(
         reported_facts=(
             _fact(
                 "NVIDIA revenue grew.",
+                provenance_kind="document",
                 source_references=("metric-source",),
                 evidence_ids=("doc-1",),
             ),
@@ -501,13 +591,14 @@ def test_validate_briefing_support_rejects_unknown_sources_and_evidence_ids() ->
         limitations=("Periods differ.",),
         source_references=("metric-source",),
     )
-    with pytest.raises(ValueError, match="unsupported source/evidence pairing"):
+    with pytest.raises(ValueError, match="unsupported document source/evidence pairing"):
         validate_support(mismatched_pair, observations)
 
     mismatched_hit_pair = AnalystBriefing(
         reported_facts=(
             _fact(
                 "NVIDIA revenue grew.",
+                provenance_kind="document",
                 source_references=("second-document-source",),
                 evidence_ids=("doc-1",),
             ),
@@ -517,7 +608,7 @@ def test_validate_briefing_support_rejects_unknown_sources_and_evidence_ids() ->
         limitations=("Periods differ.",),
         source_references=("second-document-source",),
     )
-    with pytest.raises(ValueError, match="unsupported source/evidence pairing"):
+    with pytest.raises(ValueError, match="unsupported document source/evidence pairing"):
         validate_support(mismatched_hit_pair, observations)
 
 

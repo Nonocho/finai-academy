@@ -91,6 +91,7 @@ class CitedFact(BaseModel):
     """One factual report claim with explicit observation-backed provenance."""
 
     claim: str = Field(min_length=1)
+    provenance_kind: Literal["metric", "document"]
     source_references: tuple[str, ...]
     evidence_ids: tuple[str, ...] = ()
 
@@ -104,11 +105,17 @@ class CitedFact(BaseModel):
             raise ValueError("source_references must contain non-blank values")
         if any(not evidence_id.strip() for evidence_id in self.evidence_ids):
             raise ValueError("evidence_ids must contain non-blank values")
-        if self.evidence_ids and (
+        if self.provenance_kind == "metric" and (
+            len(self.source_references) != 1 or self.evidence_ids
+        ):
+            raise ValueError(
+                "metric fact requires exactly one source reference and no evidence ID"
+            )
+        if self.provenance_kind == "document" and (
             len(self.source_references) != 1 or len(self.evidence_ids) != 1
         ):
             raise ValueError(
-                "document-backed fact requires exactly one source reference and one evidence ID"
+                "document fact requires exactly one source reference and one evidence ID"
             )
         return self
 
@@ -165,17 +172,11 @@ def validate_briefing_support(
     """Reject a briefing whose claim provenance is absent from successful observations."""
 
     checked = AnalystBriefing.model_validate(briefing.model_dump(mode="python"))
-    supported_sources = {
+    supported_metric_sources = {
         source
         for observation in successful_observations
-        if observation.status == "ok"
+        if observation.status == "ok" and observation.capability == "get_company_metric"
         for source in observation.source_references
-    }
-    supported_evidence_ids = {
-        evidence_id
-        for observation in successful_observations
-        if observation.status == "ok"
-        for evidence_id in observation.evidence_ids
     }
     supported_pairs: set[tuple[str, str]] = set()
     for observation in successful_observations:
@@ -196,16 +197,14 @@ def validate_briefing_support(
                 and evidence_id in observation.evidence_ids
             )
     for fact in checked.reported_facts:
-        for source in fact.source_references:
-            if source not in supported_sources:
-                raise ValueError(f"unsupported source reference: {source}")
-        for evidence_id in fact.evidence_ids:
-            if evidence_id not in supported_evidence_ids:
-                raise ValueError(f"unsupported evidence ID: {evidence_id}")
-        if fact.evidence_ids:
+        if fact.provenance_kind == "metric":
+            source = fact.source_references[0]
+            if source not in supported_metric_sources:
+                raise ValueError(f"unsupported metric source reference: {source}")
+        else:
             citation_pair = (fact.source_references[0], fact.evidence_ids[0])
             if citation_pair not in supported_pairs:
-                raise ValueError("unsupported source/evidence pairing")
+                raise ValueError("unsupported document source/evidence pairing")
     return checked
 
 

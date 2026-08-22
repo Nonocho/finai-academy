@@ -146,6 +146,7 @@ def briefing_from_verified_observations(
                 facts.append(
                     CitedFact(
                         claim=f"{company} {metric} was {value:g} {unit} as of {as_of}.",
+                        provenance_kind="metric",
                         source_references=observation.source_references,
                     )
                 )
@@ -174,6 +175,7 @@ def briefing_from_verified_observations(
                     facts.append(
                         CitedFact(
                             claim=f"{company} ({period}): {text}",
+                            provenance_kind="document",
                             source_references=(source,),
                             evidence_ids=(evidence_id,),
                         )
@@ -285,9 +287,11 @@ class LiveReportWriter(_LivePolicy):
     ) -> AnalystBriefing:
         result = await self._respond(
             "Write a concise factual briefing with no investment advice. Every reported_facts item "
-            "must be a CitedFact with a claim and non-empty source_references selected exactly from "
-            "the supplied successful observations. A metric fact uses one source and no evidence ID. "
-            "A document fact uses exactly one returned source/evidence ID pair; never merge or invent "
+            "must be a CitedFact with a claim, an explicit provenance_kind, and source_references "
+            "selected exactly from the supplied successful observations. provenance_kind='metric' "
+            "uses exactly one get_company_metric source and no evidence ID. "
+            "provenance_kind='document' uses exactly one returned search_financial_documents "
+            "source/evidence ID pair; never merge, omit, relabel, or invent "
             "provenance. State explicit comparison limitations for "
             "currency, reporting period, and business mix.",
             {

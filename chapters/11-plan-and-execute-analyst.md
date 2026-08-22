@@ -177,7 +177,7 @@ exceeds six steps, uses an unknown capability, or exceeds one replan.
 |---:|---|---|
 | 0:00-2:00 | Confirm the maintained route and have a learner read the final observation sequence. | One `unsupported_metric`, steps 1, 2, 3, 5, and 6, and no duplicate successful call. |
 | 2:00-4:00 | Ask what the model proposed and what Python controlled. | Planner, replanner, and report writer propose data; host validates, executes, limits, and gates. |
-| 4:00-6:00 | Ask why a plausible report can still fail. | Each company needs sourced metric evidence and document evidence with source references and evidence IDs; every reported fact must cite that verified provenance. |
+| 4:00-6:00 | Ask why a plausible report can still fail. | Each fact declares `metric` or `document` provenance. Metric facts cite one metric-tool source and no evidence ID; document facts cite one exact returned source/evidence-ID pair. |
 | 6:00-8:00 | Connect the trajectory to Lesson 12. | `LESSON_11_PASS`, `reported_facts`, `cross_company_observations`, `interpretation`, `limitations`, `source_references`, and evaluation fields listed below. |
 
 The rows total 8 minutes. The full slot is 12 + 40 + 8 = 60 minutes, from
@@ -296,7 +296,8 @@ Lesson 12 evaluates the final answer and the trajectory separately. Pass these
 fields without transformation: original mission; initial and final plans;
 capability names and arguments; observation statuses and error codes; tool-call
 order and count; replan count; evidence IDs and source references; final
-briefing sections (`reported_facts`, `cross_company_observations`,
+briefing sections (`reported_facts`, including each fact's
+`provenance_kind`, `cross_company_observations`,
 `interpretation`, `limitations`, and `source_references`); and latency per stage.
 
 For the answer, Lesson 12 will score relevance, completeness, grounding, and

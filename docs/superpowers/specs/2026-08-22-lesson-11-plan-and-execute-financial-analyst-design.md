@@ -301,12 +301,16 @@ The evidence gate requires:
 - no factual report claim whose source cannot be traced to a successful observation; and
 - explicit limitations for incompatible periods, currencies, and business definitions.
 
-Each reported fact is a typed `CitedFact` containing non-blank claim text and
-source references. Metric facts use source provenance without an evidence ID.
-A document-backed fact contains exactly one source and its one evidence ID, which
-prevents ambiguous cross-pairing. The pure
-`validate_briefing_support()` boundary rejects sources, evidence IDs, and
-exact source/evidence pairings absent from returned successful document hits. The final
+Each reported fact is a typed `CitedFact` containing non-blank claim text, an
+explicit `provenance_kind` discriminator (`metric` or `document`), and source
+references. A metric fact contains exactly one source, no evidence ID, and that
+source must come from a successful `get_company_metric` observation. A document
+fact contains exactly one source and one evidence ID, and that exact pair must
+occur in a returned hit from a successful `search_financial_documents`
+observation. This prevents source-only document claims from bypassing the
+pairing contract and prevents document-only provenance from masquerading as a
+metric claim. The pure `validate_briefing_support()` boundary enforces these
+capability-specific rules. The final
 `AnalystBriefing` separates:
 
 ```text

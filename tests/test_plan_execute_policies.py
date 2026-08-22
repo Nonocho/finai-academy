@@ -220,6 +220,7 @@ def test_recorded_report_uses_verified_facts_and_states_comparison_limits() -> N
     assert any("Schneider Electric" in fact.claim for fact in report.reported_facts)
     assert CitedFact(
         claim="NVIDIA (Q2 2026): Data Center revenue grew 56% year over year.",
+        provenance_kind="document",
         source_references=("NVIDIA public filing",),
         evidence_ids=("nvda-q2",),
     ) in report.reported_facts
@@ -278,6 +279,7 @@ class FakeModelFactory:
                 reported_facts=(
                     CitedFact(
                         claim="NVIDIA P/E is 47.2x.",
+                        provenance_kind="metric",
                         source_references=("NVIDIA metrics snapshot",),
                     ),
                 ),
@@ -329,6 +331,7 @@ def test_live_policies_use_lazy_structured_output_and_safe_prompt_context() -> N
     assert isinstance(plan, ResearchPlan)
     assert isinstance(decision, ReplanDecision)
     assert isinstance(report, AnalystBriefing)
+    assert report.reported_facts[0].provenance_kind == "metric"
     assert factory.calls == 3
     assert factory.schemas == [ResearchPlan, ReplanDecision, AnalystBriefing]
     rendered_prompts = json.dumps(factory.prompts)
@@ -350,6 +353,7 @@ def test_live_policies_use_lazy_structured_output_and_safe_prompt_context() -> N
         "nvda-q2",
         "source_references",
         "evidence_ids",
+        "provenance_kind",
     ):
         assert safe_text in rendered_prompts
 
