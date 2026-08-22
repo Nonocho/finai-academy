@@ -2,8 +2,8 @@
 
 ## Status
 
-Approved in-chat direction from Arnaud Demes on 22 August 2026. This written
-specification is awaiting final review before the implementation plan is produced.
+Approved by Arnaud Demes on 22 August 2026. This specification is the authoritative
+contract for the Lesson 11 implementation plan and classroom artifacts.
 
 Lesson 11 adapts the progression of the MLExpert Academy Plan and Execute Agent
 lesson without reproducing its code, copy, diagrams, datasets, or exercises. The
