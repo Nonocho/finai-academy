@@ -10,10 +10,10 @@ Electric (`SU.PA`). They validate a proposed plan, execute discovered read-only
 MCP tools through one lifecycle, retain a typed failure, replace only unfinished
 work, and require evidence before a cited briefing can be written.
 
-The Lesson 11 chapter and notebook are available for instructor-led testing. The
-deck remains planned at `decks/11-plan-and-execute-analyst.pptx`; Task 7 creates
-and certifies that file before it is linked as a delivery asset. This lesson does
-not use live market data and does not provide investment advice.
+The full Lesson 11 route is ready for an instructor-led test class. Use the
+[Lesson 11 concept deck](../decks/11-plan-and-execute-analyst.pptx) with this
+chapter and the companion notebook. This lesson does not use live market data
+and does not provide investment advice.
 
 ```text
 mission -> discovered catalog -> validated plan -> observations -> revised tail
@@ -109,9 +109,10 @@ a substitute for a metric, document evidence ID, and source reference.
 
 ## 12-minute concept deck route
 
-The nine-slide companion deck is planned, not yet a delivery file. When Task 7
-has certified it, use this script. Until then, teach this sequence from the
-static matrices and notebook figures without implying that a deck exists.
+Use the certified nine-slide
+[Lesson 11 concept deck](../decks/11-plan-and-execute-analyst.pptx) for this
+script. The static matrices and notebook figures remain recovery material if a
+presentation cannot be opened in class.
 
 | Time | Slide | Instructor job |
 |---:|---:|---|

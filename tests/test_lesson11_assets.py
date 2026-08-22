@@ -4,8 +4,10 @@ from __future__ import annotations
 
 import subprocess
 import sys
+import zipfile
 from importlib.util import module_from_spec, spec_from_file_location
 from pathlib import Path
+from xml.etree import ElementTree
 
 import nbformat
 
@@ -14,6 +16,7 @@ NOTEBOOK = ROOT / "notebooks" / "11_plan_and_execute_analyst.ipynb"
 BUILDER = ROOT / "scripts" / "build_lesson11_notebook.py"
 EXECUTOR = ROOT / "scripts" / "execute_notebooks.py"
 CHAPTER = ROOT / "chapters" / "11-plan-and-execute-analyst.md"
+DECK = ROOT / "decks" / "11-plan-and-execute-analyst.pptx"
 
 
 def _build_notebook():
@@ -156,7 +159,7 @@ def test_lesson11_chapter_defines_the_complete_instructor_route() -> None:
         "capability names and arguments",
         "replan count",
         "latency per stage",
-        "deck remains planned",
+        "full Lesson 11 route is ready for an instructor-led test class",
         "| 6 | `search_financial_documents` | `Schneider Electric`, `energy management`, `top_k=2` |",
         "reported_facts",
         "cross_company_observations",
@@ -166,11 +169,14 @@ def test_lesson11_chapter_defines_the_complete_instructor_route() -> None:
     ):
         assert marker.lower() in normalized_chapter
     assert "—" not in chapter
-    assert "](../decks/11-plan-and-execute-analyst.pptx)" not in chapter
+    assert "[Lesson 11 concept deck](../decks/11-plan-and-execute-analyst.pptx)" in chapter
 
 
-def test_lesson11_chapter_and_notebook_are_discoverable_while_deck_is_planned() -> None:
-    """Catch an index that hides usable materials or falsely activates the deck."""
+def test_lesson11_final_assets_and_indexes_report_truthful_readiness() -> None:
+    """Catch missing delivery assets, stale planned copy, or a hidden final deck."""
+
+    for asset in (CHAPTER, NOTEBOOK, DECK):
+        assert asset.is_file()
 
     indexes = {
         "chapters/README.md": "[Plan-and-execute financial analyst](11-plan-and-execute-analyst.md)",
@@ -179,10 +185,78 @@ def test_lesson11_chapter_and_notebook_are_discoverable_while_deck_is_planned() 
     }
     for relative_path, expected_link in indexes.items():
         text = (ROOT / relative_path).read_text(encoding="utf-8")
+        normalized_text = " ".join(text.split())
         assert expected_link in text
         assert "Lessons 11–12 remain planned" not in text
+        assert "Lessons 08-11" in normalized_text
+        assert "Lesson 12 remains planned" in normalized_text
+
+    root_readme = (ROOT / "README.md").read_text(encoding="utf-8")
+    assert "[Lesson 11 concept deck](decks/11-plan-and-execute-analyst.pptx)" in root_readme
 
     deck_index = (ROOT / "decks" / "README.md").read_text(encoding="utf-8")
-    assert "`11-plan-and-execute-analyst.pptx`" in deck_index
-    assert "Planned, Task 7" in deck_index
-    assert "](11-plan-and-execute-analyst.pptx)" not in deck_index
+    normalized_deck_index = " ".join(deck_index.split())
+    assert "[Plan-and-execute financial analyst](11-plan-and-execute-analyst.pptx)" in deck_index
+    assert "Ready for instructor delivery" in deck_index
+    assert "Planned, Task 7" not in deck_index
+    assert "Lessons 08-11" in normalized_deck_index
+    assert "Lesson 12 remains planned" in normalized_deck_index
+
+
+def test_lesson11_deck_has_the_complete_sourced_concept_route() -> None:
+    """Catch a missing, partial, unsourced, or visibly non-compliant deck."""
+
+    assert DECK.is_file()
+    with zipfile.ZipFile(DECK) as archive:
+        names = archive.namelist()
+        slide_names = sorted(
+            name
+            for name in names
+            if name.startswith("ppt/slides/slide") and name.endswith(".xml")
+        )
+        notes_names = sorted(
+            name
+            for name in names
+            if name.startswith("ppt/notesSlides/notesSlide") and name.endswith(".xml")
+        )
+        assert len(slide_names) == 9
+        assert len(notes_names) == 9
+
+        visible_text = "\n".join(
+            "".join(
+                node.text or ""
+                for node in ElementTree.fromstring(archive.read(name)).iter(
+                    "{http://schemas.openxmlformats.org/drawingml/2006/main}t"
+                )
+            )
+            for name in slide_names
+        )
+        notes_text = "\n".join(
+            "".join(
+                node.text or ""
+                for node in ElementTree.fromstring(archive.read(name)).iter(
+                    "{http://schemas.openxmlformats.org/drawingml/2006/main}t"
+                )
+            )
+            for name in notes_names
+        )
+
+    assert visible_text.count("First Finance - Arnaud Demes") == 9
+    assert "—" not in visible_text
+    for marker in (
+        "Plan-and-Execute Financial Analyst",
+        "REACT",
+        "PLAN",
+        "EXECUTE",
+        "REPLAN",
+        "REPORT",
+        "HOST POLICY",
+        "MCP DISCOVERY",
+        "unsupported_metric",
+        "EVIDENCE GATE",
+        "LESSON 12",
+    ):
+        assert marker.casefold() in visible_text.casefold()
+    assert notes_text.count("[Sources]") == 9
+    assert notes_text.count("[/Sources]") == 9
+    assert notes_text.count("chapters/11-plan-and-execute-analyst.md") == 9

@@ -86,11 +86,12 @@ tests/                  Engineering and course contracts
 ```
 
 Day 1 consists of the introduction plus canonical Lessons 01-07. Day 2 adds
-workflows, tools, bounded agents, and MCP. The full Lesson 10 route is ready for
-an instructor-led test class. Lesson 11 materials are available for instructor
-testing: [Lesson 11 instructor chapter](chapters/11-plan-and-execute-analyst.md)
-and [Lesson 11 notebook](notebooks/11_plan_and_execute_analyst.ipynb). Its deck
-remains planned until Task 7 creates and certifies it. Lesson 12 remains planned.
+workflows, tools, bounded agents, and MCP. Lessons 08-11 are ready for an
+instructor-led test class. Lesson 11 includes the
+[Lesson 11 instructor chapter](chapters/11-plan-and-execute-analyst.md),
+[Lesson 11 notebook](notebooks/11_plan_and_execute_analyst.ipynb), and
+[Lesson 11 concept deck](decks/11-plan-and-execute-analyst.pptx). Lesson 12
+remains planned.
 
 ## Copyright
 
