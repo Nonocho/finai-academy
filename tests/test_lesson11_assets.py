@@ -17,6 +17,17 @@ BUILDER = ROOT / "scripts" / "build_lesson11_notebook.py"
 EXECUTOR = ROOT / "scripts" / "execute_notebooks.py"
 CHAPTER = ROOT / "chapters" / "11-plan-and-execute-analyst.md"
 DECK = ROOT / "decks" / "11-plan-and-execute-analyst.pptx"
+PRESENTATION_NS = "http://schemas.openxmlformats.org/presentationml/2006/main"
+DRAWING_NS = "http://schemas.openxmlformats.org/drawingml/2006/main"
+
+
+def _shape_text(shape: ElementTree.Element) -> str:
+    return " ".join(
+        " ".join(
+            node.text or ""
+            for node in shape.iter(f"{{{DRAWING_NS}}}t")
+        ).split()
+    )
 
 
 def _build_notebook():
@@ -260,3 +271,55 @@ def test_lesson11_deck_has_the_complete_sourced_concept_route() -> None:
     assert notes_text.count("[Sources]") == 9
     assert notes_text.count("[/Sources]") == 9
     assert notes_text.count("chapters/11-plan-and-execute-analyst.md") == 9
+
+
+def test_lesson11_deck_shares_central_host_state_across_four_roles() -> None:
+    """Catch a linear fifth STATE role or loss of the four graph roles."""
+
+    with zipfile.ZipFile(DECK) as archive:
+        slide = ElementTree.fromstring(archive.read("ppt/slides/slide5.xml"))
+        presentation = ElementTree.fromstring(archive.read("ppt/presentation.xml"))
+
+    shapes = slide.findall(f".//{{{PRESENTATION_NS}}}sp")
+    shape_texts = {_shape_text(shape): shape for shape in shapes if _shape_text(shape)}
+    visible_text = " ".join(shape_texts).casefold()
+
+    for role in ("PLANNER", "EXECUTOR", "REPLANNER", "REPORT WRITER"):
+        assert role.casefold() in visible_text
+    assert "STATE" not in shape_texts
+    assert "host owned" not in visible_text
+
+    host_state = shape_texts["HOST STATE"]
+    transform = host_state.find(
+        f"./{{{PRESENTATION_NS}}}spPr/{{{DRAWING_NS}}}xfrm"
+    )
+    assert transform is not None
+    offset = transform.find(f"{{{DRAWING_NS}}}off")
+    extent = transform.find(f"{{{DRAWING_NS}}}ext")
+    assert offset is not None and extent is not None
+
+    slide_size = presentation.find(f"{{{PRESENTATION_NS}}}sldSz")
+    assert slide_size is not None
+    slide_width = int(slide_size.attrib["cx"])
+    host_state_center = int(offset.attrib["x"]) + int(extent.attrib["cx"]) / 2
+    assert slide_width * 0.4 <= host_state_center <= slide_width * 0.6
+
+
+def test_lesson11_evaluation_slides_cite_direct_primary_sources() -> None:
+    """Catch generic inspiration links replacing slide-specific evaluation sources."""
+
+    with zipfile.ZipFile(DECK) as archive:
+        notes = {
+            slide: "".join(
+                node.text or ""
+                for node in ElementTree.fromstring(
+                    archive.read(f"ppt/notesSlides/notesSlide{slide}.xml")
+                ).iter(f"{{{DRAWING_NS}}}t")
+            )
+            for slide in (8, 9)
+        }
+
+    assert "https://docs.langchain.com/langsmith/evaluation-concepts" in notes[8]
+    assert "https://docs.langchain.com/langsmith/evaluate-complex-agent" in notes[9]
+    assert "MLOps-Basics" not in notes[8]
+    assert "MLOps-Basics" not in notes[9]
