@@ -395,6 +395,22 @@ def test_briefing_reported_facts_are_typed_cited_claims() -> None:
     assert briefing.reported_facts[0].source_references == ("metric-1",)
 
 
+def test_document_cited_fact_requires_one_exact_source_and_evidence_pair() -> None:
+    """Breaks if one fact can cross-pair several sources and evidence IDs."""
+    with pytest.raises(ValidationError, match="exactly one source reference and one evidence ID"):
+        CitedFact(
+            claim="Two document claims were incorrectly merged.",
+            source_references=("document-a", "document-b"),
+            evidence_ids=("doc-1", "doc-2"),
+        )
+
+    metric_fact = CitedFact(
+        claim="NVIDIA P/E is available.",
+        source_references=("metric-source",),
+    )
+    assert metric_fact.evidence_ids == ()
+
+
 def test_validate_briefing_support_rejects_unknown_sources_and_evidence_ids() -> None:
     """Breaks if a provider can cite provenance absent from successful observations."""
     observations = (
@@ -510,7 +526,7 @@ def _observation(
     company: str,
     capability: str,
     evidence_ids: tuple[str, ...] = (),
-    hits: tuple[str, ...] = (),
+    hits: tuple[dict[str, str], ...] = (),
     source_references: tuple[str, ...] | None = None,
 ) -> ResearchObservation:
     result = {"company": company}
@@ -541,7 +557,7 @@ def test_evidence_gate_requires_metric_and_document_evidence_for_both_companies(
             company="NVIDIA",
             capability="search_financial_documents",
             evidence_ids=("d-nvda",),
-            hits=("hit-1",),
+            hits=({"source": "NVIDIA public source", "evidence_id": "d-nvda"},),
         ),
         _observation(
             company="Schneider Electric", capability="get_company_metric", evidence_ids=("m-su",)
@@ -550,7 +566,12 @@ def test_evidence_gate_requires_metric_and_document_evidence_for_both_companies(
             company="Schneider Electric",
             capability="search_financial_documents",
             evidence_ids=("d-su",),
-            hits=("hit-2",),
+            hits=(
+                {
+                    "source": "Schneider Electric public source",
+                    "evidence_id": "d-su",
+                },
+            ),
         ),
     )
 
@@ -568,7 +589,9 @@ def test_evidence_gate_reports_missing_document_evidence() -> None:
     observations = (
         _observation(company="NVIDIA", capability="get_company_metric"),
         _observation(
-            company="NVIDIA", capability="search_financial_documents", hits=("hit-1",)
+            company="NVIDIA",
+            capability="search_financial_documents",
+            hits=({"source": "NVIDIA public source", "evidence_id": "d-nvda"},),
         ),
         _observation(company="Schneider Electric", capability="get_company_metric"),
     )
@@ -591,7 +614,7 @@ def test_evidence_gate_rejects_untraceable_metric_and_document_observations() ->
             company="NVIDIA",
             capability="search_financial_documents",
             evidence_ids=("d-nvda",),
-            hits=("hit-1",),
+            hits=({"source": "NVIDIA public source", "evidence_id": "d-nvda"},),
             source_references=(),
         ),
         _observation(
@@ -602,7 +625,12 @@ def test_evidence_gate_rejects_untraceable_metric_and_document_observations() ->
         _observation(
             company="Schneider Electric",
             capability="search_financial_documents",
-            hits=("hit-2",),
+            hits=(
+                {
+                    "source": "Schneider Electric public source",
+                    "evidence_id": "d-su",
+                },
+            ),
             source_references=(),
         ),
     )
@@ -617,6 +645,22 @@ def test_evidence_gate_rejects_untraceable_metric_and_document_observations() ->
         "Schneider Electric metric evidence",
         "Schneider Electric document evidence",
     }
+
+
+def test_evidence_gate_rejects_document_provenance_absent_from_returned_hits() -> None:
+    """Breaks if non-empty metadata can replace an exact returned citation pair."""
+    mismatched = _observation(
+        company="NVIDIA",
+        capability="search_financial_documents",
+        source_references=("declared-source",),
+        evidence_ids=("declared-id",),
+        hits=({"source": "returned-source", "evidence_id": "returned-id"},),
+    )
+
+    gate = evaluate_evidence_gate((mismatched,))
+
+    assert "document" not in gate.coverage["NVIDIA"]
+    assert "NVIDIA document evidence" in gate.missing_requirements
 
 
 def test_evidence_gate_ignores_unsuccessful_observations() -> None:

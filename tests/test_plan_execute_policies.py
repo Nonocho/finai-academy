@@ -236,6 +236,18 @@ def test_recorded_report_uses_verified_facts_and_states_comparison_limits() -> N
     assert any("business mix" in limitation.casefold() for limitation in report.limitations)
 
 
+def test_recorded_metric_fact_keeps_source_without_document_evidence_id() -> None:
+    """Breaks if a metric claim is forced into the document citation-pair contract."""
+    metric = successful_observations()[0].model_copy(
+        update={"evidence_ids": ("metric-row-id",)}
+    )
+
+    report = asyncio.run(recorded_report_writer(MISSION, (metric,)))
+
+    assert report.reported_facts[0].source_references == ("NVIDIA metrics snapshot",)
+    assert report.reported_facts[0].evidence_ids == ()
+
+
 class FakeStructuredModel:
     def __init__(self, response: object, schemas: list[type[Any]], prompts: list[object]) -> None:
         self._response = response
@@ -442,7 +454,14 @@ class ReplacementExecutor:
         else:
             result = {
                 "company": company,
-                "hits": [{"text": "Public growth evidence.", "period": "Q2 2026"}],
+                "hits": [
+                    {
+                        "evidence_id": f"evidence-{step.step_id}",
+                        "text": "Public growth evidence.",
+                        "period": "Q2 2026",
+                        "source": f"public-source-{step.step_id}",
+                    }
+                ],
             }
         return ResearchObservation(
             attempt_id=attempt_id,

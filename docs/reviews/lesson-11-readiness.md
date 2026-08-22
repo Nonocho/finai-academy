@@ -25,8 +25,11 @@ fact now carries non-empty source references and optional evidence IDs. The grap
 validates each source, evidence ID, and document source/evidence pairing against
 successful observations before it can return `completed`; aggregate briefing
 sources must exactly match the stable first-seen union of cited-fact sources.
-Metric evidence cannot satisfy the evidence gate without source references, and
-document evidence additionally requires evidence IDs.
+Metric facts retain source provenance without document evidence IDs. Each
+document-backed fact is constrained to one source and one evidence ID, preventing
+aggregate cross-pairing. Metric evidence cannot satisfy the evidence gate without
+source references, and document evidence counts only when at least one returned
+hit exactly matches the observation's declared source/evidence-ID pair.
 
 Notebook cell `lesson11-022` now prints every complete factual claim with its
 source references and evidence IDs, followed by cross-company observations,
@@ -39,7 +42,7 @@ The required targeted package passed with approved local-kernel permission:
 
 ```bash
 .venv/bin/pytest -q tests/test_research_planning.py tests/test_planning_mcp_executor.py tests/test_plan_execute_graph.py tests/test_plan_execute_policies.py tests/test_lesson11_assets.py tests/test_course_manifest.py
-# 83 passed in 6.69s
+# 87 passed in 7.71s
 ```
 
 The full repository regression passed after a failure-driven correction to the
@@ -49,7 +52,7 @@ statement:
 
 ```bash
 .venv/bin/pytest -q
-# 324 passed in 50.08s
+# 328 passed in 56.06s
 
 .venv/bin/ruff check .
 # All checks passed!
@@ -74,8 +77,8 @@ remove only those imports; whole-repository Ruff and the targeted package pass.
 Fresh post-fix execution used a new explicit output directory:
 
 ```bash
-.venv/bin/python scripts/execute_notebooks.py notebooks/11_plan_and_execute_analyst.ipynb --mode offline --output-dir /private/tmp/finai-lesson11-final-fix-0bL558
-# PASS notebooks/11_plan_and_execute_analyst.ipynb -> /private/tmp/finai-lesson11-final-fix-0bL558/11_plan_and_execute_analyst.ipynb
+.venv/bin/python scripts/execute_notebooks.py notebooks/11_plan_and_execute_analyst.ipynb --mode offline --output-dir /private/tmp/finai-lesson11-pairing-0Ep6Il
+# PASS notebooks/11_plan_and_execute_analyst.ipynb -> /private/tmp/finai-lesson11-pairing-0Ep6Il/11_plan_and_execute_analyst.ipynb
 ```
 
 Observed runtime evidence: `offline fixture · deterministic planner and
@@ -168,7 +171,7 @@ execution.
 | Dimension | Weight | Score | Basis |
 | --- | ---: | ---: | --- |
 | Learner usability | 25% | 9.2/10 | Deterministic 40-minute offline notebook, visible artifacts, complete instructor route; no timed learner rehearsal. |
-| Technical correctness and safety | 20% | 9.7/10 | 324 passing tests, real local MCP lifecycle, typed failure/replan/evidence/provenance gates, repository validation. |
+| Technical correctness and safety | 20% | 9.7/10 | 328 passing tests, real local MCP lifecycle, exact returned-hit citation pairing, typed failure/replan/evidence/provenance gates, repository validation. |
 | Conceptual progression | 20% | 9.5/10 | Deck, chapter, and notebook move from proposal to host control, retained failure, evidence gate, and Lesson 12 handoff. |
 | Live delivery | 15% | 4.0/10 | Offline delivery is observed; neither live provider was available/configured, so no live-provider pass is awarded. |
 | Visuals | 10% | 9.7/10 | Six current notebook figures and the nine-slide deck pass full-size review, overflow, template-plan, fidelity, placeholder, and theme checks. |

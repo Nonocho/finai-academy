@@ -147,7 +147,6 @@ def briefing_from_verified_observations(
                     CitedFact(
                         claim=f"{company} {metric} was {value:g} {unit} as of {as_of}.",
                         source_references=observation.source_references,
-                        evidence_ids=observation.evidence_ids,
                     )
                 )
         elif observation.capability == "search_financial_documents":
@@ -287,8 +286,9 @@ class LiveReportWriter(_LivePolicy):
         result = await self._respond(
             "Write a concise factual briefing with no investment advice. Every reported_facts item "
             "must be a CitedFact with a claim and non-empty source_references selected exactly from "
-            "the supplied successful observations. Include evidence_ids only when they are supplied "
-            "with that evidence; never invent provenance. State explicit comparison limitations for "
+            "the supplied successful observations. A metric fact uses one source and no evidence ID. "
+            "A document fact uses exactly one returned source/evidence ID pair; never merge or invent "
+            "provenance. State explicit comparison limitations for "
             "currency, reporting period, and business mix.",
             {
                 "mission": question,

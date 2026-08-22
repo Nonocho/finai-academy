@@ -104,6 +104,12 @@ class CitedFact(BaseModel):
             raise ValueError("source_references must contain non-blank values")
         if any(not evidence_id.strip() for evidence_id in self.evidence_ids):
             raise ValueError("evidence_ids must contain non-blank values")
+        if self.evidence_ids and (
+            len(self.source_references) != 1 or len(self.evidence_ids) != 1
+        ):
+            raise ValueError(
+                "document-backed fact requires exactly one source reference and one evidence ID"
+            )
         return self
 
 
@@ -189,12 +195,6 @@ def validate_briefing_support(
                 and source in observation.source_references
                 and evidence_id in observation.evidence_ids
             )
-        else:
-            supported_pairs.update(
-                (source, evidence_id)
-                for source in observation.source_references
-                for evidence_id in observation.evidence_ids
-            )
     for fact in checked.reported_facts:
         for source in fact.source_references:
             if source not in supported_sources:
@@ -203,22 +203,8 @@ def validate_briefing_support(
             if evidence_id not in supported_evidence_ids:
                 raise ValueError(f"unsupported evidence ID: {evidence_id}")
         if fact.evidence_ids:
-            paired_sources = {
-                source
-                for source in fact.source_references
-                if any((source, evidence_id) in supported_pairs for evidence_id in fact.evidence_ids)
-            }
-            paired_evidence_ids = {
-                evidence_id
-                for evidence_id in fact.evidence_ids
-                if any(
-                    (source, evidence_id) in supported_pairs
-                    for source in fact.source_references
-                )
-            }
-            if paired_sources != set(fact.source_references) or paired_evidence_ids != set(
-                fact.evidence_ids
-            ):
+            citation_pair = (fact.source_references[0], fact.evidence_ids[0])
+            if citation_pair not in supported_pairs:
                 raise ValueError("unsupported source/evidence pairing")
     return checked
 
@@ -303,10 +289,7 @@ def evaluate_evidence_gate(
             evidence[company].add("metric")
         elif (
             observation.capability == "search_financial_documents"
-            and observation.result.get("hits")
-            and has_sources
-            and observation.evidence_ids
-            and all(evidence_id.strip() for evidence_id in observation.evidence_ids)
+            and _has_returned_document_citation(observation)
         ):
             evidence[company].add("document")
 
@@ -324,6 +307,29 @@ def evaluate_evidence_gate(
         passed=not missing,
         coverage=coverage,
         missing_requirements=missing,
+    )
+
+
+def _has_returned_document_citation(observation: ResearchObservation) -> bool:
+    """Return whether one hit exactly matches the observation's declared provenance."""
+    if observation.result is None:
+        return False
+    hits = observation.result.get("hits")
+    if not isinstance(hits, Sequence) or isinstance(hits, (str, bytes)):
+        return False
+    declared_sources = set(observation.source_references)
+    declared_evidence_ids = set(observation.evidence_ids)
+    if not declared_sources or not declared_evidence_ids:
+        return False
+    return any(
+        isinstance(hit, Mapping)
+        and isinstance((source := hit.get("source")), str)
+        and bool(source.strip())
+        and isinstance((evidence_id := hit.get("evidence_id")), str)
+        and bool(evidence_id.strip())
+        and source in declared_sources
+        and evidence_id in declared_evidence_ids
+        for hit in hits
     )
 
 

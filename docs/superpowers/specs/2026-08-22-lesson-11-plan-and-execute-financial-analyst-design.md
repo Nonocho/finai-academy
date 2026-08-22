@@ -296,14 +296,17 @@ evidence_id, document_id, section, period, trace_id
 The evidence gate requires:
 
 - at least one successful metric observation with a source reference for each company;
-- at least one document evidence hit with source references and evidence IDs for each company;
+- at least one document evidence hit whose returned source/evidence-ID pair exactly
+  matches the observation provenance for each company;
 - no factual report claim whose source cannot be traced to a successful observation; and
 - explicit limitations for incompatible periods, currencies, and business definitions.
 
-Each reported fact is a typed `CitedFact` containing non-blank claim text, one or
-more source references, and optional evidence IDs. The pure
+Each reported fact is a typed `CitedFact` containing non-blank claim text and
+source references. Metric facts use source provenance without an evidence ID.
+A document-backed fact contains exactly one source and its one evidence ID, which
+prevents ambiguous cross-pairing. The pure
 `validate_briefing_support()` boundary rejects sources, evidence IDs, and
-source/evidence pairings absent from successful observations. The final
+exact source/evidence pairings absent from returned successful document hits. The final
 `AnalystBriefing` separates:
 
 ```text

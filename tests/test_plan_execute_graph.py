@@ -190,7 +190,11 @@ async def recorded_report_writer(
         CitedFact(
             claim=f"Evidence from successful step {item.step_id}.",
             source_references=item.source_references,
-            evidence_ids=item.evidence_ids,
+            evidence_ids=(
+                item.evidence_ids
+                if item.capability == "search_financial_documents"
+                else ()
+            ),
         )
         for item in observations
         if item.status == "ok" and item.source_references
@@ -396,6 +400,54 @@ def test_missing_document_evidence_blocks_report_generation() -> None:
     assert result.status == "insufficient_evidence"
     assert result.briefing is None
     assert "Schneider Electric document evidence" in result.evidence_gate.missing_requirements
+    assert report_writer.calls == 0
+
+
+def test_unreportable_document_provenance_blocks_report_generation() -> None:
+    """Breaks if the graph can complete from document metadata absent from its hits."""
+
+    class MismatchedDocumentExecutor(FakeExecutor):
+        async def execute(
+            self,
+            step: PlanStep,
+            *,
+            attempt_id: int,
+            plan_revision: int,
+        ) -> ResearchObservation:
+            observation = await super().execute(
+                step,
+                attempt_id=attempt_id,
+                plan_revision=plan_revision,
+            )
+            if step.capability != "search_financial_documents":
+                return observation
+            return observation.model_copy(
+                update={
+                    "result": {
+                        "company": observation.result["company"],
+                        "hits": [
+                            {"source": "returned-source", "evidence_id": "returned-id"}
+                        ],
+                    },
+                    "source_references": ("declared-source",),
+                    "evidence_ids": ("declared-id",),
+                }
+            )
+
+    report_writer = ReportRecorder()
+    result = asyncio.run(
+        run_plan_execute(
+            question=MISSION,
+            executor=MismatchedDocumentExecutor(),
+            planner=recorded_planner,
+            replanner=recorded_replanner,
+            report_writer=report_writer,
+        )
+    )
+
+    assert result.status == "insufficient_evidence"
+    assert result.briefing is None
+    assert result.evidence_gate.passed is False
     assert report_writer.calls == 0
 
 
