@@ -4080,72 +4080,135 @@
           "trajectory": [
             {
               "index": 1,
-              "phase": "execution",
+              "phase": "planning",
               "status": "ok",
-              "summary": "Attempt 1 recorded for the regression fixture.",
-              "step_id": 1,
-              "attempt_id": 1,
-              "duration_ms": 12.0
+              "summary": "Planner proposed 4 research steps.",
+              "step_id": null,
+              "attempt_id": null,
+              "duration_ms": 3.0
             },
             {
               "index": 2,
-              "phase": "execution",
+              "phase": "policy",
               "status": "ok",
-              "summary": "Attempt 2 recorded for the regression fixture.",
-              "step_id": 1,
-              "attempt_id": 2,
-              "duration_ms": 10.0
-            },
-            {
-              "index": 3,
-              "phase": "execution",
-              "status": "ok",
-              "summary": "Attempt 3 recorded for the regression fixture.",
-              "step_id": 2,
-              "attempt_id": 3,
-              "duration_ms": 11.0
-            },
-            {
-              "index": 4,
-              "phase": "execution",
-              "status": "error",
-              "summary": "Attempt 4 recorded for the regression fixture.",
-              "step_id": 3,
-              "attempt_id": 4,
-              "duration_ms": 1.0
-            },
-            {
-              "index": 5,
-              "phase": "execution",
-              "status": "ok",
-              "summary": "Attempt 5 recorded for the regression fixture.",
-              "step_id": 5,
-              "attempt_id": 5,
-              "duration_ms": 8.0
-            },
-            {
-              "index": 6,
-              "phase": "execution",
-              "status": "ok",
-              "summary": "Attempt 6 recorded for the regression fixture.",
-              "step_id": 6,
-              "attempt_id": 6,
-              "duration_ms": 9.0
-            },
-            {
-              "index": 7,
-              "phase": "evidence_gate",
-              "status": "ok",
-              "summary": "Required evidence is present.",
+              "summary": "Initial research plan passed host validation.",
               "step_id": null,
               "attempt_id": null,
               "duration_ms": 1.0
             },
             {
+              "index": 3,
+              "phase": "execution",
+              "status": "ok",
+              "summary": "Step 1 completed.",
+              "step_id": 1,
+              "attempt_id": 1,
+              "duration_ms": 12.0
+            },
+            {
+              "index": 4,
+              "phase": "execution",
+              "status": "ok",
+              "summary": "Step 1 was redundantly repeated.",
+              "step_id": 1,
+              "attempt_id": 2,
+              "duration_ms": 10.0
+            },
+            {
+              "index": 5,
+              "phase": "replanning",
+              "status": "ok",
+              "summary": "Replanner selected continue.",
+              "step_id": null,
+              "attempt_id": null,
+              "duration_ms": 2.0
+            },
+            {
+              "index": 6,
+              "phase": "execution",
+              "status": "ok",
+              "summary": "Step 2 completed.",
+              "step_id": 2,
+              "attempt_id": 3,
+              "duration_ms": 11.0
+            },
+            {
+              "index": 7,
+              "phase": "replanning",
+              "status": "ok",
+              "summary": "Replanner selected continue.",
+              "step_id": null,
+              "attempt_id": null,
+              "duration_ms": 2.0
+            },
+            {
               "index": 8,
+              "phase": "execution",
+              "status": "error",
+              "summary": "Step 3 returned unsupported_metric.",
+              "step_id": 3,
+              "attempt_id": 4,
+              "duration_ms": 1.0
+            },
+            {
+              "index": 9,
+              "phase": "replanning",
+              "status": "ok",
+              "summary": "Replanner selected replace_remaining.",
+              "step_id": null,
+              "attempt_id": null,
+              "duration_ms": 2.0
+            },
+            {
+              "index": 10,
+              "phase": "execution",
+              "status": "ok",
+              "summary": "Step 5 completed.",
+              "step_id": 5,
+              "attempt_id": 5,
+              "duration_ms": 8.0
+            },
+            {
+              "index": 11,
+              "phase": "replanning",
+              "status": "ok",
+              "summary": "Replanner selected continue.",
+              "step_id": null,
+              "attempt_id": null,
+              "duration_ms": 2.0
+            },
+            {
+              "index": 12,
+              "phase": "execution",
+              "status": "ok",
+              "summary": "Step 6 completed.",
+              "step_id": 6,
+              "attempt_id": 6,
+              "duration_ms": 9.0
+            },
+            {
+              "index": 13,
+              "phase": "replanning",
+              "status": "ok",
+              "summary": "Replanner selected finish.",
+              "step_id": null,
+              "attempt_id": null,
+              "duration_ms": 2.0
+            },
+            {
+              "index": 14,
+              "phase": "evidence_gate",
+              "status": "ok",
+              "summary": "Required metric and document evidence is present.",
+              "step_id": null,
+              "attempt_id": null,
+              "duration_ms": 1.0
+            },
+            {
+              "index": 15,
               "phase": "report",
               "status": "ok",
-              "summary": "Briefing emitted after a redundant call.",
+              "summary": "Analyst briefing created from verified observations.",
               "step_id": null,
               "attempt_id": null,
               "duration_ms": 4.0

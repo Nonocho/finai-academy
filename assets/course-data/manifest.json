@@ -17,7 +17,7 @@
       "fixture_version": "agent-runs-v1",
       "dataset_version": "agent-cases-v1",
       "path": "assets/course-data/evaluation/agent_runs_v1.json",
-      "sha256": "99c2471426cce6ae0fec9e6a4b94bcb62b4ab829e6b46d462063b1ade2478685"
+      "sha256": "a58d3652f84c6b2abdd5d392fd0d2d74c3931835347723c2048a9a0372958469"
     }
   ],
   "sources": [

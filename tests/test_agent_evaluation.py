@@ -598,10 +598,25 @@ def test_tool_call_correctness_is_dependency_aware_not_list_position_based() -> 
 
 def test_tool_call_correctness_requires_expected_typed_error_and_replan() -> None:
     case, prediction = fixture_pair("reference_completed", "bounded-agent-v1")
-    changed = prediction.model_copy(update={"replan_count": 0})
-    score = score_agent_case(case, changed).tool_call_correctness
-    assert 0.0 <= score.value < 1.0
-    assert "replan" in score.rationale.casefold()
+    wrong_replan = prediction.model_copy(update={"replan_count": 0})
+    replan_score = score_agent_case(case, wrong_replan).tool_call_correctness
+    assert 0.0 <= replan_score.value < 1.0
+    assert "replan" in replan_score.rationale.casefold()
+
+    error_index = next(
+        index
+        for index, observation in enumerate(prediction.observations)
+        if observation.error_code == "unsupported_metric"
+    )
+    observations = list(prediction.observations)
+    observations[error_index] = observations[error_index].model_copy(
+        update={"error_code": "upstream_failure"}
+    )
+    wrong_error = prediction.model_copy(update={"observations": tuple(observations)})
+    error_scores = score_agent_case(case, wrong_error)
+    assert 0.0 <= error_scores.tool_call_correctness.value < 1.0
+    assert "typed error unsupported_metric" in error_scores.tool_call_correctness.rationale
+    assert error_scores.failure_stage == "tool_boundary"
 
 
 def test_tool_call_efficiency_penalizes_duplicate_budget_and_post_terminal_calls() -> None:
@@ -611,10 +626,33 @@ def test_tool_call_efficiency_penalizes_duplicate_budget_and_post_terminal_calls
     assert score.redundant_tool_calls >= 1
 
 
+def test_tool_call_efficiency_directly_penalizes_a_post_terminal_call() -> None:
+    case, prediction = fixture_pair("reference_completed", "bounded-agent-v1")
+    terminal = prediction.trajectory[-2].model_copy(
+        update={
+            "index": 1,
+            "phase": "guardrail",
+            "status": "blocked",
+            "summary": "Terminal guardrail blocked reporting.",
+        }
+    )
+    final_execution = next(
+        event for event in prediction.trajectory if event.attempt_id == 5
+    ).model_copy(update={"index": 2})
+    changed = prediction.model_copy(update={"trajectory": (terminal, final_execution)})
+
+    score = score_agent_case(case, changed).tool_call_efficiency
+
+    assert score.value == 0.8
+    assert "calls after terminal event=1" in score.rationale
+
+
 def test_answer_relevance_scores_expected_typed_stop_without_a_briefing() -> None:
     case, prediction = fixture_pair("missing_schneider_document", "bounded-agent-v1")
     assert prediction.briefing is None
-    assert score_agent_case(case, prediction).answer_relevance.value == 1.0
+    scores = score_agent_case(case, prediction)
+    assert scores.answer_relevance.value == 1.0
+    assert 0.0 <= scores.answer_completeness.value < 1.0
 
 
 def test_answer_completeness_requires_companies_evidence_fact_kinds_comparison_and_limits() -> None:
@@ -634,12 +672,33 @@ def test_citation_integrity_accepts_metric_source_and_exact_document_pair() -> N
 
 def test_citation_integrity_returns_zero_for_document_fact_without_evidence_id() -> None:
     case, prediction = fixture_pair("document_fact_without_evidence_id", "regressed-agent-v0")
-    assert score_agent_case(case, prediction).citation_integrity.value == 0.0
+    score = score_agent_case(case, prediction).citation_integrity
+    assert score.value == 0.0
+    assert "Satisfied: aggregate source union." in score.rationale
+    assert "Missing: observation-backed fact provenance." in score.rationale
 
 
 def test_citation_integrity_returns_zero_for_cross_paired_source_and_evidence() -> None:
     case, prediction = fixture_pair("wrong_source_evidence_pair", "regressed-agent-v0")
-    assert score_agent_case(case, prediction).citation_integrity.value == 0.0
+    score = score_agent_case(case, prediction).citation_integrity
+    assert score.value == 0.0
+    assert "Satisfied: aggregate source union." in score.rationale
+    assert "Missing: observation-backed fact provenance." in score.rationale
+
+
+def test_citation_integrity_reports_aggregate_only_union_corruption() -> None:
+    case, prediction = fixture_pair("reference_completed", "bounded-agent-v1")
+    assert prediction.briefing is not None
+    changed_briefing = prediction.briefing.model_copy(
+        update={"source_references": tuple(reversed(prediction.briefing.source_references))}
+    )
+    changed = prediction.model_copy(update={"briefing": changed_briefing})
+
+    score = score_agent_case(case, changed).citation_integrity
+
+    assert score.value == 0.0
+    assert "Satisfied: observation-backed fact provenance." in score.rationale
+    assert "Missing: aggregate source union." in score.rationale
 
 
 def test_release_fails_when_required_gate_stop_emits_a_briefing() -> None:
@@ -680,3 +739,99 @@ def test_failure_classification_assigns_expected_fixture_owners() -> None:
         case, prediction = fixture_pair(case_id, "regressed-agent-v0")
         scores = score_agent_case(case, prediction)
         assert scores.failure_stage == owner
+
+
+@pytest.mark.parametrize(
+    ("mutation", "owner", "release_passed"),
+    [
+        ("missing_from_plan_and_observations", "planner", True),
+        ("missing_replanned_call", "replanner", False),
+        ("missing_observation", "tool_boundary", True),
+        ("wrong_observed_arguments", "tool_boundary", True),
+        ("broken_dependency_order", "replanner", True),
+    ],
+)
+def test_failure_classification_owns_adversarial_trajectory_correctness_failures(
+    mutation: str, owner: str, release_passed: bool
+) -> None:
+    case, prediction = fixture_pair("reference_completed", "bounded-agent-v1")
+    observations = list(prediction.observations)
+    initial_plan = prediction.initial_plan
+    final_steps = prediction.final_steps
+    if mutation in {"missing_from_plan_and_observations", "missing_observation"}:
+        observations.pop(1)
+        if mutation == "missing_from_plan_and_observations":
+            initial_plan = initial_plan.model_copy(
+                update={"steps": tuple(step for step in initial_plan.steps if step.step_id != 2)}
+            )
+            final_steps = tuple(step for step in final_steps if step.step_id != 2)
+    elif mutation == "missing_replanned_call":
+        observations.pop(3)
+        final_steps = tuple(step for step in final_steps if step.step_id != 5)
+    elif mutation == "wrong_observed_arguments":
+        observations[1] = observations[1].model_copy(
+            update={"arguments": {"ticker": "NVDA", "metric": "EPS"}}
+        )
+    elif mutation == "broken_dependency_order":
+        observations[3], observations[4] = observations[4], observations[3]
+    else:
+        raise AssertionError(f"unknown mutation: {mutation}")
+    changed = prediction.model_copy(
+        update={
+            "initial_plan": initial_plan,
+            "final_steps": final_steps,
+            "observations": tuple(observations),
+        }
+    )
+
+    scores = score_agent_case(case, changed)
+
+    assert scores.tool_call_correctness.value < 1.0
+    assert scores.failure_stage == owner
+    assert scores.release_passed is release_passed
+
+
+def test_redundant_fixture_retains_full_public_topology_with_one_duplicate_attempt() -> None:
+    _, reference = fixture_pair("reference_completed", "bounded-agent-v1")
+    _, redundant = fixture_pair("redundant_metric_call", "regressed-agent-v0")
+    reference_phases = tuple(event.phase for event in reference.trajectory)
+    redundant_phases = tuple(event.phase for event in redundant.trajectory)
+    first_execution = reference_phases.index("execution")
+    expected_phases = (
+        reference_phases[: first_execution + 1]
+        + ("execution",)
+        + reference_phases[first_execution + 1 :]
+    )
+    reference_signatures = tuple(
+        canonical_call_signature(item.capability, item.arguments) for item in reference.observations
+    )
+    redundant_signatures = tuple(
+        canonical_call_signature(item.capability, item.arguments) for item in redundant.observations
+    )
+
+    assert redundant_phases == expected_phases
+    assert redundant_signatures == (
+        reference_signatures[0],
+        reference_signatures[0],
+        *reference_signatures[1:],
+    )
+    assert tuple(
+        event.attempt_id for event in redundant.trajectory if event.phase == "execution"
+    ) == tuple(item.attempt_id for item in redundant.observations)
+    assert (
+        sum(
+            event.phase == "replanning" and "replace_remaining" in event.summary
+            for event in redundant.trajectory
+        )
+        == redundant.replan_count
+    )
+
+
+def test_redundant_fixture_latency_adds_the_duplicate_attempt_to_reference_latency() -> None:
+    reference_case, reference = fixture_pair("reference_completed", "bounded-agent-v1")
+    redundant_case, redundant = fixture_pair("redundant_metric_call", "regressed-agent-v0")
+    duplicate_duration = redundant.observations[1].duration_ms
+
+    assert score_agent_case(redundant_case, redundant).latency_ms == (
+        score_agent_case(reference_case, reference).latency_ms + duplicate_duration
+    )

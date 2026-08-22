@@ -977,18 +977,22 @@ def _citation_integrity(
     if facts_valid and union_valid:
         return _metric_score(
             (
-                ("every fact has observation-backed provenance", True),
+                ("observation-backed fact provenance", True),
                 ("aggregate source union", True),
             )
         )
-    missing = []
-    if not facts_valid:
-        missing.append("observation-backed fact provenance")
-    if not union_valid:
-        missing.append("aggregate source union")
+    checks = (
+        ("observation-backed fact provenance", facts_valid),
+        ("aggregate source union", union_valid),
+    )
+    satisfied = [name for name, passed in checks if passed]
+    missing = [name for name, passed in checks if not passed]
     return MetricScore(
         value=0.0,
-        rationale=f"Satisfied: none. Missing: {', '.join(missing)}.",
+        rationale=(
+            f"Satisfied: {', '.join(satisfied) if satisfied else 'none'}. "
+            f"Missing: {', '.join(missing) if missing else 'none'}."
+        ),
     )
 
 
@@ -1003,6 +1007,36 @@ def classify_failure(
         return "dataset"
     if prediction.status == "plan_blocked" or not prediction.initial_plan.steps:
         return "planner"
+    planned_signatures = {
+        canonical_call_signature(step.capability, step.arguments)
+        for step in (*prediction.initial_plan.steps, *prediction.final_steps)
+    }
+    observed_signatures = {
+        canonical_call_signature(observation.capability, observation.arguments)
+        for observation in prediction.observations
+    }
+    missing_calls = tuple(
+        call
+        for call in case.expected_tool_calls
+        if canonical_call_signature(call.capability, call.arguments) not in observed_signatures
+    )
+    unplanned_missing_calls = tuple(
+        call
+        for call in missing_calls
+        if canonical_call_signature(call.capability, call.arguments) not in planned_signatures
+    )
+    if any(
+        not call.prerequisite_call_ids or prediction.replan_count == 0
+        for call in unplanned_missing_calls
+    ):
+        return "planner"
+    if any(
+        canonical_call_signature(call.capability, call.arguments) in planned_signatures
+        for call in missing_calls
+    ):
+        return "tool_boundary"
+    if unplanned_missing_calls:
+        return "replanner"
     observed_errors = {
         observation.error_code
         for observation in prediction.observations
@@ -1018,6 +1052,8 @@ def classify_failure(
             and prediction.status != case.expected_final_status
         )
     ):
+        return "replanner"
+    if scores.tool_call_correctness.value < 1.0:
         return "replanner"
     if (
         prediction.status == "insufficient_evidence"
