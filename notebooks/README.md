@@ -18,6 +18,6 @@ verification marker.
 | 10 | [Financial MCP](10_financial_mcp.ipynb) |
 
 Lessons 01–07 complete Day 1. Lessons 08–09 begin the completed Day 2 labs;
-Lesson 10 is ready for instructor delivery; Lessons 11–12 remain planned. See the
+the Lesson 10 notebook is ready, while the full 45-minute delivery route is pending Task 6 deck. Lessons 11–12 remain planned. See the
 [Day 1 student guide](../docs/day-1-student-guide.md) for the completed first-day
 timings and capstone increments.

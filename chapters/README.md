@@ -18,5 +18,5 @@ increment for the completed Day 1 course.
 | 10 | [Financial MCP](10-financial-mcp.md) |
 
 Lessons 01–07 complete Day 1. Lessons 08–09 begin the completed Day 2 chapters;
-Lesson 10 is ready for instructor delivery; Lessons 11–12 remain planned. Day 1 student order and timing are in the
+the Lesson 10 chapter and notebook are ready, while the full 45-minute delivery route is pending Task 6 deck. Lessons 11–12 remain planned. Day 1 student order and timing are in the
 [Day 1 student guide](../docs/day-1-student-guide.md).

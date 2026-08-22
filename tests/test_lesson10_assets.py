@@ -151,12 +151,24 @@ def test_lesson10_chapter_and_discoverable_indexes_expose_the_classroom_contract
 
     assert "notebooks/10_financial_mcp.ipynb" in chapter
     assert "decks/10-financial-mcp.pptx" in chapter
-    assert "[Financial MCP](10-financial-mcp.md)" in (
-        ROOT / "chapters" / "README.md"
-    ).read_text(encoding="utf-8")
-    assert "[Financial MCP](10_financial_mcp.ipynb)" in (
-        ROOT / "notebooks" / "README.md"
-    ).read_text(encoding="utf-8")
+    assert "Task 6" in chapter
+    assert "Static recovery catalog" in chapter
+    for capability in (
+        "| Resource | Application | `finance://coverage` |",
+        "| Tool | Model + host approval | `get_company_metric` |",
+        "| Tool | Model + host approval | `search_financial_documents` |",
+        "| Prompt | User | `compare_companies` |",
+    ):
+        assert capability in chapter
+
+    chapter_index = (ROOT / "chapters" / "README.md").read_text(encoding="utf-8")
+    notebook_index = (ROOT / "notebooks" / "README.md").read_text(encoding="utf-8")
+    assert "[Financial MCP](10-financial-mcp.md)" in chapter_index
+    assert "[Financial MCP](10_financial_mcp.ipynb)" in notebook_index
+    assert "full 45-minute delivery route is pending Task 6 deck" in chapter_index
+    assert "full 45-minute delivery route is pending Task 6 deck" in notebook_index
+    assert "ready for instructor delivery" not in chapter_index
+    assert "ready for instructor delivery" not in notebook_index
     assert "[Build a financial MCP](10-financial-mcp.pptx)" in (
         ROOT / "decks" / "README.md"
     ).read_text(encoding="utf-8")

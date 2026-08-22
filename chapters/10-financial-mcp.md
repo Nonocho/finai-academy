@@ -1,11 +1,13 @@
 # Lesson 10 — Financial MCP
 
-**First Finance - Arnaud Demes**  
+**First Finance - Arnaud Demes**
 **Day 2 · 11:15–12:00 · 10-minute concept deck + 30-minute notebook + 5-minute verification and debrief**
 
 ## Instructor outcome
 
 Students connect a local financial application to one MCP server over `stdio`, discover its declared capabilities at runtime, and use them within a host-owned permission boundary. The NVIDIA (`NVDA`) and Schneider Electric (`SU.PA`) examples are read-only, deterministic, and grounded in controlled course fixtures. This lesson does not demonstrate trading, portfolio changes, or an investment recommendation.
+
+The instructor chapter and notebook route are ready. The full 45-minute delivery route is pending Task 6, which creates and certifies the nine-slide deck; do not present the lesson as fully deliverable until that deck is available.
 
 ```text
 host starts local server → client discovers capabilities → host reads context
@@ -44,9 +46,22 @@ FINAI_LIVE_MODE=1 FINAI_MODEL_PROVIDER=openai FINAI_CHAT_MODEL=gpt-5-mini \
 
 Never display, print, trace, or commit the key. A live provider is optional; the shared gateway gives Ollama and OpenAI the same discovered-tool contract.
 
+## Static recovery catalog
+
+Use this table only when local discovery cannot run. It is a teaching fallback, not a substitute for runtime discovery or host policy. The controlled evidence fixture is `assets/course-data/mcp/lesson10_evidence_catalog_v1.json`.
+
+| Primitive | Controller | Expected capability | Classroom purpose |
+|---|---|---|---|
+| Resource | Application | `finance://coverage` | Read the controlled coverage boundary before tool selection. |
+| Tool | Model + host approval | `get_company_metric` | Read one dated, source-bearing metric. |
+| Tool | Model + host approval | `search_financial_documents` | Find controlled evidence with document and evidence IDs. |
+| Prompt | User | `compare_companies` | Render a reusable comparison request for review. |
+
+The expected discovery result is exactly one resource, two tools, and one prompt. The host must still allowlist a tool name, validate its arguments, and apply permissions.
+
 ## 10-minute concept deck
 
-Use `decks/10-financial-mcp.pptx` when it is available. Frame the notebook; do not read the slides aloud.
+Task 6 creates and certifies the nine-slide `decks/10-financial-mcp.pptx` deck. Until Task 6 is complete, this table is the planned slide route, not an available deck or a complete delivery substitute. Once available, use the deck to frame the notebook; do not read the slides aloud.
 
 | Time | Slide | Instructor job |
 |---:|---:|---|
@@ -115,7 +130,7 @@ Run the frozen sync command from **Before class**, restart the notebook kernel, 
 uv run python -c "from mcp.server import MCPServer; print(MCPServer.__name__)"
 ```
 
-If this does not print `MCPServer`, restore the maintained environment. Do not patch imports in the notebook.
+If this does not print `MCPServer`, restore the maintained environment. Do not patch imports in the notebook. Until it is fixed, use the **Static recovery catalog** in this chapter to explain the expected capability boundary.
 
 ### Subprocess cannot import the package
 
@@ -125,7 +140,7 @@ Start Jupyter and the executor from the repository root, not `notebooks/`. Confi
 uv run python -c "import finai_academy.financial_mcp_server as server; print(server.mcp.name)"
 ```
 
-Restart the kernel after a sync. If it still fails, use the recorded offline run to teach the lifecycle, catalog, and policy; do not replace the subprocess with direct server-function calls.
+Restart the kernel after a sync. If it still fails, use the **Static recovery catalog** in this chapter to teach the lifecycle, catalog, and policy; do not replace the subprocess with direct server-function calls.
 
 ### Protocol output is corrupted
 
@@ -133,7 +148,7 @@ The server's stdout is the `stdio` protocol stream. Do not add `print()` calls, 
 
 ### Discovery is empty
 
-Check `lesson10-010`: a healthy run lists one resource, two tools, and one prompt. Confirm the import check above and rerun from the repository root. If the catalog remains empty, use Figure 3 and the checked-in discovery table, explicitly labeled as recovery material.
+Check `lesson10-010`: a healthy run lists one resource, two tools, and one prompt. Confirm the import check above and rerun from the repository root. If the catalog remains empty, use the **Static recovery catalog** in this chapter and the controlled evidence fixture at `assets/course-data/mcp/lesson10_evidence_catalog_v1.json`, explicitly labeled as recovery material.
 
 ### Unsupported metric
 
@@ -141,7 +156,7 @@ Check `lesson10-010`: a healthy run lists one resource, two tools, and one promp
 
 ### Ollama unavailable or invalid live output
 
-Do not spend the core lesson debugging a local model. Leave `FINAI_LIVE_MODE` unset and use the recorded valid selection in `lesson10-020`. For malformed live output, retry the cell once; if it fails again, keep the schema and use offline mode. Record the provider issue after class. OpenAI is optional under the same rule.
+Do not spend the core lesson debugging a local model. Leave `FINAI_LIVE_MODE` unset and explain the allowlisted selection using the **Static recovery catalog**. For malformed live output, retry the cell once; if it fails again, keep the schema and use offline mode. Record the provider issue after class. OpenAI is optional under the same rule.
 
 ## No-network fallback
 
@@ -152,7 +167,7 @@ uv run python scripts/execute_notebooks.py notebooks/10_financial_mcp.ipynb \
   --mode offline --output-dir /private/tmp/finai-lesson10-offline
 ```
 
-The output must include `offline fixture · deterministic course run` and `LESSON_10_PASS`. This verifies teaching and protocol contracts, not live model quality or live financial data.
+The output must include `offline fixture · deterministic course run` and `LESSON_10_PASS`. This verifies teaching and protocol contracts, not live model quality or live financial data. If the local command cannot run, teach from the **Static recovery catalog** and `assets/course-data/mcp/lesson10_evidence_catalog_v1.json`; do not claim that discovery or notebook execution occurred.
 
 ## Skip if late
 
