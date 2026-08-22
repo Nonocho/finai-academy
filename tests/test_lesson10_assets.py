@@ -4,8 +4,10 @@ from __future__ import annotations
 
 import subprocess
 import sys
+import zipfile
 from importlib.util import module_from_spec, spec_from_file_location
 from pathlib import Path
+from xml.etree import ElementTree
 
 import nbformat
 
@@ -14,6 +16,7 @@ NOTEBOOK = ROOT / "notebooks" / "10_financial_mcp.ipynb"
 EXECUTOR = ROOT / "scripts" / "execute_notebooks.py"
 BUILDER = ROOT / "scripts" / "build_lesson10_notebook.py"
 CHAPTER = ROOT / "chapters" / "10-financial-mcp.md"
+DECK = ROOT / "decks" / "10-financial-mcp.pptx"
 
 
 def _build_notebook():
@@ -172,3 +175,63 @@ def test_lesson10_chapter_and_discoverable_indexes_expose_the_classroom_contract
     assert "[Build a financial MCP](10-financial-mcp.pptx)" in (
         ROOT / "decks" / "README.md"
     ).read_text(encoding="utf-8")
+
+
+def test_lesson10_deck_has_the_complete_sourced_concept_route() -> None:
+    assert DECK.is_file()
+    with zipfile.ZipFile(DECK) as archive:
+        names = archive.namelist()
+        slide_names = sorted(
+            name
+            for name in names
+            if name.startswith("ppt/slides/slide") and name.endswith(".xml")
+        )
+        notes_names = sorted(
+            name
+            for name in names
+            if name.startswith("ppt/notesSlides/notesSlide") and name.endswith(".xml")
+        )
+        assert len(slide_names) == 9
+        assert len(notes_names) == 9
+
+        visible_text = "\n".join(
+            "".join(
+                node.text or ""
+                for node in ElementTree.fromstring(archive.read(name)).iter(
+                    "{http://schemas.openxmlformats.org/drawingml/2006/main}t"
+                )
+            )
+            for name in slide_names
+        )
+        notes_text = "\n".join(
+            "".join(
+                node.text or ""
+                for node in ElementTree.fromstring(archive.read(name)).iter(
+                    "{http://schemas.openxmlformats.org/drawingml/2006/main}t"
+                )
+            )
+            for name in notes_names
+        )
+
+    assert visible_text.count("First Finance - Arnaud Demes") == 9
+    assert "—" not in visible_text
+    for marker in (
+        "Build a Financial MCP",
+        "Direct import",
+        "HOST",
+        "CLIENT",
+        "SERVER",
+        "RESOURCES",
+        "TOOLS",
+        "PROMPTS",
+        "finance://coverage",
+        "DISCOVERY",
+        "stdio",
+        "DISCOVERY IS NOT PERMISSION",
+        "LESSON 11",
+    ):
+        assert marker.casefold() in visible_text.casefold()
+    assert notes_text.count("[Sources]") == 9
+    assert notes_text.count("[/Sources]") == 9
+    assert "chapters/10-financial-mcp.md" in notes_text
+    assert "https://modelcontextprotocol.io" in notes_text

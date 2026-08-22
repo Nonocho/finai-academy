@@ -19,7 +19,7 @@
 |---:|---|---|
 | 08 | [Workflows versus agents](08-workflows-vs-agents.pptx) | Completed |
 | 09 | [Self-correcting financial agent](09-self-correcting-agent.pptx) | Completed |
-| 10 | [Build a financial MCP](10-financial-mcp.pptx) | Planned |
+| 10 | [Build a financial MCP](10-financial-mcp.pptx) | Ready for instructor delivery |
 | 11 | Plan-and-execute financial analyst | Planned |
 | 12 | Evaluating agentic systems | Planned |
 
