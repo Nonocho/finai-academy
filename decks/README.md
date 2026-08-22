@@ -20,10 +20,12 @@
 | 08 | [Workflows versus agents](08-workflows-vs-agents.pptx) | Completed |
 | 09 | [Self-correcting financial agent](09-self-correcting-agent.pptx) | Completed |
 | 10 | [Build a financial MCP](10-financial-mcp.pptx) | Ready for instructor delivery |
-| 11 | Plan-and-execute financial analyst | Planned |
+| 11 | Plan-and-execute financial analyst: `11-plan-and-execute-analyst.pptx` | Planned, Task 7 |
 | 12 | Evaluating agentic systems | Planned |
 
-The full Lesson 10 route is ready for an instructor-led test class.
+The full Lesson 10 route is ready for an instructor-led test class. Lesson 11
+has a discoverable chapter and notebook, but its deck is planned until Task 7
+creates and certifies the file.
 
 Every completed deck is editable, includes speaker notes and sources, uses the
 footer `First Finance - Arnaud Demes`, and is accepted only after render and overflow

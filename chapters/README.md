@@ -16,7 +16,10 @@ increment for the completed Day 1 course.
 | 08 | [Workflows versus agents](08-workflows-vs-agents.md) |
 | 09 | [Self-correcting financial agent](09-self-correcting-agent.md) |
 | 10 | [Financial MCP](10-financial-mcp.md) |
+| 11 | [Plan-and-execute financial analyst](11-plan-and-execute-analyst.md) |
 
 Lessons 01–07 complete Day 1. Lessons 08–09 begin the completed Day 2 chapters;
-the full Lesson 10 route is ready for an instructor-led test class. Lessons 11–12 remain planned. Day 1 student order and timing are in the
-[Day 1 student guide](../docs/day-1-student-guide.md).
+the full Lesson 10 route is ready for an instructor-led test class. Lesson 11
+now has a chapter and notebook for instructor-led testing; its deck remains
+planned until Task 7. Lesson 12 remains planned. Day 1 student order and timing
+are in the [Day 1 student guide](../docs/day-1-student-guide.md).

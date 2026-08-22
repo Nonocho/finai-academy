@@ -13,6 +13,7 @@ ROOT = Path(__file__).resolve().parents[1]
 NOTEBOOK = ROOT / "notebooks" / "11_plan_and_execute_analyst.ipynb"
 BUILDER = ROOT / "scripts" / "build_lesson11_notebook.py"
 EXECUTOR = ROOT / "scripts" / "execute_notebooks.py"
+CHAPTER = ROOT / "chapters" / "11-plan-and-execute-analyst.md"
 
 
 def _build_notebook():
@@ -114,3 +115,68 @@ def test_lesson11_notebook_executes_offline_with_visual_evidence(tmp_path: Path)
     assert "Plan revisions: 1" in text
     assert "Evidence gate passed: True" in text
     assert text.count("LESSON_11_PASS") == 1
+
+
+def test_lesson11_chapter_defines_the_complete_instructor_route() -> None:
+    """Catch loss of a teachable route, recovery path, or Lesson 12 handoff."""
+
+    assert CHAPTER.is_file()
+    chapter = CHAPTER.read_text(encoding="utf-8")
+    normalized_chapter = chapter.lower()
+
+    for marker in (
+        "13:30-14:30",
+        "12-minute concept deck",
+        "40-minute notebook",
+        "8-minute verification and debrief",
+        "get_company_metric",
+        "search_financial_documents",
+        "unsupported_metric",
+        "replace_remaining",
+        "evidence gate",
+        "Ollama",
+        "OpenAI",
+        "No-network fallback",
+        "Skip if late",
+        "LESSON_11_PASS",
+        "Lesson 12",
+        "read-only",
+        "investment advice",
+        "missing MCP SDK",
+        "subprocess",
+        "empty discovery",
+        "invalid live output",
+        "insufficient evidence",
+        "same-tool recovery",
+        "strategy revision",
+        "lesson11-000",
+        "lesson11-027",
+        "1, 2, 3, 5, and 6",
+        "initial and final plans",
+        "capability names and arguments",
+        "replan count",
+        "latency per stage",
+        "deck remains planned",
+    ):
+        assert marker.lower() in normalized_chapter
+    assert "—" not in chapter
+    assert "](../decks/11-plan-and-execute-analyst.pptx)" not in chapter
+
+
+def test_lesson11_chapter_and_notebook_are_discoverable_while_deck_is_planned() -> None:
+    """Catch an index that hides usable materials or falsely activates the deck."""
+
+    indexes = {
+        "chapters/README.md": "[Plan-and-execute financial analyst](11-plan-and-execute-analyst.md)",
+        "notebooks/README.md": "[Plan-and-execute financial analyst](11_plan_and_execute_analyst.ipynb)",
+        "README.md": "[Lesson 11 instructor chapter](chapters/11-plan-and-execute-analyst.md)",
+    }
+    for relative_path, expected_link in indexes.items():
+        text = (ROOT / relative_path).read_text(encoding="utf-8")
+        assert expected_link in text
+        assert "Lessons 11–12 remain planned" not in text
+
+    deck_index = (ROOT / "decks" / "README.md").read_text(encoding="utf-8")
+    assert "`11-plan-and-execute-analyst.pptx`" in deck_index
+    assert "Planned, Task 7" in deck_index
+    assert "](11-plan-and-execute-analyst.pptx)" not in deck_index
