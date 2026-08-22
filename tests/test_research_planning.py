@@ -149,6 +149,59 @@ def test_plan_rejects_missing_required_argument_and_unknown_argument() -> None:
         validate_plan(unknown, strict_catalog, max_steps=6)
 
 
+def test_plan_accepts_schema_valued_additional_properties() -> None:
+    schema_catalog = (
+        tool_catalog()[0].model_copy(
+            update={
+                "input_schema": {
+                    **tool_catalog()[0].input_schema,
+                    "additionalProperties": {"type": "string"},
+                }
+            }
+        ),
+        tool_catalog()[1],
+    )
+    plan = valid_plan().model_copy(
+        update={
+            "steps": (
+                valid_plan().steps[0].model_copy(
+                    update={"arguments": {"ticker": "NVDA", "metric": "P/E", "note": "latest"}}
+                ),
+            )
+        }
+    )
+
+    checked = validate_plan(plan, schema_catalog, max_steps=6)
+
+    assert checked.steps[0].arguments["note"] == "latest"
+
+
+def test_plan_rejects_schema_valued_additional_property_with_wrong_type() -> None:
+    schema_catalog = (
+        tool_catalog()[0].model_copy(
+            update={
+                "input_schema": {
+                    **tool_catalog()[0].input_schema,
+                    "additionalProperties": {"type": "string"},
+                }
+            }
+        ),
+        tool_catalog()[1],
+    )
+    plan = valid_plan().model_copy(
+        update={
+            "steps": (
+                valid_plan().steps[0].model_copy(
+                    update={"arguments": {"ticker": "NVDA", "metric": "P/E", "note": 7}}
+                ),
+            )
+        }
+    )
+
+    with pytest.raises(ValueError, match="arguments_not_accepted"):
+        validate_plan(plan, schema_catalog, max_steps=6)
+
+
 def test_plan_rejects_invalid_schema_types_and_bounds() -> None:
     bad_type = valid_plan().model_copy(
         update={

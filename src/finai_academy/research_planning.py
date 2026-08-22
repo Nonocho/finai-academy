@@ -253,7 +253,14 @@ def _validate_schema_value(value: Any, schema: Mapping[str, Any], path: str) -> 
         for name in required:
             if name not in value:
                 raise ValueError(f"arguments_not_accepted: missing required argument {name}")
-        if schema.get("additionalProperties") is False:
+        additional_properties = schema.get("additionalProperties")
+        if additional_properties is not None and not isinstance(
+            additional_properties, (bool, Mapping)
+        ):
+            raise ValueError(
+                f"arguments_not_accepted: invalid additionalProperties schema at {path}"
+            )
+        if additional_properties is False:
             unknown = set(value) - set(properties)
             if unknown:
                 raise ValueError(
@@ -265,6 +272,8 @@ def _validate_schema_value(value: Any, schema: Mapping[str, Any], path: str) -> 
                 if not isinstance(child_schema, Mapping):
                     raise ValueError(f"arguments_not_accepted: invalid schema for {path}.{name}")
                 _validate_schema_value(item, child_schema, f"{path}.{name}")
+            elif isinstance(additional_properties, Mapping):
+                _validate_schema_value(item, additional_properties, f"{path}.{name}")
     elif expected_type == "array":
         if not isinstance(value, list):
             raise ValueError(f"arguments_not_accepted: {path} must be an array")
