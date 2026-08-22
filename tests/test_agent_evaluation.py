@@ -193,12 +193,9 @@ def test_prediction_conversion_preserves_every_public_plan_execute_field() -> No
     assert prediction.replan_count == result.replan_count
     assert prediction.evidence_gate == result.evidence_gate
     assert prediction.briefing is not None and result.briefing is not None
-    assert prediction.briefing.reported_facts[0].claim == result.briefing.reported_facts[0].claim
-    assert (
-        prediction.briefing.reported_facts[0].provenance_kind
-        == result.briefing.reported_facts[0].provenance_kind
+    assert prediction.briefing.model_dump(mode="python") == result.briefing.model_dump(
+        mode="python"
     )
-    assert prediction.briefing.source_references == result.briefing.source_references
 
 
 def test_prediction_conversion_has_a_lossless_json_round_trip() -> None:
@@ -237,6 +234,48 @@ def test_candidate_fact_rejects_blank_text_and_unknown_fields() -> None:
 def test_candidate_fact_rejects_secret_shaped_text(payload: dict[str, object]) -> None:
     with pytest.raises(ValidationError):
         CandidateFact.model_validate(payload)
+
+
+def test_prediction_rejects_secret_shaped_metadata_before_logging() -> None:
+    metadata = prediction_metadata()
+    metadata["agent_model"] = "sk-abcdefghijkl"
+
+    with pytest.raises(ValidationError):
+        prediction_from_plan_execute_result(completed_plan_execute_result(), **metadata)
+
+
+@pytest.mark.parametrize(
+    ("path", "secret_value"),
+    [
+        (("initial_plan", "goal"), "Bearer abcdefghijklmnop"),
+        (("final_steps", 0, "arguments", "credential"), "Bearer abcdefghijklmnop"),
+        (("observations", 0, "result", "credential"), "Bearer abcdefghijklmnop"),
+        (("trajectory", 0, "summary"), "Bearer abcdefghijklmnop"),
+        (("evidence_gate", "coverage", "authorization"), ("Bearer abcdefghijklmnop",)),
+    ],
+    ids=("plan", "tool", "observation", "trajectory", "evidence_gate"),
+)
+def test_prediction_rejects_secret_shaped_nested_public_state_before_logging(
+    path: tuple[str | int, ...],
+    secret_value: object,
+) -> None:
+    payload = completed_plan_execute_result().model_dump(mode="python")
+    target: object = payload
+    for part in path[:-1]:
+        if isinstance(part, int):
+            assert isinstance(target, tuple)
+            target = target[part]
+        else:
+            assert isinstance(target, dict)
+            target = target[part]
+    assert isinstance(target, dict)
+    final_key = path[-1]
+    assert isinstance(final_key, str)
+    target[final_key] = secret_value
+    result = PlanExecuteResult.model_validate(payload)
+
+    with pytest.raises(ValidationError):
+        prediction_from_plan_execute_result(result, **prediction_metadata())
 
 
 def test_candidate_fact_strips_text_and_preserves_tuple_order() -> None:

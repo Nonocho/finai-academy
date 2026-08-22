@@ -69,11 +69,14 @@ def _clean_strings(value: Any) -> Any:
 
 
 def _reject_secret_shaped_strings(value: Any) -> None:
-    """Reject credential-shaped strings recursively in candidate output fields."""
+    """Reject credential-shaped strings recursively in public evaluation fields."""
 
     if isinstance(value, str):
         if _SECRET_PATTERN.search(value):
-            raise ValueError("candidate fields must not contain secret-shaped text")
+            raise ValueError("evaluation fields must not contain secret-shaped text")
+        return
+    if isinstance(value, BaseModel):
+        _reject_secret_shaped_strings(value.model_dump(mode="python"))
         return
     if isinstance(value, Mapping):
         for key, item in value.items():
@@ -174,6 +177,12 @@ class AgentEvaluationPrediction(_StrictFrozenModel):
     replan_count: int = Field(ge=0)
     evidence_gate: EvidenceGateResult
     briefing: CandidateBriefing | None
+
+    @model_validator(mode="before")
+    @classmethod
+    def reject_secret_shaped_text(cls, value: Any) -> Any:
+        _reject_secret_shaped_strings(value)
+        return value
 
 
 class MetricScore(_StrictFrozenModel):
