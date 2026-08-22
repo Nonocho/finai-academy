@@ -157,6 +157,12 @@ def test_lesson11_chapter_defines_the_complete_instructor_route() -> None:
         "replan count",
         "latency per stage",
         "deck remains planned",
+        "| 6 | `search_financial_documents` | `Schneider Electric`, `energy management`, `top_k=2` |",
+        "reported_facts",
+        "cross_company_observations",
+        "interpretation",
+        "limitations",
+        "source_references",
     ):
         assert marker.lower() in normalized_chapter
     assert "—" not in chapter

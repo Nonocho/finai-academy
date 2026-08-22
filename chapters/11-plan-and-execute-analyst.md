@@ -78,7 +78,7 @@ occurred.
 | 3 | `get_company_metric` | `NVDA`, `Revenue` | `unsupported_metric` typed error | Retained error |
 | 4 | `search_financial_documents` | Original unfinished query | Not executed after revision | Superseded |
 | 5 | `search_financial_documents` | NVIDIA revenue query | Document evidence and source reference | Replacement success |
-| 6 | `search_financial_documents` | Schneider revenue query | Document evidence and source reference | Replacement success |
+| 6 | `search_financial_documents` | `Schneider Electric`, `energy management`, `top_k=2` | Document evidence and source reference | Replacement success |
 
 The initial capability sequence is `get_company_metric`,
 `get_company_metric`, `get_company_metric`, and
@@ -138,7 +138,7 @@ server, re-run a successful call, or replace course evidence with live data.
 | 16:00-23:00 | `lesson11-012` to `lesson11-014` | Expose the controlled third attempt. Read the `unsupported_metric` error rather than correcting it in place. | Typed error table and Figure 4 attempt timeline. |
 | 23:00-29:00 | `lesson11-015` to `lesson11-017` | Request the recorded replan. Read `replace_remaining`; compare executed prefix, superseded tail, and replacements. | Replacement IDs 5 and 6, retained failure, and Figure 5 tail revision. |
 | 29:00-34:00 | `lesson11-018` to `lesson11-020` | Confirm the completed sequence, one replan, and no duplicate successful calls. | Steps 1, 2, 3, 5, and 6 plus Figure 6 evidence coverage matrix. |
-| 34:00-37:00 | `lesson11-021` to `lesson11-024` | Run the evidence gate. Only then inspect the cited briefing and optional live route configuration. | Passed coverage table, briefing field counts, and trajectory table. |
+| 34:00-37:00 | `lesson11-021` to `lesson11-024` | Run the evidence gate. Only then inspect the cited briefing and optional live route configuration. | Passed coverage table, `reported_facts`, `cross_company_observations`, `interpretation`, `limitations`, `source_references`, and trajectory table. |
 | 37:00-40:00 | `lesson11-025` to `lesson11-027` | Run verification, answer the knowledge check, and state the Lesson 12 handoff. | One `LESSON_11_PASS` marker and challenge constraints. |
 
 The rows total 40 minutes. In offline mode, the expected final results are one
@@ -177,7 +177,7 @@ exceeds six steps, uses an unknown capability, or exceeds one replan.
 | 0:00-2:00 | Confirm the maintained route and have a learner read the final observation sequence. | One `unsupported_metric`, steps 1, 2, 3, 5, and 6, and no duplicate successful call. |
 | 2:00-4:00 | Ask what the model proposed and what Python controlled. | Planner, replanner, and report writer propose data; host validates, executes, limits, and gates. |
 | 4:00-6:00 | Ask why a plausible report can still fail. | Each company needs both metric and document evidence with sources. |
-| 6:00-8:00 | Connect the trajectory to Lesson 12. | `LESSON_11_PASS`, cited briefing fields, and evaluation fields listed below. |
+| 6:00-8:00 | Connect the trajectory to Lesson 12. | `LESSON_11_PASS`, `reported_facts`, `cross_company_observations`, `interpretation`, `limitations`, `source_references`, and evaluation fields listed below. |
 
 The rows total 8 minutes. The full slot is 12 + 40 + 8 = 60 minutes, from
 13:30-14:30.
@@ -295,7 +295,8 @@ Lesson 12 evaluates the final answer and the trajectory separately. Pass these
 fields without transformation: original mission; initial and final plans;
 capability names and arguments; observation statuses and error codes; tool-call
 order and count; replan count; evidence IDs and source references; final
-briefing sections; and latency per stage.
+briefing sections (`reported_facts`, `cross_company_observations`,
+`interpretation`, `limitations`, and `source_references`); and latency per stage.
 
 For the answer, Lesson 12 will score relevance, completeness, grounding, and
 citation quality. For the trajectory, it will score policy correctness,
