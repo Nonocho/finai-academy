@@ -23,6 +23,8 @@ MISSION = (
     "and state which observations cannot be compared directly."
 )
 
+MAX_RESEARCH_STEPS = 6
+
 INITIAL_RECORDED_STEPS = (
     PlanStep(
         step_id=1,
@@ -233,6 +235,7 @@ class LiveReplanner(_LivePolicy):
             "not hidden reasoning. Do not repeat successful calls.",
             {
                 "allowlisted_catalog": _safe_catalog_from_state(state),
+                **_safe_replanning_progress(state),
                 "typed_errors": _safe_error_summaries(state.get("observations")),
                 "successful_observations": _safe_successful_observations(
                     state.get("observations")
@@ -295,6 +298,24 @@ def _safe_catalog_from_state(state: Mapping[str, Any]) -> list[dict[str, Any]]:
         if len(tools) == len(catalog):
             return _safe_catalog(tools)
     return []
+
+
+def _safe_replanning_progress(state: Mapping[str, Any]) -> dict[str, int | list[int]]:
+    reserved = state.get("all_step_ids")
+    if not isinstance(reserved, Sequence) or isinstance(reserved, (str, bytes)):
+        reserved_ids: list[int] = []
+    else:
+        reserved_ids = [
+            step_id
+            for step_id in reserved
+            if isinstance(step_id, int) and not isinstance(step_id, bool) and step_id >= 1
+        ]
+    highest_reserved_id = max(reserved_ids, default=0)
+    return {
+        "reserved_step_ids": reserved_ids,
+        "next_replacement_step_id": highest_reserved_id + 1,
+        "remaining_step_capacity": max(0, MAX_RESEARCH_STEPS - len(reserved_ids)),
+    }
 
 
 def _safe_error_summaries(observations: object) -> list[dict[str, Any]]:
