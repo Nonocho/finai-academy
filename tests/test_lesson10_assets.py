@@ -172,7 +172,10 @@ def test_lesson10_chapter_and_discoverable_indexes_expose_the_classroom_contract
     assert "[Financial MCP](10-financial-mcp.md)" in chapter_index
     assert "[Financial MCP](10_financial_mcp.ipynb)" in notebook_index
     for index in (chapter_index, notebook_index, deck_index, root_readme):
-        assert "full Lesson 10 route is ready for an instructor-led test class" in index
+        assert (
+            "Lessons 08-11 are ready for an instructor-led test class"
+            in " ".join(index.split())
+        )
         assert "pending Task 6" not in index
         assert "when available" not in index
     assert "[Build a financial MCP](10-financial-mcp.pptx)" in deck_index
