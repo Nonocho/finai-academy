@@ -1,7 +1,7 @@
 # Lesson 10 delivery readiness
 
-Review date: 2026-08-22  
-Lesson: Financial MCP  
+Review date: 2026-08-22
+Lesson: Financial MCP
 Environment: macOS, Apple Silicon, Python 3.13.9, MCP Python SDK 2.0.0
 
 ## Decision
@@ -30,6 +30,7 @@ this certification. Neither limitation is represented as a provider pass.
 | Ollama live execution | PASS | Exact live command produced an artifact with 5 PNG figures and `LESSON_10_PASS`; runner wall time was 32.5 seconds. Runtime label identifies `ollama` / `qwen3:8b`; it selected the runtime-discovered, allowlisted `search_financial_documents` tool and preserved the expected invalid-metric protocol error. |
 | OpenAI live execution | NOT CONFIGURED | `OPENAI_API_KEY` was absent. The OpenAI command was not run and no OpenAI pass is claimed. |
 | Full course regression | PASS | Approved interactive local-port run: `.venv/bin/pytest -q` reported `252 passed in 50.26s`. |
+| Prior readiness-commit post-gate | PASS | After commit `1b11503`, `git status --porcelain` was empty, the Lesson 10 sequence appeared in `git log -7 --oneline`, and the Task 1-4 targeted gate passed `26` tests in `5.04s`. This evidence applies to that prior commit only. |
 | Whitespace | PASS | `git diff --check` exited with no output. |
 | Deck overflow | PASS | Bundled-runtime `slides_test.py decks/10-financial-mcp.pptx`: `Test passed. No overflow detected.` |
 | Deck structure and notes | PASS | 9 slide XML parts and 9 notes XML parts were found; every notes part contains a complete `[Sources]` and `[/Sources]` block. The Lesson 10 deck contract passed: `1 passed, 3 deselected in 0.70s`. |

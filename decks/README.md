@@ -23,6 +23,8 @@
 | 11 | Plan-and-execute financial analyst | Planned |
 | 12 | Evaluating agentic systems | Planned |
 
+The full Lesson 10 route is ready for an instructor-led test class.
+
 Every completed deck is editable, includes speaker notes and sources, uses the
 footer `First Finance - Arnaud Demes`, and is accepted only after render and overflow
 checks.

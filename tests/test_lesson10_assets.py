@@ -154,7 +154,8 @@ def test_lesson10_chapter_and_discoverable_indexes_expose_the_classroom_contract
 
     assert "notebooks/10_financial_mcp.ipynb" in chapter
     assert "decks/10-financial-mcp.pptx" in chapter
-    assert "Task 6" in chapter
+    assert "full Lesson 10 route is ready for an instructor-led test class" in chapter
+    assert "pending Task 6" not in chapter
     assert "Static recovery catalog" in chapter
     for capability in (
         "| Resource | Application | `finance://coverage` |",
@@ -166,15 +167,15 @@ def test_lesson10_chapter_and_discoverable_indexes_expose_the_classroom_contract
 
     chapter_index = (ROOT / "chapters" / "README.md").read_text(encoding="utf-8")
     notebook_index = (ROOT / "notebooks" / "README.md").read_text(encoding="utf-8")
+    deck_index = (ROOT / "decks" / "README.md").read_text(encoding="utf-8")
+    root_readme = (ROOT / "README.md").read_text(encoding="utf-8")
     assert "[Financial MCP](10-financial-mcp.md)" in chapter_index
     assert "[Financial MCP](10_financial_mcp.ipynb)" in notebook_index
-    assert "full 45-minute delivery route is pending Task 6 deck" in chapter_index
-    assert "full 45-minute delivery route is pending Task 6 deck" in notebook_index
-    assert "ready for instructor delivery" not in chapter_index
-    assert "ready for instructor delivery" not in notebook_index
-    assert "[Build a financial MCP](10-financial-mcp.pptx)" in (
-        ROOT / "decks" / "README.md"
-    ).read_text(encoding="utf-8")
+    for index in (chapter_index, notebook_index, deck_index, root_readme):
+        assert "full Lesson 10 route is ready for an instructor-led test class" in index
+        assert "pending Task 6" not in index
+        assert "when available" not in index
+    assert "[Build a financial MCP](10-financial-mcp.pptx)" in deck_index
 
 
 def test_lesson10_deck_has_the_complete_sourced_concept_route() -> None:

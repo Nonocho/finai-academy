@@ -86,7 +86,7 @@ tests/                  Engineering and course contracts
 ```
 
 Day 1 consists of the introduction plus canonical Lessons 01-07. Day 2 adds
-workflows, tools, bounded agents, and MCP.
+workflows, tools, bounded agents, and MCP. The full Lesson 10 route is ready for an instructor-led test class.
 
 ## Copyright
 

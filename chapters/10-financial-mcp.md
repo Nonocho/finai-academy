@@ -7,7 +7,8 @@
 
 Students connect a local financial application to one MCP server over `stdio`, discover its declared capabilities at runtime, and use them within a host-owned permission boundary. The NVIDIA (`NVDA`) and Schneider Electric (`SU.PA`) examples are read-only, deterministic, and grounded in controlled course fixtures. This lesson does not demonstrate trading, portfolio changes, or an investment recommendation.
 
-The instructor chapter and notebook route are ready. The full 45-minute delivery route is pending Task 6, which creates and certifies the nine-slide deck; do not present the lesson as fully deliverable until that deck is available.
+The full Lesson 10 route is ready for an instructor-led test class. Use the
+nine-slide deck to frame the notebook; do not read the slides aloud.
 
 ```text
 host starts local server → client discovers capabilities → host reads context
@@ -61,7 +62,8 @@ The expected discovery result is exactly one resource, two tools, and one prompt
 
 ## 10-minute concept deck
 
-Task 6 creates and certifies the nine-slide `decks/10-financial-mcp.pptx` deck. Until Task 6 is complete, this table is the planned slide route, not an available deck or a complete delivery substitute. Once available, use the deck to frame the notebook; do not read the slides aloud.
+The certified nine-slide `decks/10-financial-mcp.pptx` deck frames this route.
+Use it to introduce the notebook; do not read the slides aloud.
 
 | Time | Slide | Instructor job |
 |---:|---:|---|
