@@ -89,7 +89,6 @@ def build_notebook():
             from finai_academy.plan_execute_policies import (
                 INITIAL_RECORDED_STEPS,
                 MISSION,
-                RECORDED_REPLACEMENT_STEPS,
                 build_live_plan_execute_policies,
                 recorded_planner,
                 recorded_replanner,
@@ -97,10 +96,7 @@ def build_notebook():
             )
             from finai_academy.planning_mcp_executor import FinancialMcpPlanningExecutor
             from finai_academy.research_planning import (
-                AnalystBriefing,
                 ReplanDecision,
-                ResearchObservation,
-                ResearchPlan,
                 validate_plan,
             )
             from finai_academy.settings import Settings
