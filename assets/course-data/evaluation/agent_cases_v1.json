@@ -1,0 +1,453 @@
+{
+  "schema_version": 1,
+  "dataset_version": "agent-cases-v1",
+  "scorer_contract_version": "agent-scorers-v1",
+  "cases": [
+    {
+      "case_id": "reference_completed",
+      "mission": "Produce a concise NVIDIA and Schneider Electric briefing. Compare their available valuation metrics and latest operating-growth evidence. Cite every factual claim and state which observations cannot be compared directly.",
+      "expected_final_status": "completed",
+      "expected_tool_calls": [
+        {
+          "call_id": "metric-nvda-pe",
+          "capability": "get_company_metric",
+          "arguments": {
+            "ticker": "NVDA",
+            "metric": "P/E"
+          },
+          "prerequisite_call_ids": []
+        },
+        {
+          "call_id": "metric-su-pe",
+          "capability": "get_company_metric",
+          "arguments": {
+            "ticker": "SU.PA",
+            "metric": "P/E"
+          },
+          "prerequisite_call_ids": []
+        },
+        {
+          "call_id": "metric-nvda-revenue-error",
+          "capability": "get_company_metric",
+          "arguments": {
+            "ticker": "NVDA",
+            "metric": "Revenue"
+          },
+          "prerequisite_call_ids": []
+        },
+        {
+          "call_id": "document-nvda-growth",
+          "capability": "search_financial_documents",
+          "arguments": {
+            "company": "NVIDIA",
+            "query": "revenue growth",
+            "top_k": 2
+          },
+          "prerequisite_call_ids": [
+            "metric-nvda-pe"
+          ]
+        },
+        {
+          "call_id": "document-su-growth",
+          "capability": "search_financial_documents",
+          "arguments": {
+            "company": "Schneider Electric",
+            "query": "energy management",
+            "top_k": 2
+          },
+          "prerequisite_call_ids": [
+            "metric-su-pe",
+            "document-nvda-growth"
+          ]
+        }
+      ],
+      "expected_error_codes": [
+        "unsupported_metric"
+      ],
+      "expected_replan_count": 1,
+      "max_tool_calls": 5,
+      "required_companies": [
+        "NVIDIA",
+        "Schneider Electric"
+      ],
+      "required_evidence_ids": [
+        "NVDA-FY2026-DATA-CENTER-001",
+        "SU-FY2025-ENERGY-MANAGEMENT-001"
+      ],
+      "required_fact_kinds": [
+        "metric",
+        "document"
+      ],
+      "required_limitations": [
+        "currencies",
+        "reporting periods",
+        "business definitions"
+      ],
+      "allow_briefing": true
+    },
+    {
+      "case_id": "unsupported_metric_not_recovered",
+      "mission": "Produce a concise NVIDIA and Schneider Electric briefing. Compare their available valuation metrics and latest operating-growth evidence. Cite every factual claim and state which observations cannot be compared directly.",
+      "expected_final_status": "execution_stopped",
+      "expected_tool_calls": [
+        {
+          "call_id": "metric-nvda-pe",
+          "capability": "get_company_metric",
+          "arguments": {
+            "ticker": "NVDA",
+            "metric": "P/E"
+          },
+          "prerequisite_call_ids": []
+        },
+        {
+          "call_id": "metric-su-pe",
+          "capability": "get_company_metric",
+          "arguments": {
+            "ticker": "SU.PA",
+            "metric": "P/E"
+          },
+          "prerequisite_call_ids": []
+        },
+        {
+          "call_id": "metric-nvda-revenue-error",
+          "capability": "get_company_metric",
+          "arguments": {
+            "ticker": "NVDA",
+            "metric": "Revenue"
+          },
+          "prerequisite_call_ids": []
+        }
+      ],
+      "expected_error_codes": [
+        "unsupported_metric"
+      ],
+      "expected_replan_count": 0,
+      "max_tool_calls": 3,
+      "required_companies": [
+        "NVIDIA",
+        "Schneider Electric"
+      ],
+      "required_evidence_ids": [
+        "NVDA-FY2026-DATA-CENTER-001",
+        "SU-FY2025-ENERGY-MANAGEMENT-001"
+      ],
+      "required_fact_kinds": [
+        "metric",
+        "document"
+      ],
+      "required_limitations": [],
+      "allow_briefing": false
+    },
+    {
+      "case_id": "redundant_metric_call",
+      "mission": "Produce a concise NVIDIA and Schneider Electric briefing. Compare their available valuation metrics and latest operating-growth evidence. Cite every factual claim and state which observations cannot be compared directly.",
+      "expected_final_status": "completed",
+      "expected_tool_calls": [
+        {
+          "call_id": "metric-nvda-pe",
+          "capability": "get_company_metric",
+          "arguments": {
+            "ticker": "NVDA",
+            "metric": "P/E"
+          },
+          "prerequisite_call_ids": []
+        },
+        {
+          "call_id": "metric-su-pe",
+          "capability": "get_company_metric",
+          "arguments": {
+            "ticker": "SU.PA",
+            "metric": "P/E"
+          },
+          "prerequisite_call_ids": []
+        },
+        {
+          "call_id": "metric-nvda-revenue-error",
+          "capability": "get_company_metric",
+          "arguments": {
+            "ticker": "NVDA",
+            "metric": "Revenue"
+          },
+          "prerequisite_call_ids": []
+        },
+        {
+          "call_id": "document-nvda-growth",
+          "capability": "search_financial_documents",
+          "arguments": {
+            "company": "NVIDIA",
+            "query": "revenue growth",
+            "top_k": 2
+          },
+          "prerequisite_call_ids": [
+            "metric-nvda-pe"
+          ]
+        },
+        {
+          "call_id": "document-su-growth",
+          "capability": "search_financial_documents",
+          "arguments": {
+            "company": "Schneider Electric",
+            "query": "energy management",
+            "top_k": 2
+          },
+          "prerequisite_call_ids": [
+            "metric-su-pe",
+            "document-nvda-growth"
+          ]
+        }
+      ],
+      "expected_error_codes": [
+        "unsupported_metric"
+      ],
+      "expected_replan_count": 1,
+      "max_tool_calls": 5,
+      "required_companies": [
+        "NVIDIA",
+        "Schneider Electric"
+      ],
+      "required_evidence_ids": [
+        "NVDA-FY2026-DATA-CENTER-001",
+        "SU-FY2025-ENERGY-MANAGEMENT-001"
+      ],
+      "required_fact_kinds": [
+        "metric",
+        "document"
+      ],
+      "required_limitations": [
+        "currencies",
+        "reporting periods",
+        "business definitions"
+      ],
+      "allow_briefing": true
+    },
+    {
+      "case_id": "missing_schneider_document",
+      "mission": "Produce a concise NVIDIA and Schneider Electric briefing. Compare their available valuation metrics and latest operating-growth evidence. Cite every factual claim and state which observations cannot be compared directly.",
+      "expected_final_status": "insufficient_evidence",
+      "expected_tool_calls": [
+        {
+          "call_id": "metric-nvda-pe",
+          "capability": "get_company_metric",
+          "arguments": {
+            "ticker": "NVDA",
+            "metric": "P/E"
+          },
+          "prerequisite_call_ids": []
+        },
+        {
+          "call_id": "metric-su-pe",
+          "capability": "get_company_metric",
+          "arguments": {
+            "ticker": "SU.PA",
+            "metric": "P/E"
+          },
+          "prerequisite_call_ids": []
+        },
+        {
+          "call_id": "metric-nvda-revenue-error",
+          "capability": "get_company_metric",
+          "arguments": {
+            "ticker": "NVDA",
+            "metric": "Revenue"
+          },
+          "prerequisite_call_ids": []
+        },
+        {
+          "call_id": "document-nvda-growth",
+          "capability": "search_financial_documents",
+          "arguments": {
+            "company": "NVIDIA",
+            "query": "revenue growth",
+            "top_k": 2
+          },
+          "prerequisite_call_ids": [
+            "metric-nvda-pe"
+          ]
+        }
+      ],
+      "expected_error_codes": [
+        "unsupported_metric"
+      ],
+      "expected_replan_count": 1,
+      "max_tool_calls": 4,
+      "required_companies": [
+        "NVIDIA",
+        "Schneider Electric"
+      ],
+      "required_evidence_ids": [
+        "NVDA-FY2026-DATA-CENTER-001",
+        "SU-FY2025-ENERGY-MANAGEMENT-001"
+      ],
+      "required_fact_kinds": [
+        "metric",
+        "document"
+      ],
+      "required_limitations": [],
+      "allow_briefing": false
+    },
+    {
+      "case_id": "document_fact_without_evidence_id",
+      "mission": "Produce a concise NVIDIA and Schneider Electric briefing. Compare their available valuation metrics and latest operating-growth evidence. Cite every factual claim and state which observations cannot be compared directly.",
+      "expected_final_status": "completed",
+      "expected_tool_calls": [
+        {
+          "call_id": "metric-nvda-pe",
+          "capability": "get_company_metric",
+          "arguments": {
+            "ticker": "NVDA",
+            "metric": "P/E"
+          },
+          "prerequisite_call_ids": []
+        },
+        {
+          "call_id": "metric-su-pe",
+          "capability": "get_company_metric",
+          "arguments": {
+            "ticker": "SU.PA",
+            "metric": "P/E"
+          },
+          "prerequisite_call_ids": []
+        },
+        {
+          "call_id": "metric-nvda-revenue-error",
+          "capability": "get_company_metric",
+          "arguments": {
+            "ticker": "NVDA",
+            "metric": "Revenue"
+          },
+          "prerequisite_call_ids": []
+        },
+        {
+          "call_id": "document-nvda-growth",
+          "capability": "search_financial_documents",
+          "arguments": {
+            "company": "NVIDIA",
+            "query": "revenue growth",
+            "top_k": 2
+          },
+          "prerequisite_call_ids": [
+            "metric-nvda-pe"
+          ]
+        },
+        {
+          "call_id": "document-su-growth",
+          "capability": "search_financial_documents",
+          "arguments": {
+            "company": "Schneider Electric",
+            "query": "energy management",
+            "top_k": 2
+          },
+          "prerequisite_call_ids": [
+            "metric-su-pe",
+            "document-nvda-growth"
+          ]
+        }
+      ],
+      "expected_error_codes": [
+        "unsupported_metric"
+      ],
+      "expected_replan_count": 1,
+      "max_tool_calls": 5,
+      "required_companies": [
+        "NVIDIA",
+        "Schneider Electric"
+      ],
+      "required_evidence_ids": [
+        "NVDA-FY2026-DATA-CENTER-001",
+        "SU-FY2025-ENERGY-MANAGEMENT-001"
+      ],
+      "required_fact_kinds": [
+        "metric",
+        "document"
+      ],
+      "required_limitations": [
+        "currencies",
+        "reporting periods",
+        "business definitions"
+      ],
+      "allow_briefing": true
+    },
+    {
+      "case_id": "wrong_source_evidence_pair",
+      "mission": "Produce a concise NVIDIA and Schneider Electric briefing. Compare their available valuation metrics and latest operating-growth evidence. Cite every factual claim and state which observations cannot be compared directly.",
+      "expected_final_status": "completed",
+      "expected_tool_calls": [
+        {
+          "call_id": "metric-nvda-pe",
+          "capability": "get_company_metric",
+          "arguments": {
+            "ticker": "NVDA",
+            "metric": "P/E"
+          },
+          "prerequisite_call_ids": []
+        },
+        {
+          "call_id": "metric-su-pe",
+          "capability": "get_company_metric",
+          "arguments": {
+            "ticker": "SU.PA",
+            "metric": "P/E"
+          },
+          "prerequisite_call_ids": []
+        },
+        {
+          "call_id": "metric-nvda-revenue-error",
+          "capability": "get_company_metric",
+          "arguments": {
+            "ticker": "NVDA",
+            "metric": "Revenue"
+          },
+          "prerequisite_call_ids": []
+        },
+        {
+          "call_id": "document-nvda-growth",
+          "capability": "search_financial_documents",
+          "arguments": {
+            "company": "NVIDIA",
+            "query": "revenue growth",
+            "top_k": 2
+          },
+          "prerequisite_call_ids": [
+            "metric-nvda-pe"
+          ]
+        },
+        {
+          "call_id": "document-su-growth",
+          "capability": "search_financial_documents",
+          "arguments": {
+            "company": "Schneider Electric",
+            "query": "energy management",
+            "top_k": 2
+          },
+          "prerequisite_call_ids": [
+            "metric-su-pe",
+            "document-nvda-growth"
+          ]
+        }
+      ],
+      "expected_error_codes": [
+        "unsupported_metric"
+      ],
+      "expected_replan_count": 1,
+      "max_tool_calls": 5,
+      "required_companies": [
+        "NVIDIA",
+        "Schneider Electric"
+      ],
+      "required_evidence_ids": [
+        "NVDA-FY2026-DATA-CENTER-001",
+        "SU-FY2025-ENERGY-MANAGEMENT-001"
+      ],
+      "required_fact_kinds": [
+        "metric",
+        "document"
+      ],
+      "required_limitations": [
+        "currencies",
+        "reporting periods",
+        "business definitions"
+      ],
+      "allow_briefing": true
+    }
+  ]
+}

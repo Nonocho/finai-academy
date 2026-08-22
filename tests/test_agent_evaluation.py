@@ -1,6 +1,9 @@
 from __future__ import annotations
 
 import inspect
+import json
+from hashlib import sha256
+from pathlib import Path
 
 import pytest
 from pydantic import ValidationError
@@ -32,6 +35,57 @@ MISSION = (
     "Produce a concise NVIDIA and Schneider Electric briefing. Compare their available "
     "valuation metrics and latest operating-growth evidence."
 )
+PROJECT_ROOT = Path(__file__).resolve().parents[1]
+CASES_PATH = PROJECT_ROOT / "assets/course-data/evaluation/agent_cases_v1.json"
+RUNS_PATH = PROJECT_ROOT / "assets/course-data/evaluation/agent_runs_v1.json"
+MANIFEST_PATH = PROJECT_ROOT / "assets/course-data/manifest.json"
+METRIC_NAMES = (
+    "tool_call_correctness",
+    "tool_call_efficiency",
+    "answer_relevance",
+    "answer_completeness",
+    "citation_integrity",
+)
+
+
+def load_agent_evaluation_dataset(*args: object, **kwargs: object):
+    return agent_evaluation.load_agent_evaluation_dataset(*args, **kwargs)
+
+
+def load_recorded_agent_runs(*args: object, **kwargs: object):
+    return agent_evaluation.load_recorded_agent_runs(*args, **kwargs)
+
+
+def align_cases_and_predictions(*args: object, **kwargs: object):
+    return agent_evaluation.align_cases_and_predictions(*args, **kwargs)
+
+
+def score_agent_case(*args: object, **kwargs: object):
+    return agent_evaluation.score_agent_case(*args, **kwargs)
+
+
+def summarize_agent_evaluation(*args: object, **kwargs: object):
+    return agent_evaluation.summarize_agent_evaluation(*args, **kwargs)
+
+
+def _manifest() -> dict[str, object]:
+    return json.loads(MANIFEST_PATH.read_text(encoding="utf-8"))
+
+
+def manifest_case_hash() -> str:
+    entries = _manifest()["evaluation_datasets"]
+    assert isinstance(entries, list)
+    return next(
+        str(item["sha256"]) for item in entries if item["dataset_version"] == "agent-cases-v1"
+    )
+
+
+def manifest_run_hash() -> str:
+    entries = _manifest()["evaluation_run_fixtures"]
+    assert isinstance(entries, list)
+    return next(
+        str(item["sha256"]) for item in entries if item["fixture_version"] == "agent-runs-v1"
+    )
 
 
 def initial_plan() -> ResearchPlan:
@@ -292,12 +346,8 @@ def test_candidate_fact_strips_text_and_preserves_tuple_order() -> None:
 
 
 def test_canonical_call_signature_sorts_nested_arguments() -> None:
-    left = canonical_call_signature(
-        "get_company_metric", {"metric": "P/E", "ticker": "NVDA"}
-    )
-    right = canonical_call_signature(
-        "get_company_metric", {"ticker": "NVDA", "metric": "P/E"}
-    )
+    left = canonical_call_signature("get_company_metric", {"metric": "P/E", "ticker": "NVDA"})
+    right = canonical_call_signature("get_company_metric", {"ticker": "NVDA", "metric": "P/E"})
     assert left == right == 'get_company_metric:{"metric":"P/E","ticker":"NVDA"}'
 
 
@@ -342,9 +392,7 @@ def test_contract_models_are_strict_frozen_and_validate_numeric_bounds() -> None
     with pytest.raises(ValidationError):
         AgentEvaluationCase.model_validate({**case.model_dump(), "unknown": True})
     with pytest.raises(ValidationError):
-        AgentEvaluationCase.model_validate(
-            {**case.model_dump(), "expected_replan_count": -1}
-        )
+        AgentEvaluationCase.model_validate({**case.model_dump(), "expected_replan_count": -1})
     with pytest.raises(ValidationError):
         ExpectedToolCall.model_validate(
             {**expected_call.model_dump(), "prerequisite_call_ids": (" ",)}
@@ -397,3 +445,238 @@ def test_agent_evaluation_module_does_not_import_mlflow() -> None:
 
     assert "import mlflow" not in source
     assert "from mlflow" not in source
+
+
+def aligned_fixture() -> tuple[
+    tuple[AgentEvaluationCase, ...], tuple[AgentEvaluationPrediction, ...]
+]:
+    dataset = load_agent_evaluation_dataset(CASES_PATH, expected_sha256=manifest_case_hash())
+    runs = load_recorded_agent_runs(RUNS_PATH, cases=dataset, expected_sha256=manifest_run_hash())
+    return dataset.cases, runs.configurations[0].predictions
+
+
+def mutate_alignment(
+    predictions: tuple[AgentEvaluationPrediction, ...], mutation: str
+) -> tuple[AgentEvaluationPrediction, ...]:
+    if mutation == "missing":
+        return predictions[:-1]
+    if mutation == "extra":
+        return predictions + (predictions[0].model_copy(update={"case_id": "unexpected_case"}),)
+    if mutation == "duplicate":
+        return predictions[:-1] + (predictions[0],)
+    if mutation == "wrong_hash":
+        return (
+            predictions[0].model_copy(update={"dataset_sha256": "b" * 64}),
+            *predictions[1:],
+        )
+    if mutation == "wrong_version":
+        return (
+            predictions[0].model_copy(update={"dataset_version": "agent-cases-v2"}),
+            *predictions[1:],
+        )
+    raise AssertionError(f"unknown mutation: {mutation}")
+
+
+def fixture_pair(
+    case_id: str, configuration_id: str
+) -> tuple[AgentEvaluationCase, AgentEvaluationPrediction]:
+    dataset = load_agent_evaluation_dataset(CASES_PATH, expected_sha256=manifest_case_hash())
+    runs = load_recorded_agent_runs(RUNS_PATH, cases=dataset, expected_sha256=manifest_run_hash())
+    case = next(item for item in dataset.cases if item.case_id == case_id)
+    configuration = next(
+        item for item in runs.configurations if item.configuration_id == configuration_id
+    )
+    prediction = next(item for item in configuration.predictions if item.case_id == case_id)
+    return case, prediction
+
+
+def test_agent_cases_v1_has_exactly_six_required_cases_and_expected_calls() -> None:
+    dataset = load_agent_evaluation_dataset(CASES_PATH, expected_sha256=manifest_case_hash())
+    assert dataset.dataset_version == "agent-cases-v1"
+    assert tuple(case.case_id for case in dataset.cases) == (
+        "reference_completed",
+        "unsupported_metric_not_recovered",
+        "redundant_metric_call",
+        "missing_schneider_document",
+        "document_fact_without_evidence_id",
+        "wrong_source_evidence_pair",
+    )
+    assert all(call.call_id for case in dataset.cases for call in case.expected_tool_calls)
+
+
+def test_dataset_loader_rejects_byte_hash_mismatch_before_parsing(
+    tmp_path: Path,
+) -> None:
+    path = tmp_path / "agent_cases_v1.json"
+    path.write_bytes(CASES_PATH.read_bytes() + b"\n")
+    with pytest.raises(ValueError, match="dataset SHA-256 mismatch"):
+        load_agent_evaluation_dataset(path, expected_sha256=manifest_case_hash())
+
+
+def test_recorded_runs_have_two_configurations_and_six_aligned_predictions_each() -> None:
+    dataset = load_agent_evaluation_dataset(CASES_PATH, expected_sha256=manifest_case_hash())
+    runs = load_recorded_agent_runs(RUNS_PATH, cases=dataset, expected_sha256=manifest_run_hash())
+    assert tuple(config.configuration_id for config in runs.configurations) == (
+        "bounded-agent-v1",
+        "regressed-agent-v0",
+    )
+    assert all(len(config.predictions) == 6 for config in runs.configurations)
+    assert (
+        runs.configurations[0].agent_version,
+        runs.configurations[1].agent_version,
+    ) == ("lesson11-certified-v1", "lesson11-regression-fixtures-v0")
+    assert all(config.agent_model == "recorded-public-fixture-v1" for config in runs.configurations)
+    assert tuple(config.prompt_version for config in runs.configurations) == (
+        "lesson11-recorded-policies-v1",
+        "lesson11-regression-policies-v0",
+    )
+    assert all((config.max_steps, config.max_replans) == (6, 1) for config in runs.configurations)
+
+
+@pytest.mark.parametrize(
+    "mutation", ["missing", "extra", "duplicate", "wrong_hash", "wrong_version"]
+)
+def test_alignment_rejects_partial_or_mismatched_prediction_tables(
+    mutation: str,
+) -> None:
+    cases, predictions = aligned_fixture()
+    changed = mutate_alignment(predictions, mutation)
+    with pytest.raises(ValueError, match="alignment"):
+        align_cases_and_predictions(
+            cases,
+            changed,
+            dataset_version="agent-cases-v1",
+            dataset_sha256="a" * 64,
+        )
+
+
+@pytest.mark.parametrize(
+    ("fixture", "nested_path"),
+    [
+        ("cases", ("cases", 0, "expected_tool_calls", 0)),
+        ("runs", ("configurations", 0, "predictions", 0, "initial_plan", "steps", 0)),
+        ("runs", ("configurations", 0, "predictions", 0, "observations", 0)),
+    ],
+    ids=("expected-call", "reused-plan-step", "reused-observation"),
+)
+def test_raw_json_loader_rejects_unknown_nested_fields_before_model_parsing(
+    fixture: str, nested_path: tuple[str | int, ...], tmp_path: Path
+) -> None:
+    source = CASES_PATH if fixture == "cases" else RUNS_PATH
+    payload = json.loads(source.read_text(encoding="utf-8"))
+    target: object = payload
+    for part in nested_path:
+        if isinstance(part, int):
+            assert isinstance(target, list)
+            target = target[part]
+        else:
+            assert isinstance(target, dict)
+            target = target[part]
+    assert isinstance(target, dict)
+    target["unknown_nested_field"] = True
+    changed = json.dumps(payload, indent=2).encode("utf-8") + b"\n"
+    path = tmp_path / source.name
+    path.write_bytes(changed)
+    changed_hash = sha256(changed).hexdigest()
+
+    with pytest.raises(ValueError, match="unknown field"):
+        if fixture == "cases":
+            load_agent_evaluation_dataset(path, expected_sha256=changed_hash)
+        else:
+            dataset = load_agent_evaluation_dataset(
+                CASES_PATH, expected_sha256=manifest_case_hash()
+            )
+            load_recorded_agent_runs(path, cases=dataset, expected_sha256=changed_hash)
+
+
+def test_tool_call_correctness_is_dependency_aware_not_list_position_based() -> None:
+    case, prediction = fixture_pair("reference_completed", "bounded-agent-v1")
+    independent = tuple(reversed(prediction.observations[:2])) + prediction.observations[2:]
+    changed = prediction.model_copy(update={"observations": independent})
+    assert score_agent_case(case, changed).tool_call_correctness.value == 1.0
+
+
+def test_tool_call_correctness_requires_expected_typed_error_and_replan() -> None:
+    case, prediction = fixture_pair("reference_completed", "bounded-agent-v1")
+    changed = prediction.model_copy(update={"replan_count": 0})
+    score = score_agent_case(case, changed).tool_call_correctness
+    assert 0.0 <= score.value < 1.0
+    assert "replan" in score.rationale.casefold()
+
+
+def test_tool_call_efficiency_penalizes_duplicate_budget_and_post_terminal_calls() -> None:
+    case, prediction = fixture_pair("redundant_metric_call", "regressed-agent-v0")
+    score = score_agent_case(case, prediction)
+    assert score.tool_call_efficiency.value < 1.0
+    assert score.redundant_tool_calls >= 1
+
+
+def test_answer_relevance_scores_expected_typed_stop_without_a_briefing() -> None:
+    case, prediction = fixture_pair("missing_schneider_document", "bounded-agent-v1")
+    assert prediction.briefing is None
+    assert score_agent_case(case, prediction).answer_relevance.value == 1.0
+
+
+def test_answer_completeness_requires_companies_evidence_fact_kinds_comparison_and_limits() -> None:
+    case, prediction = fixture_pair("reference_completed", "bounded-agent-v1")
+    assert score_agent_case(case, prediction).answer_completeness.value == 1.0
+    assert prediction.briefing is not None
+    changed = prediction.model_copy(
+        update={"briefing": prediction.briefing.model_copy(update={"limitations": ()})}
+    )
+    assert score_agent_case(case, changed).answer_completeness.value < 1.0
+
+
+def test_citation_integrity_accepts_metric_source_and_exact_document_pair() -> None:
+    case, prediction = fixture_pair("reference_completed", "bounded-agent-v1")
+    assert score_agent_case(case, prediction).citation_integrity.value == 1.0
+
+
+def test_citation_integrity_returns_zero_for_document_fact_without_evidence_id() -> None:
+    case, prediction = fixture_pair("document_fact_without_evidence_id", "regressed-agent-v0")
+    assert score_agent_case(case, prediction).citation_integrity.value == 0.0
+
+
+def test_citation_integrity_returns_zero_for_cross_paired_source_and_evidence() -> None:
+    case, prediction = fixture_pair("wrong_source_evidence_pair", "regressed-agent-v0")
+    assert score_agent_case(case, prediction).citation_integrity.value == 0.0
+
+
+def test_release_fails_when_required_gate_stop_emits_a_briefing() -> None:
+    case, prediction = fixture_pair("missing_schneider_document", "regressed-agent-v0")
+    assert prediction.briefing is not None
+    assert score_agent_case(case, prediction).release_passed is False
+
+
+def test_summary_preserves_per_case_failures_and_computes_five_means() -> None:
+    dataset = load_agent_evaluation_dataset(CASES_PATH, expected_sha256=manifest_case_hash())
+    runs = load_recorded_agent_runs(RUNS_PATH, cases=dataset, expected_sha256=manifest_run_hash())
+    configuration = runs.configurations[0]
+    aligned = align_cases_and_predictions(
+        dataset.cases,
+        configuration.predictions,
+        dataset_version=dataset.dataset_version,
+        dataset_sha256=dataset.dataset_sha256,
+    )
+    scores = tuple(score_agent_case(case, prediction) for case, prediction in aligned)
+    summary = summarize_agent_evaluation(
+        scores,
+        dataset_version=dataset.dataset_version,
+        dataset_sha256=dataset.dataset_sha256,
+    )
+    assert summary.case_count == 6
+    assert set(summary.metric_means) == set(METRIC_NAMES)
+
+
+def test_failure_classification_assigns_expected_fixture_owners() -> None:
+    expected = {
+        "unsupported_metric_not_recovered": "replanner",
+        "redundant_metric_call": "replanner",
+        "missing_schneider_document": "evidence_gate",
+        "document_fact_without_evidence_id": "report_writer",
+        "wrong_source_evidence_pair": "report_writer",
+    }
+    for case_id, owner in expected.items():
+        case, prediction = fixture_pair(case_id, "regressed-agent-v0")
+        scores = score_agent_case(case, prediction)
+        assert scores.failure_stage == owner
