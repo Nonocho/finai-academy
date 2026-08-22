@@ -352,6 +352,33 @@ class ReplacementFactory:
         return ReplacementModel(self.prompts)
 
 
+class CapacityAwareModel:
+    def __init__(self, prompts: list[object]) -> None:
+        self._prompts = prompts
+
+    def with_structured_output(self, _schema: type[Any]) -> CapacityAwareModel:
+        return self
+
+    async def ainvoke(self, payload: object) -> ReplanDecision:
+        self._prompts.append(payload)
+        context = json.loads(payload[1][1])
+        errors = context["typed_errors"]
+        if errors and context["remaining_step_capacity"] == 0:
+            return ReplanDecision(
+                action="stop",
+                reasoning="The graph's remaining step budget is exhausted.",
+            )
+        return ReplanDecision(action="continue", reasoning="Continue within the graph budget.")
+
+
+class CapacityAwareFactory:
+    def __init__(self) -> None:
+        self.prompts: list[object] = []
+
+    def __call__(self, _settings: Settings) -> CapacityAwareModel:
+        return CapacityAwareModel(self.prompts)
+
+
 class ReplacementExecutor:
     catalog = tool_catalog()
 
@@ -435,7 +462,51 @@ def test_live_replanner_receives_safe_reserved_ids_and_validates_its_replacement
     )
     assert replanning_context["reserved_step_ids"] == [1, 2, 3, 4]
     assert replanning_context["next_replacement_step_id"] == 5
+    assert replanning_context["max_step_budget"] == 6
     assert replanning_context["remaining_step_capacity"] == 2
     rendered_prompt = json.dumps(factory.prompts)
     for unsafe_text in ("OPENAI_API_KEY", "secret", "server_parameters", "sys.executable"):
         assert unsafe_text not in rendered_prompt
+
+
+def test_live_replanner_uses_a_stricter_graph_step_limit_for_remaining_capacity() -> None:
+    """Breaks if the prompt advertises replacement slots that Task 3 will reject."""
+    factory = CapacityAwareFactory()
+    _, replanner, _ = build_live_plan_execute_policies(
+        Settings(provider="ollama"), model_factory=factory
+    )
+
+    result = asyncio.run(
+        run_plan_execute(
+            question=MISSION,
+            executor=ReplacementExecutor(),
+            planner=recorded_planner,
+            replanner=replanner,
+            report_writer=recorded_report_writer,
+            max_steps=4,
+        )
+    )
+
+    assert result.status == "execution_stopped"
+    failure_context = next(
+        json.loads(messages[1][1])
+        for messages in factory.prompts
+        if "unsupported_metric" in messages[1][1]
+    )
+    assert failure_context["reserved_step_ids"] == [1, 2, 3, 4]
+    assert failure_context["max_step_budget"] == 4
+    assert failure_context["remaining_step_capacity"] == 0
+
+
+def test_live_replanner_fails_closed_without_a_valid_graph_step_limit() -> None:
+    """Breaks if direct callers receive an invented replacement budget."""
+    factory = CapacityAwareFactory()
+    _, replanner, _ = build_live_plan_execute_policies(
+        Settings(provider="ollama"), model_factory=factory
+    )
+
+    asyncio.run(replanner({"all_step_ids": (1, 2, 3, 4), "observations": ()}))
+
+    direct_context = json.loads(factory.prompts[0][1][1])
+    assert direct_context["reserved_step_ids"] == [1, 2, 3, 4]
+    assert direct_context["remaining_step_capacity"] == 0

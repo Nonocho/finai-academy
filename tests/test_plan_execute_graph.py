@@ -434,6 +434,30 @@ def test_compiled_graph_exposes_the_six_instructional_nodes() -> None:
     }
 
 
+def test_replanner_receives_the_graph_owned_step_limit() -> None:
+    """Breaks if a policy cannot align its replacement budget with the graph validator."""
+    executor = FakeExecutor()
+    received_limits: list[int] = []
+
+    async def limit_aware_replanner(state: Mapping[str, Any]) -> ReplanDecision:
+        received_limits.append(state["max_steps"])
+        return ReplanDecision(action="stop", reasoning="The configured budget permits no revision.")
+
+    result = asyncio.run(
+        run_plan_execute(
+            question=MISSION,
+            executor=executor,
+            planner=recorded_planner,
+            replanner=limit_aware_replanner,
+            report_writer=recorded_report_writer,
+            max_steps=4,
+        )
+    )
+
+    assert result.status == "execution_stopped"
+    assert received_limits == [4]
+
+
 def test_result_trajectory_is_sequential_and_contains_no_runtime_configuration() -> None:
     """Breaks if displayable output captures executor internals, environment, or secrets."""
     executor = FakeExecutor()

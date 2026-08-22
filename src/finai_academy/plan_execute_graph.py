@@ -73,6 +73,7 @@ class PlanExecuteState(TypedDict, total=False):
 
     question: str
     catalog: tuple[PlannerToolSpec, ...]
+    max_steps: int
     initial_plan: ResearchPlan
     active_steps: tuple[PlanStep, ...]
     all_step_ids: tuple[int, ...]
@@ -486,6 +487,7 @@ async def run_plan_execute(
         {
             "question": question,
             "catalog": executor.catalog,
+            "max_steps": max_steps,
             "observations": (),
             "trajectory": (),
             "plan_revision": 0,

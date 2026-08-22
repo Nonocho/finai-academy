@@ -230,9 +230,10 @@ class LiveReplanner(_LivePolicy):
 
     async def __call__(self, state: Mapping[str, Any]) -> ReplanDecision:
         result = await self._respond(
-            "Choose whether to continue, replace remaining steps, finish, or stop. Use at most six "
-            "total allowlisted research steps, no investment advice, and observable concise reasons, "
-            "not hidden reasoning. Do not repeat successful calls.",
+            "Choose whether to continue, replace remaining steps, finish, or stop. Respect the "
+            "supplied graph step limit, reserved IDs, and remaining capacity. Use only allowlisted "
+            "research steps, no investment advice, and observable concise reasons, not hidden "
+            "reasoning. Do not repeat successful calls.",
             {
                 "allowlisted_catalog": _safe_catalog_from_state(state),
                 **_safe_replanning_progress(state),
@@ -310,11 +311,20 @@ def _safe_replanning_progress(state: Mapping[str, Any]) -> dict[str, int | list[
             for step_id in reserved
             if isinstance(step_id, int) and not isinstance(step_id, bool) and step_id >= 1
         ]
+    graph_step_limit = state.get("max_steps")
+    valid_limit = (
+        isinstance(graph_step_limit, int)
+        and not isinstance(graph_step_limit, bool)
+        and 1 <= graph_step_limit <= MAX_RESEARCH_STEPS
+    )
     highest_reserved_id = max(reserved_ids, default=0)
     return {
         "reserved_step_ids": reserved_ids,
         "next_replacement_step_id": highest_reserved_id + 1,
-        "remaining_step_capacity": max(0, MAX_RESEARCH_STEPS - len(reserved_ids)),
+        "max_step_budget": graph_step_limit if valid_limit else 0,
+        "remaining_step_capacity": max(0, graph_step_limit - len(reserved_ids))
+        if valid_limit
+        else 0,
     }
 
 
