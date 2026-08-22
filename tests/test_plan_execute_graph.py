@@ -5,6 +5,8 @@ import json
 from collections.abc import Mapping
 from typing import Any
 
+import pytest
+
 from finai_academy.plan_execute_graph import build_plan_execute_graph, run_plan_execute
 from finai_academy.research_planning import (
     AnalystBriefing,
@@ -19,6 +21,10 @@ MISSION = (
     "Produce a concise NVIDIA and Schneider Electric briefing. Compare their available "
     "valuation metrics and latest operating-growth evidence."
 )
+
+
+class SdkPolicyError(Exception):
+    """Representative provider SDK exception outside built-in validation error families."""
 
 
 def tool_catalog() -> tuple[PlannerToolSpec, ...]:
@@ -477,7 +483,7 @@ def test_result_trajectory_is_sequential_and_contains_no_runtime_configuration()
         assert unsafe_text not in serialized
 
 
-def test_planner_failure_returns_a_typed_provider_error_without_raw_exception_text() -> None:
+def test_planner_custom_exception_returns_provider_error_without_raw_text() -> None:
     """Breaks if malformed planner output escapes the graph or leaks provider content."""
     executor = FakeExecutor()
 
@@ -486,7 +492,7 @@ def test_planner_failure_returns_a_typed_provider_error_without_raw_exception_te
         catalog: tuple[PlannerToolSpec, ...],
     ) -> ResearchPlan:
         del question, catalog
-        raise ValueError("OPENAI_API_KEY=planner-secret")
+        raise SdkPolicyError("OPENAI_API_KEY=planner-secret")
 
     result = asyncio.run(
         run_plan_execute(
@@ -504,7 +510,7 @@ def test_planner_failure_returns_a_typed_provider_error_without_raw_exception_te
     assert "planner-secret" not in json.dumps(result.model_dump(mode="json"))
 
 
-def test_replanner_failure_returns_a_typed_provider_error() -> None:
+def test_replanner_custom_exception_returns_a_typed_provider_error() -> None:
     """Breaks if a provider failure after execution crashes instead of stopping safely."""
     executor = FakeExecutor()
 
@@ -517,7 +523,7 @@ def test_replanner_failure_returns_a_typed_provider_error() -> None:
 
     async def failing_replanner(state: Mapping[str, Any]) -> ReplanDecision:
         del state
-        raise RuntimeError("provider response was malformed")
+        raise SdkPolicyError("provider response was malformed")
 
     result = asyncio.run(
         run_plan_execute(
@@ -533,7 +539,7 @@ def test_replanner_failure_returns_a_typed_provider_error() -> None:
     assert [item.step_id for item in result.observations] == [1]
 
 
-def test_report_failure_returns_a_typed_provider_error_without_a_briefing() -> None:
+def test_report_custom_exception_returns_provider_error_without_a_briefing() -> None:
     """Breaks if synthesis failure discards the completed evidence trajectory."""
     executor = FakeExecutor()
 
@@ -557,7 +563,7 @@ def test_report_failure_returns_a_typed_provider_error_without_a_briefing() -> N
         observations: tuple[ResearchObservation, ...],
     ) -> AnalystBriefing:
         del question, observations
-        raise RuntimeError("provider response was malformed")
+        raise SdkPolicyError("provider response was malformed")
 
     result = asyncio.run(
         run_plan_execute(
@@ -573,3 +579,350 @@ def test_report_failure_returns_a_typed_provider_error_without_a_briefing() -> N
     assert result.evidence_gate.passed is True
     assert result.briefing is None
     assert [item.step_id for item in result.observations] == [1, 2, 3, 4]
+
+
+def test_planner_malformed_return_becomes_a_typed_provider_error() -> None:
+    """Breaks if a wrong-shaped planner return raises AttributeError outside the boundary."""
+
+    async def malformed_planner(
+        question: str,
+        catalog: tuple[PlannerToolSpec, ...],
+    ) -> Any:
+        del question, catalog
+        return object()
+
+    result = asyncio.run(
+        run_plan_execute(
+            question=MISSION,
+            executor=FakeExecutor(),
+            planner=malformed_planner,
+            replanner=recorded_replanner,
+            report_writer=recorded_report_writer,
+        )
+    )
+
+    assert result.status == "provider_error"
+    assert result.initial_plan.steps == ()
+    assert result.final_steps == ()
+
+
+def test_replanner_malformed_return_becomes_a_typed_provider_error() -> None:
+    """Breaks if a wrong-shaped replanner return raises AttributeError outside the boundary."""
+
+    async def one_step_planner(
+        question: str,
+        catalog: tuple[PlannerToolSpec, ...],
+    ) -> ResearchPlan:
+        del question, catalog
+        return ResearchPlan(goal="Collect one metric.", steps=(metric_step(1, "NVDA"),))
+
+    async def malformed_replanner(state: Mapping[str, Any]) -> Any:
+        del state
+        return object()
+
+    result = asyncio.run(
+        run_plan_execute(
+            question=MISSION,
+            executor=FakeExecutor(),
+            planner=one_step_planner,
+            replanner=malformed_replanner,
+            report_writer=recorded_report_writer,
+        )
+    )
+
+    assert result.status == "provider_error"
+    assert [item.step_id for item in result.observations] == [1]
+
+
+def test_report_malformed_return_becomes_provider_error_without_a_briefing() -> None:
+    """Breaks if a wrong-shaped report reaches terminal result validation."""
+
+    async def complete_planner(
+        question: str,
+        catalog: tuple[PlannerToolSpec, ...],
+    ) -> ResearchPlan:
+        del question, catalog
+        return ResearchPlan(
+            goal="Collect complete evidence.",
+            steps=(
+                metric_step(1, "NVDA"),
+                metric_step(2, "SU.PA"),
+                document_step(3, "NVIDIA"),
+                document_step(4, "Schneider Electric"),
+            ),
+        )
+
+    async def malformed_report_writer(
+        question: str,
+        observations: tuple[ResearchObservation, ...],
+    ) -> Any:
+        del question, observations
+        return object()
+
+    result = asyncio.run(
+        run_plan_execute(
+            question=MISSION,
+            executor=FakeExecutor(),
+            planner=complete_planner,
+            replanner=finish_after_last_step,
+            report_writer=malformed_report_writer,
+        )
+    )
+
+    assert result.status == "provider_error"
+    assert result.evidence_gate.passed is True
+    assert result.briefing is None
+
+
+@pytest.mark.parametrize("max_steps", [1, 6])
+def test_configured_step_ceiling_allows_limits_up_to_six(max_steps: int) -> None:
+    """Breaks if a caller cannot choose a stricter limit or the hard ceiling itself."""
+    graph = build_plan_execute_graph(
+        executor=FakeExecutor(),
+        planner=recorded_planner,
+        replanner=recorded_replanner,
+        report_writer=recorded_report_writer,
+        max_steps=max_steps,
+    )
+
+    assert graph is not None
+
+
+def test_configured_step_ceiling_rejects_values_above_six() -> None:
+    """Breaks if a caller can expand the host-owned six-step safety ceiling."""
+    with pytest.raises(ValueError, match="between 1 and 6"):
+        build_plan_execute_graph(
+            executor=FakeExecutor(),
+            planner=recorded_planner,
+            replanner=recorded_replanner,
+            report_writer=recorded_report_writer,
+            max_steps=7,
+        )
+
+
+@pytest.mark.parametrize("max_replans", [0, 1])
+def test_configured_replan_ceiling_allows_limits_up_to_one(max_replans: int) -> None:
+    """Breaks if a caller cannot disable revisions or allow the maintained one revision."""
+    graph = build_plan_execute_graph(
+        executor=FakeExecutor(),
+        planner=recorded_planner,
+        replanner=recorded_replanner,
+        report_writer=recorded_report_writer,
+        max_replans=max_replans,
+    )
+
+    assert graph is not None
+
+
+def test_configured_replan_ceiling_rejects_values_above_one() -> None:
+    """Breaks if a caller can expand the host-owned one-revision safety ceiling."""
+    with pytest.raises(ValueError, match="between 0 and 1"):
+        build_plan_execute_graph(
+            executor=FakeExecutor(),
+            planner=recorded_planner,
+            replanner=recorded_replanner,
+            report_writer=recorded_report_writer,
+            max_replans=2,
+        )
+
+
+def test_executor_exception_returns_safe_provider_error_without_replanning() -> None:
+    """Breaks if an executor runtime failure escapes, leaks, or reaches the replanner."""
+
+    class RaisingExecutor(FakeExecutor):
+        async def execute(
+            self,
+            step: PlanStep,
+            *,
+            attempt_id: int,
+            plan_revision: int,
+        ) -> ResearchObservation:
+            del step, attempt_id, plan_revision
+            raise OSError("OPENAI_API_KEY=executor-secret stderr=raw-server-output")
+
+    executor = RaisingExecutor()
+    replanner_calls: list[bool] = []
+
+    async def one_step_planner(
+        question: str,
+        catalog: tuple[PlannerToolSpec, ...],
+    ) -> ResearchPlan:
+        del question, catalog
+        return ResearchPlan(goal="Collect one metric.", steps=(metric_step(1, "NVDA"),))
+
+    async def replanner(state: Mapping[str, Any]) -> ReplanDecision:
+        del state
+        replanner_calls.append(True)
+        return ReplanDecision(action="stop", reasoning="Should not be called.")
+
+    result = asyncio.run(
+        run_plan_execute(
+            question=MISSION,
+            executor=executor,
+            planner=one_step_planner,
+            replanner=replanner,
+            report_writer=recorded_report_writer,
+        )
+    )
+
+    assert result.status == "provider_error"
+    assert result.observations == ()
+    assert replanner_calls == []
+    assert result.trajectory[-1].phase == "execution"
+    assert result.trajectory[-1].status == "error"
+    serialized = json.dumps(result.model_dump(mode="json"))
+    assert "OPENAI_API_KEY" not in serialized
+    assert "executor-secret" not in serialized
+    assert "stderr" not in serialized
+    assert "raw-server-output" not in serialized
+
+
+def test_non_json_replacement_arguments_are_validated_before_canonicalization() -> None:
+    """Breaks if duplicate-signature serialization runs on an unvalidated replacement."""
+
+    async def planner(
+        question: str,
+        catalog: tuple[PlannerToolSpec, ...],
+    ) -> ResearchPlan:
+        del question, catalog
+        return ResearchPlan(
+            goal="Reach a replacement after one successful call.",
+            steps=(metric_step(1, "NVDA"), metric_step(2, "NVDA", metric="Revenue")),
+        )
+
+    async def replanner(state: Mapping[str, Any]) -> ReplanDecision:
+        observations = tuple(state["observations"])
+        if observations[-1].status == "ok":
+            return ReplanDecision(action="continue", reasoning="Reach the failing step.")
+        malformed = document_step(3, "NVIDIA").model_copy(
+            update={
+                "arguments": {
+                    "company": "NVIDIA",
+                    "query": {"OPENAI_API_KEY=non-json-secret"},
+                    "top_k": 2,
+                }
+            }
+        )
+        return ReplanDecision(
+            action="replace_remaining",
+            reasoning="Propose malformed non-JSON arguments.",
+            replacement_steps=(malformed,),
+        )
+
+    result = asyncio.run(
+        run_plan_execute(
+            question=MISSION,
+            executor=FakeExecutor(),
+            planner=planner,
+            replanner=replanner,
+            report_writer=recorded_report_writer,
+        )
+    )
+
+    assert result.status == "plan_blocked"
+    assert [item.step_id for item in result.observations] == [1, 2]
+    assert result.replan_count == 0
+    serialized = json.dumps(result.model_dump(mode="json"))
+    assert "OPENAI_API_KEY" not in serialized
+    assert "non-json-secret" not in serialized
+
+
+def test_invalid_initial_plan_is_replaced_before_result_serialization() -> None:
+    """Breaks if rejected planner content or validation details remain displayable."""
+
+    async def unsafe_planner(
+        question: str,
+        catalog: tuple[PlannerToolSpec, ...],
+    ) -> ResearchPlan:
+        del question, catalog
+        return ResearchPlan(
+            goal="stderr=raw-initial-provider-output",
+            steps=(
+                PlanStep(
+                    step_id=1,
+                    capability="OPENAI_API_KEY=initial-secret",
+                    arguments={"stderr": "raw-initial-arguments"},
+                    purpose="Retain no rejected provider content.",
+                    expected_evidence=("none",),
+                ),
+            ),
+        )
+
+    result = asyncio.run(
+        run_plan_execute(
+            question=MISSION,
+            executor=FakeExecutor(),
+            planner=unsafe_planner,
+            replanner=recorded_replanner,
+            report_writer=recorded_report_writer,
+        )
+    )
+
+    assert result.status == "plan_blocked"
+    assert result.initial_plan.steps == ()
+    assert result.final_steps == ()
+    assert result.trajectory[-1].summary == "initial_plan_rejected"
+    serialized = json.dumps(result.model_dump(mode="json"))
+    for unsafe_text in (
+        "OPENAI_API_KEY",
+        "initial-secret",
+        "stderr",
+        "raw-initial-provider-output",
+        "raw-initial-arguments",
+    ):
+        assert unsafe_text not in serialized
+
+
+def test_invalid_replacement_plan_is_excluded_from_result_serialization() -> None:
+    """Breaks if a rejected replacement or raw validation message becomes displayable."""
+
+    async def planner(
+        question: str,
+        catalog: tuple[PlannerToolSpec, ...],
+    ) -> ResearchPlan:
+        del question, catalog
+        return ResearchPlan(
+            goal="Reach a rejected replacement.",
+            steps=(metric_step(1, "NVDA"), metric_step(2, "NVDA", metric="Revenue")),
+        )
+
+    async def unsafe_replanner(state: Mapping[str, Any]) -> ReplanDecision:
+        observations = tuple(state["observations"])
+        if observations[-1].status == "ok":
+            return ReplanDecision(action="continue", reasoning="Reach the failing step.")
+        return ReplanDecision(
+            action="replace_remaining",
+            reasoning="stderr=raw-replanner-output",
+            replacement_steps=(
+                PlanStep(
+                    step_id=3,
+                    capability="OPENAI_API_KEY=replacement-secret",
+                    arguments={"stderr": "raw-replacement-arguments"},
+                    purpose="Retain no rejected replacement content.",
+                    expected_evidence=("none",),
+                ),
+            ),
+        )
+
+    result = asyncio.run(
+        run_plan_execute(
+            question=MISSION,
+            executor=FakeExecutor(),
+            planner=planner,
+            replanner=unsafe_replanner,
+            report_writer=recorded_report_writer,
+        )
+    )
+
+    assert result.status == "plan_blocked"
+    assert [step.step_id for step in result.final_steps] == [1, 2]
+    assert result.trajectory[-1].summary == "replacement_plan_rejected"
+    serialized = json.dumps(result.model_dump(mode="json"))
+    for unsafe_text in (
+        "OPENAI_API_KEY",
+        "replacement-secret",
+        "stderr",
+        "raw-replanner-output",
+        "raw-replacement-arguments",
+    ):
+        assert unsafe_text not in serialized

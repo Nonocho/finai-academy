@@ -106,6 +106,10 @@ class PlanExecuteResult(BaseModel):
     briefing: AnalystBriefing | None = None
 
 
+def _safe_rejected_plan() -> ResearchPlan:
+    return ResearchPlan(goal="Rejected plan content was removed.", steps=())
+
+
 def _call_signature(capability: str, arguments: Mapping[str, Any]) -> tuple[str, str]:
     return capability, json.dumps(arguments, sort_keys=True, separators=(",", ":"))
 
@@ -153,19 +157,18 @@ def build_plan_execute_graph(
 ) -> Any:
     """Compile the bounded graph with runtime dependencies captured in closures."""
 
-    if max_steps < 1:
-        raise ValueError("max_steps must be at least 1")
-    if max_replans < 0:
-        raise ValueError("max_replans must be zero or greater")
+    if not 1 <= max_steps <= 6:
+        raise ValueError("max_steps must be between 1 and 6")
+    if not 0 <= max_replans <= 1:
+        raise ValueError("max_replans must be between 0 and 1")
 
     async def planner_node(state: PlanExecuteState) -> dict[str, Any]:
         try:
             plan = await planner(state["question"], state["catalog"])
-        except (RuntimeError, TypeError, ValueError):
-            empty_plan = ResearchPlan(
-                goal="Planner did not return a valid research plan.",
-                steps=(),
-            )
+            if not isinstance(plan, ResearchPlan):
+                raise TypeError("planner returned an invalid plan")
+        except Exception:  # noqa: BLE001 - provider boundary must fail closed
+            empty_plan = _safe_rejected_plan()
             return {
                 "initial_plan": empty_plan,
                 "active_steps": (),
@@ -198,14 +201,18 @@ def build_plan_execute_graph(
             return {"status": "provider_error"}
         try:
             checked = validate_plan(state["initial_plan"], state["catalog"], max_steps=max_steps)
-        except ValueError as error:
+        except ValueError:
             return {
+                "initial_plan": _safe_rejected_plan(),
+                "active_steps": (),
+                "all_step_ids": (),
+                "current_index": 0,
                 "status": "plan_blocked",
                 "trajectory": _append_event(
                     state,
                     phase="guardrail",
                     status="blocked",
-                    summary=str(error),
+                    summary="initial_plan_rejected",
                 ),
             }
         return {
@@ -222,11 +229,26 @@ def build_plan_execute_graph(
     async def executor_node(state: PlanExecuteState) -> dict[str, Any]:
         step = state["active_steps"][state["current_index"]]
         attempt_id = len(state.get("observations", ())) + 1
-        observation = await executor.execute(
-            step,
-            attempt_id=attempt_id,
-            plan_revision=state.get("plan_revision", 0),
-        )
+        try:
+            observation = await executor.execute(
+                step,
+                attempt_id=attempt_id,
+                plan_revision=state.get("plan_revision", 0),
+            )
+            if not isinstance(observation, ResearchObservation):
+                raise TypeError("executor returned an invalid observation")
+        except Exception:  # noqa: BLE001 - runtime boundary must fail closed
+            return {
+                "status": "provider_error",
+                "trajectory": _append_event(
+                    state,
+                    phase="execution",
+                    status="error",
+                    summary="Executor failed to return a valid observation.",
+                    step_id=step.step_id,
+                    attempt_id=attempt_id,
+                ),
+            }
         return {
             "observations": tuple(state.get("observations", ())) + (observation,),
             "current_index": state["current_index"] + 1,
@@ -246,9 +268,13 @@ def build_plan_execute_graph(
         }
 
     async def replanner_node(state: PlanExecuteState) -> dict[str, Any]:
+        if state.get("status") == "provider_error":
+            return {"status": "provider_error"}
         try:
             decision = await replanner(state)
-        except (RuntimeError, TypeError, ValueError):
+            if not isinstance(decision, ReplanDecision):
+                raise TypeError("replanner returned an invalid decision")
+        except Exception:  # noqa: BLE001 - provider boundary must fail closed
             return {
                 "status": "provider_error",
                 "trajectory": _append_event(
@@ -285,24 +311,6 @@ def build_plan_execute_graph(
         successful_observations = tuple(
             item for item in state.get("observations", ()) if item.status == "ok"
         )
-        successful_signatures = {
-            _call_signature(item.capability, item.arguments) for item in successful_observations
-        }
-        repeated_signatures = {
-            _call_signature(step.capability, step.arguments)
-            for step in decision.replacement_steps
-        } & successful_signatures
-        if repeated_signatures:
-            return {
-                "status": "plan_blocked",
-                "trajectory": _append_event(
-                    {**state, "trajectory": trajectory},
-                    phase="guardrail",
-                    status="blocked",
-                    summary="replacement_repeats_successful_call",
-                ),
-            }
-
         try:
             checked = validate_replacement(
                 decision.replacement_steps,
@@ -311,14 +319,42 @@ def build_plan_execute_graph(
                 successful_step_ids=tuple(item.step_id for item in successful_observations),
                 max_total_steps=max_steps,
             )
-        except ValueError as error:
+        except ValueError:
             return {
                 "status": "plan_blocked",
                 "trajectory": _append_event(
                     {**state, "trajectory": trajectory},
                     phase="guardrail",
                     status="blocked",
-                    summary=str(error),
+                    summary="replacement_plan_rejected",
+                ),
+            }
+        try:
+            successful_signatures = {
+                _call_signature(item.capability, item.arguments)
+                for item in successful_observations
+            }
+            repeated_signatures = {
+                _call_signature(step.capability, step.arguments) for step in checked
+            } & successful_signatures
+        except Exception:  # noqa: BLE001 - validated signature boundary must fail closed
+            return {
+                "status": "plan_blocked",
+                "trajectory": _append_event(
+                    {**state, "trajectory": trajectory},
+                    phase="guardrail",
+                    status="blocked",
+                    summary="replacement_signature_rejected",
+                ),
+            }
+        if repeated_signatures:
+            return {
+                "status": "plan_blocked",
+                "trajectory": _append_event(
+                    {**state, "trajectory": trajectory},
+                    phase="guardrail",
+                    status="blocked",
+                    summary="replacement_repeats_successful_call",
                 ),
             }
         executed_prefix = state["active_steps"][: state["current_index"]]
@@ -353,7 +389,9 @@ def build_plan_execute_graph(
         observations = tuple(state.get("observations", ()))
         try:
             briefing = await report_writer(state["question"], observations)
-        except (RuntimeError, TypeError, ValueError):
+            if not isinstance(briefing, AnalystBriefing):
+                raise TypeError("report writer returned an invalid briefing")
+        except Exception:  # noqa: BLE001 - provider boundary must fail closed
             return {
                 "briefing": None,
                 "status": "provider_error",
