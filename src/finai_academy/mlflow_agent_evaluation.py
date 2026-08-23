@@ -2,10 +2,12 @@
 
 from __future__ import annotations
 
+import json
 import os
 import re
 import tempfile
 from collections.abc import Mapping, Sequence
+from copy import deepcopy
 from pathlib import Path
 from time import perf_counter
 from typing import Any, Literal
@@ -13,6 +15,7 @@ from urllib.parse import unquote, urlparse
 
 import mlflow
 from mlflow.entities import SpanEvent, Trace
+from mlflow.exceptions import MlflowException
 from mlflow.tracking import MlflowClient
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -76,6 +79,46 @@ _JUDGE_METRIC_NAMES = {
     "RelevanceToQuery": "judge_relevance_to_query",
     "Completeness": "judge_completeness",
 }
+_JUDGE_AVAILABLE_TOOLS = (
+    {
+        "type": "function",
+        "function": {
+            "name": "get_company_metric",
+            "description": "Return a controlled company metric with date and source.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "ticker": {"type": "string"},
+                    "metric": {"type": "string"},
+                },
+                "required": ["ticker", "metric"],
+                "additionalProperties": False,
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "search_financial_documents",
+            "description": "Search controlled company financial evidence passages.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "company": {"type": "string"},
+                    "query": {"type": "string"},
+                    "top_k": {
+                        "type": "integer",
+                        "minimum": 1,
+                        "maximum": 3,
+                        "default": 2,
+                    },
+                },
+                "required": ["company", "query"],
+                "additionalProperties": False,
+            },
+        },
+    },
+)
 
 
 class _ArtifactLocationError(ValueError):
@@ -226,13 +269,18 @@ def build_optional_genai_scorers(
         ToolCallEfficiency,
     )
 
+    runtime_model_uri = (
+        f"ollama:/{configuration.model}"
+        if configuration.provider == "ollama"
+        else configuration.model_uri
+    )
     return JudgeScorerSet(
         configuration=configuration,
         scorers=(
-            ToolCallCorrectness(model=configuration.model_uri),
-            ToolCallEfficiency(model=configuration.model_uri),
-            RelevanceToQuery(model=configuration.model_uri),
-            Completeness(model=configuration.model_uri),
+            ToolCallCorrectness(model=runtime_model_uri),
+            ToolCallEfficiency(model=runtime_model_uri),
+            RelevanceToQuery(model=runtime_model_uri),
+            Completeness(model=runtime_model_uri),
         ),
     )
 
@@ -254,6 +302,35 @@ def _judge_score(value: object) -> float:
     raise ValueError("MLflow judge returned an unsupported score")
 
 
+def _normalize_trace_for_judges(trace: object) -> object:
+    """Clone a Task 3 trace into MLflow's current judge-facing tool schema."""
+
+    if not isinstance(trace, Trace):
+        return trace
+    trace_payload = deepcopy(trace.to_dict())
+    span_payloads = trace_payload["data"]["spans"]
+    for span, span_payload in zip(trace.data.spans, span_payloads, strict=True):
+        attributes = span_payload["attributes"]
+        if span.parent_id is None:
+            root_inputs = span.inputs if isinstance(span.inputs, dict) else {}
+            attributes["mlflow.spanType"] = json.dumps("CHAT_MODEL")
+            attributes["mlflow.spanInputs"] = json.dumps(
+                {
+                    "mission": root_inputs.get("mission"),
+                    "tools": _JUDGE_AVAILABLE_TOOLS,
+                }
+            )
+        elif span.span_type == "TOOL":
+            inputs = span.inputs if isinstance(span.inputs, dict) else {}
+            capability = inputs.get("capability")
+            arguments = inputs.get("arguments")
+            if not isinstance(capability, str) or not isinstance(arguments, dict):
+                raise ValueError("Task 3 TOOL span lacks judge-safe capability metadata")
+            span_payload["name"] = capability
+            attributes["mlflow.spanInputs"] = json.dumps(arguments)
+    return Trace.from_dict(trace_payload)
+
+
 def _judge_error_reason(exc: Exception) -> str:
     reason = _sanitized_error_reason(exc)
     try:
@@ -261,6 +338,25 @@ def _judge_error_reason(exc: Exception) -> str:
     except ValueError:
         reason = "details redacted"
     return f"{type(exc).__name__}: {reason}"
+
+
+def _judge_is_unavailable(exc: Exception) -> bool:
+    if isinstance(exc, (ImportError, ModuleNotFoundError)):
+        return True
+    if isinstance(exc, MlflowException):
+        reason = str(exc).casefold()
+        return any(
+            marker in reason
+            for marker in (
+                "no suitable adapter found",
+                "environment variable must be set",
+                "failed to connect to",
+                " is required to use ",
+            )
+        ) or (
+            "provider" in reason and "not found" in reason
+        )
+    return False
 
 
 def _not_run_judge_results(
@@ -295,7 +391,8 @@ def _run_one_judge(
         scores: list[float] = []
         rationales: list[str] = []
         for trace in traces:
-            feedback = scorer(trace=trace)  # type: ignore[operator]
+            judge_trace = _normalize_trace_for_judges(trace)
+            feedback = scorer(trace=judge_trace)  # type: ignore[operator]
             feedback_error = getattr(feedback, "error", None)
             if feedback_error is not None:
                 raise RuntimeError(str(feedback_error))
@@ -310,11 +407,11 @@ def _run_one_judge(
             else f"Completed {len(scores)} trace(s)."
         )
         _validate_safe_payload(rationale)
-        status: Literal["COMPLETED", "ERROR"] = "COMPLETED"
+        status: Literal["COMPLETED", "ERROR", "NOT RUN"] = "COMPLETED"
     except Exception as exc:  # noqa: BLE001 - one failed judge stays observational.
         score = None
         rationale = _judge_error_reason(exc)
-        status = "ERROR"
+        status = "NOT RUN" if _judge_is_unavailable(exc) else "ERROR"
     return JudgeResult(
         scorer_name=scorer_name,
         provider=configuration.provider,

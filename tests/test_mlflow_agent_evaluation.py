@@ -11,7 +11,12 @@ from unittest.mock import Mock
 import mlflow
 import pytest
 from mlflow.entities import Feedback
+from mlflow.exceptions import MlflowException
 from mlflow.genai import scorers as genai_scorers
+from mlflow.genai.judges.adapters.gateway_adapter import GatewayAdapter
+from mlflow.genai.judges.adapters.utils import get_adapter
+from mlflow.genai.scorers import builtin_scorers
+from mlflow.genai.utils import trace_utils
 from mlflow.tracking import MlflowClient
 
 from finai_academy import mlflow_agent_evaluation
@@ -234,11 +239,102 @@ def test_optional_judge_scorers_use_the_explicit_model_uri(
         "Completeness",
     ]
     assert constructed == [
-        ("ToolCallCorrectness", "ollama_chat:/qwen3:8b"),
-        ("ToolCallEfficiency", "ollama_chat:/qwen3:8b"),
-        ("RelevanceToQuery", "ollama_chat:/qwen3:8b"),
-        ("Completeness", "ollama_chat:/qwen3:8b"),
+        ("ToolCallCorrectness", "ollama:/qwen3:8b"),
+        ("ToolCallEfficiency", "ollama:/qwen3:8b"),
+        ("RelevanceToQuery", "ollama:/qwen3:8b"),
+        ("Completeness", "ollama:/qwen3:8b"),
     ]
+
+
+def test_ollama_judge_course_uri_selects_native_same_provider_adapter_without_network() -> None:
+    configuration = load_judge_configuration(
+        {"FINAI_EVAL_JUDGE_MODEL": "ollama_chat:/qwen3:8b"}
+    )
+    scorer_set = build_optional_genai_scorers(configuration)
+
+    assert configuration is not None
+    assert (
+        configuration.provider,
+        configuration.model_uri,
+        configuration.model,
+    ) == ("ollama", "ollama_chat:/qwen3:8b", "qwen3:8b")
+    assert {scorer.model for scorer in scorer_set.scorers} == {"ollama:/qwen3:8b"}
+    assert isinstance(get_adapter("ollama:/qwen3:8b", prompt="adapter probe"), GatewayAdapter)
+
+
+def test_judge_trace_normalization_matches_installed_tool_extractors(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    summary = run_fixture_configuration(tmp_path, "bounded-agent-v1")
+    persisted = traces_by_case(summary)["reference_completed"]
+    normalized = mlflow_agent_evaluation._normalize_trace_for_judges(persisted)
+
+    monkeypatch.setattr(
+        trace_utils,
+        "get_default_model",
+        Mock(side_effect=AssertionError("implicit default judge model reached")),
+    )
+    called = trace_utils.extract_tools_called_from_trace(normalized)
+    available = trace_utils.extract_available_tools_from_trace(normalized)
+
+    assert [call.name for call in called] == [
+        "get_company_metric",
+        "get_company_metric",
+        "get_company_metric",
+        "search_financial_documents",
+        "search_financial_documents",
+    ]
+    assert called[0].arguments == {"ticker": "NVDA", "metric": "P/E"}
+    assert [tool.function.name for tool in available] == [
+        "get_company_metric",
+        "search_financial_documents",
+    ]
+    assert available[0].function.parameters.required == ["ticker", "metric"]
+    observed_models: list[str] = []
+
+    def accept_tool_calls(**kwargs: object) -> Feedback:
+        observed_models.append(str(kwargs["model"]))
+        assert [call.name for call in kwargs["tools_called"]] == [
+            call.name for call in called
+        ]
+        assert [tool.function.name for tool in kwargs["available_tools"]] == [
+            tool.function.name for tool in available
+        ]
+        return Feedback(value=True, rationale="normalized trace accepted")
+
+    monkeypatch.setattr(
+        builtin_scorers.judges,
+        "is_tool_call_correct",
+        accept_tool_calls,
+    )
+    monkeypatch.setattr(
+        builtin_scorers.judges,
+        "is_tool_call_efficient",
+        accept_tool_calls,
+    )
+    scorer_set = build_optional_genai_scorers(
+        load_judge_configuration(
+            {"FINAI_EVAL_JUDGE_MODEL": "ollama_chat:/qwen3:8b"}
+        )
+    )
+    for scorer in scorer_set.scorers[:2]:
+        assert scorer(trace=normalized).value is True
+    assert observed_models == ["ollama:/qwen3:8b", "ollama:/qwen3:8b"]
+    persisted_root = next(
+        span for span in persisted.data.spans if span.parent_id is None
+    )
+    assert persisted_root.span_type == "CHAIN"
+    assert [span.name for span in persisted.search_spans(span_type="TOOL")] == [
+        "execution:1",
+        "execution:2",
+        "execution:3",
+        "execution:4",
+        "execution:5",
+    ]
+    assert persisted.search_spans(span_type="TOOL")[0].inputs["capability"] == (
+        "get_company_metric"
+    )
 
 
 def test_completed_judges_log_four_truthful_rows_and_separate_metrics(
@@ -307,19 +403,43 @@ def test_completed_judges_log_four_truthful_rows_and_separate_metrics(
     ]
 
 
-def test_unavailable_judge_api_is_not_run_and_logs_no_metric(
+@pytest.mark.parametrize(
+    ("error_type", "reason"),
+    [
+        (ImportError, "provider client unavailable"),
+        (MlflowException, "No suitable adapter found for explicit provider"),
+        (
+            MlflowException,
+            "OPENAI_API_KEY environment variable must be set to use the openai provider",
+        ),
+        (MlflowException, "Failed to connect to http://localhost:11434/v1"),
+    ],
+)
+def test_call_time_unavailable_judge_is_not_run_and_logs_no_metric(
+    error_type: type[Exception],
+    reason: str,
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
 ) -> None:
     artifact_logs: list[tuple[str, object]] = []
     metric_logs: list[tuple[str, float]] = []
+    constructed: list[str] = []
     initialize_local_mlflow(tmp_path / "judge-unavailable")
 
     class UnavailableScorer:
         def __init__(self, *, model: str) -> None:
-            raise ImportError(f"client unavailable for {model}")
+            constructed.append(model)
 
-    monkeypatch.setattr(genai_scorers, "ToolCallCorrectness", UnavailableScorer)
+        def __call__(self, *, trace: object) -> object:
+            raise error_type(reason)
+
+    for name in (
+        "ToolCallCorrectness",
+        "ToolCallEfficiency",
+        "RelevanceToQuery",
+        "Completeness",
+    ):
+        monkeypatch.setattr(genai_scorers, name, UnavailableScorer)
     monkeypatch.setattr(
         MlflowClient,
         "log_dict",
@@ -343,14 +463,17 @@ def test_unavailable_judge_api_is_not_run_and_logs_no_metric(
     )
 
     assert len(results) == 4
+    assert len(constructed) == 4
     assert all(result.status == "NOT RUN" for result in results)
     assert all(result.score is None for result in results)
-    assert all("ImportError" in result.rationale for result in results)
+    assert all(error_type.__name__ in result.rationale for result in results)
     assert metric_logs == []
     assert artifact_logs[0][0] == "evaluation/judge_results.json"
 
 
+@pytest.mark.parametrize("error_type", [TimeoutError, RuntimeError])
 def test_judge_error_does_not_mutate_deterministic_metrics_or_release_status(
+    error_type: type[Exception],
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
 ) -> None:
@@ -359,7 +482,7 @@ def test_judge_error_does_not_mutate_deterministic_metrics_or_release_status(
             self.model = model
 
         def __call__(self, *, trace: object) -> object:
-            raise TimeoutError(
+            raise error_type(
                 "hidden reasoning; Authorization: Bearer private-token at "
                 "/Users/alice/private"
             )
@@ -401,7 +524,9 @@ def test_judge_error_does_not_mutate_deterministic_metrics_or_release_status(
     persisted_metrics = client.get_run(run.info.run_id).data.metrics
     assert all(result.status == "ERROR" for result in results)
     assert all(result.score is None for result in results)
-    assert all("TimeoutError" in result.rationale for result in results)
+    assert all(result.provider == "ollama" for result in results)
+    assert all(result.model == "qwen3:8b" for result in results)
+    assert all(error_type.__name__ in result.rationale for result in results)
     assert all("Authorization" not in result.rationale for result in results)
     assert all("/Users/" not in result.rationale for result in results)
     assert all("hidden reasoning" not in result.rationale for result in results)
