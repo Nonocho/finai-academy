@@ -171,14 +171,14 @@ lessons:
     capstone_increment: Planned multi-source financial research
 
   - id: "12"
-    title: Evaluating agentic systems
+    title: Evaluating agentic systems with MLflow
     day: 2
     start: "14:30"
     end: "15:30"
-    deck: decks/12-agent-evaluation.pptx
-    notebook: notebooks/12_agent_evaluation.ipynb
-    chapter: chapters/12-agent-evaluation.md
-    capstone_increment: Agent answer and trajectory evaluation suite
+    deck: decks/12-evaluating-agentic-systems.pptx
+    notebook: notebooks/12_evaluating_agentic_systems.ipynb
+    chapter: chapters/12-evaluating-agentic-systems.md
+    capstone_increment: Versioned agent trajectory and answer evaluation suite
 
   - id: CAPSTONE
     title: Capstone integration challenge

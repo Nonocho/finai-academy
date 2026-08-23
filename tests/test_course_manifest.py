@@ -159,6 +159,17 @@ def test_implemented_lesson_eleven_notebook_exists() -> None:
     assert (ROOT / lesson["notebook"]).is_file()
 
 
+def test_implemented_lesson_twelve_notebook_exists_before_chapter_and_deck() -> None:
+    """Task 5 requires only the notebook before chapter and deck Tasks 6-7."""
+    manifest = load_course_manifest()
+    lesson = next(item for item in manifest["lessons"] if item["id"] == "12")
+
+    assert lesson["title"] == "Evaluating agentic systems with MLflow"
+    assert lesson["start"] == "14:30"
+    assert lesson["end"] == "15:30"
+    assert (ROOT / lesson["notebook"]).is_file()
+
+
 def test_lesson_six_slide_three_uses_one_executed_query_and_traceable_manifest_ids() -> None:
     """The comparison slide must report real ranks from one maintained notebook run."""
 
