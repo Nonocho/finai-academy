@@ -242,8 +242,11 @@ def test_lesson11_final_assets_and_indexes_report_truthful_readiness() -> None:
         normalized_text = " ".join(text.split())
         assert expected_link in text
         assert "Lessons 11–12 remain planned" not in text
-        assert "Lessons 08-11" in normalized_text
-        assert "Lesson 12 remains planned" in normalized_text
+        assert (
+            "Lessons 08-12 are ready for an instructor-led offline test class"
+            in normalized_text
+        )
+        assert "Lesson 12 remains planned" not in normalized_text
 
     root_readme = (ROOT / "README.md").read_text(encoding="utf-8")
     assert "[Lesson 11 concept deck](decks/11-plan-and-execute-analyst.pptx)" in root_readme
@@ -253,8 +256,11 @@ def test_lesson11_final_assets_and_indexes_report_truthful_readiness() -> None:
     assert "[Plan-and-execute financial analyst](11-plan-and-execute-analyst.pptx)" in deck_index
     assert "Ready for instructor delivery" in deck_index
     assert "Planned, Task 7" not in deck_index
-    assert "Lessons 08-11" in normalized_deck_index
-    assert "Lesson 12 remains planned" in normalized_deck_index
+    assert (
+        "Lessons 08-12 are ready for an instructor-led offline test class"
+        in normalized_deck_index
+    )
+    assert "Lesson 12 remains planned" not in normalized_deck_index
 
 
 def test_lesson11_deck_has_the_complete_sourced_concept_route() -> None:

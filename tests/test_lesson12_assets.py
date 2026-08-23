@@ -124,6 +124,29 @@ def test_lesson12_notebook_is_output_free_stable_and_contains_the_teaching_contr
     assert "docker" not in executable_source(notebook).casefold()
 
 
+def test_lesson12_notebook_source_loads_one_persisted_failed_root_trace() -> None:
+    """Catch replacement of the offline trace drill with IDs or aggregate rows only."""
+
+    notebook = nbformat.read(NOTEBOOK, as_version=4)
+    failure_lab = next(cell for cell in notebook.cells if cell.id == "lesson12-020")
+    for marker in (
+        "mlflow.search_traces",
+        "bounded-agent-v1",
+        "unsupported_metric_not_recovered",
+        'trace_metadata["mlflow.sourceRun"]',
+        "bounded_summary.trace_ids",
+        "parent_id is None",
+        "start_time_ns",
+        "span_type",
+        "attempt_id",
+        "plan_revision",
+        "error_code",
+        "guardrail",
+        "failure_stage",
+    ):
+        assert marker in failure_lab.source
+
+
 def test_lesson12_notebook_executes_offline_with_persisted_visual_evidence(
     tmp_path: Path,
 ) -> None:
@@ -165,9 +188,16 @@ def test_lesson12_notebook_executes_offline_with_persisted_visual_evidence(
     run_ids = re.findall(r"Run ID \((?:bounded-agent-v1|regressed-agent-v0)\): ([0-9a-f]+)", stream_text)
     assert len(run_ids) == 2
     assert len(set(run_ids)) == 2
-    trace_ids = re.findall(r"Trace ID \([^\n]+\): (tr-[0-9a-f]+)", stream_text)
+    trace_matches = re.findall(
+        r"Trace ID \(([^/]+)/([^\n)]+)\): (tr-[0-9a-f]+)", stream_text
+    )
+    trace_ids = [trace_id for _, _, trace_id in trace_matches]
     assert len(trace_ids) == 12
     assert len(set(trace_ids)) == 12
+    trace_ids_by_case = {
+        (configuration_id, case_id): trace_id
+        for configuration_id, case_id, trace_id in trace_matches
+    }
     for metric_name in METRIC_NAMES:
         assert metric_name in _cell_output_text(executed, "lesson12-017")
     assert "failure_stage" in _cell_output_text(executed, "lesson12-017")
@@ -179,6 +209,38 @@ def test_lesson12_notebook_executes_offline_with_persisted_visual_evidence(
     assert "Execution revisions: [0, 0, 0, 1, 1]" in _cell_output_text(
         executed, "lesson12-012"
     )
+    failure_lab_text = _cell_output_text(executed, "lesson12-020")
+    assert "Selected failed trace configuration: bounded-agent-v1" in failure_lab_text
+    assert "Selected failed trace case: unsupported_metric_not_recovered" in (
+        failure_lab_text
+    )
+    assert f"Associated run ID: {run_ids[0]}" in failure_lab_text
+    assert (
+        "Trace ID: "
+        + trace_ids_by_case[
+            ("bounded-agent-v1", "unsupported_metric_not_recovered")
+        ]
+        in failure_lab_text
+    )
+    assert re.search(r"Root span ID: [0-9a-f]+", failure_lab_text)
+    assert (
+        "Persisted child order: planning -> plan_gate -> execution:1 -> "
+        "replanning -> execution:2 -> replanning -> execution:3 -> "
+        "evidence_gate -> report"
+    ) in failure_lab_text
+    for marker in (
+        "span_type",
+        "phase",
+        "public_status",
+        "attempt_id",
+        "plan_revision",
+        "typed_error",
+        "guardrail_evidence",
+        "unsupported_metric",
+        "blocked | Execution stopped after the unsupported metric was not recovered.",
+        "Failure owner: evidence_gate",
+    ):
+        assert marker in failure_lab_text
     assert "NOT RUN" in _cell_output_text(executed, "lesson12-022")
     assert "openai:/<model>" in _cell_output_text(executed, "lesson12-022")
     assert "ollama_chat:/<model>" in _cell_output_text(executed, "lesson12-022")

@@ -79,6 +79,7 @@ def build_notebook():
             from pathlib import Path
 
             import matplotlib.pyplot as plt
+            import mlflow
             import numpy as np
             import pandas as pd
             from IPython.display import display
@@ -674,6 +675,101 @@ def build_notebook():
             display(pd.DataFrame(diagnostic_rows))
             print("Answer-good/path-bad: the redundant call keeps a useful answer but lowers trajectory efficiency.")
             print("Path-good/answer-incomplete: the missing evidence ID breaks citation integrity even when the call path is aligned.")
+
+            selected_configuration_id = "bounded-agent-v1"
+            selected_case_id = "unsupported_metric_not_recovered"
+            persisted_traces = mlflow.search_traces(
+                run_id=bounded_summary.run_id,
+                locations=[bounded_summary.experiment_id],
+                return_type="list",
+                flush=True,
+            )
+            selected_trace = next(
+                trace
+                for trace in persisted_traces
+                if next(
+                    span for span in trace.data.spans if span.parent_id is None
+                ).inputs["case_id"]
+                == selected_case_id
+            )
+            selected_root = next(
+                span for span in selected_trace.data.spans if span.parent_id is None
+            )
+            selected_trace_id = selected_trace.info.trace_id
+            associated_run_id = selected_trace.info.trace_metadata["mlflow.sourceRun"]
+            assert selected_root.inputs["configuration_id"] == selected_configuration_id
+            assert associated_run_id == bounded_summary.run_id
+            assert selected_trace_id == bounded_summary.trace_ids[selected_case_id]
+            assert selected_root.outputs["failure_stage"] == "evidence_gate"
+
+            selected_children = sorted(
+                (
+                    span
+                    for span in selected_trace.data.spans
+                    if span.parent_id == selected_root.span_id
+                ),
+                key=lambda span: span.start_time_ns,
+            )
+            child_order = tuple(span.name for span in selected_children)
+            assert child_order == (
+                "planning",
+                "plan_gate",
+                "execution:1",
+                "replanning",
+                "execution:2",
+                "replanning",
+                "execution:3",
+                "evidence_gate",
+                "report",
+            )
+
+            failed_trace_rows = []
+            for order, span in enumerate((selected_root, *selected_children)):
+                inputs = span.inputs if isinstance(span.inputs, dict) else {}
+                outputs = span.outputs if isinstance(span.outputs, dict) else {}
+                guardrail_evidence = []
+                for event in span.events:
+                    if event.name != "guardrail":
+                        continue
+                    guardrail_evidence.append(
+                        f"{event.attributes['status']} | {event.attributes['summary']}"
+                    )
+                phase = (
+                    "root"
+                    if span.parent_id is None
+                    else "execution"
+                    if span.name.startswith("execution:")
+                    else span.name
+                )
+                failed_trace_rows.append({
+                    "order": order,
+                    "span_name": span.name,
+                    "span_type": span.span_type,
+                    "phase": phase,
+                    "public_status": outputs.get(
+                        "observed_status", outputs.get("status", "not_recorded")
+                    ),
+                    "attempt_id": span.attributes.get(
+                        "attempt_id", inputs.get("attempt_id")
+                    ),
+                    "plan_revision": span.attributes.get(
+                        "plan_revision", inputs.get("plan_revision")
+                    ),
+                    "typed_error": outputs.get("error_code") or "none",
+                    "guardrail_evidence": "; ".join(guardrail_evidence) or "none",
+                })
+
+            failed_trace_table = pd.DataFrame(failed_trace_rows)
+            display(failed_trace_table)
+            print(f"Selected failed trace configuration: {selected_configuration_id}")
+            print(f"Selected failed trace case: {selected_case_id}")
+            print(f"Associated run ID: {associated_run_id}")
+            print(f"Trace ID: {selected_trace_id}")
+            print(f"Root span ID: {selected_root.span_id}")
+            print(f"Persisted child order: {' -> '.join(child_order)}")
+            print("Typed error evidence: unsupported_metric")
+            print("Guardrail evidence: blocked | Execution stopped after the unsupported metric was not recovered.")
+            print(f"Failure owner: {selected_root.outputs['failure_stage']}")
             """,
         ),
         _code(
