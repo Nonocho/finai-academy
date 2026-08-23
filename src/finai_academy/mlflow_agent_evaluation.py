@@ -379,6 +379,26 @@ def _not_run_judge_results(
     )
 
 
+def _require_matching_judge_run_parameters(
+    *,
+    client: MlflowClient,
+    run_id: str,
+    configuration: JudgeConfiguration | None,
+) -> None:
+    """Reject judge writes when the run did not declare that exact route."""
+
+    expected_provider = configuration.provider if configuration is not None else "none"
+    expected_model = configuration.model if configuration is not None else "none"
+    parameters = client.get_run(run_id).data.params
+    if (
+        parameters.get("judge_provider"),
+        parameters.get("judge_model"),
+    ) != (expected_provider, expected_model):
+        raise ValueError(
+            "judge configuration does not match immutable MLflow run parameters"
+        )
+
+
 def _run_one_judge(
     *,
     scorer_name: str,
@@ -432,6 +452,12 @@ def run_optional_judges(
 ) -> tuple[JudgeResult, ...]:
     """Run and log optional judges without changing deterministic evaluation state."""
 
+    client = MlflowClient()
+    _require_matching_judge_run_parameters(
+        client=client,
+        run_id=run_id,
+        configuration=configuration,
+    )
     if configuration is None:
         results = _not_run_judge_results(
             configuration=None,
@@ -465,7 +491,6 @@ def run_optional_judges(
                 )
             )
 
-    client = MlflowClient()
     for result in results:
         if result.status == "COMPLETED" and result.score is not None:
             client.log_metric(

@@ -64,10 +64,15 @@ FINAI_EVAL_JUDGE_MODEL=ollama_chat:/<model>
 ```
 
 OpenAI and Ollama are optional comparisons. Configuration text, installed packages,
-ambient credentials, or a reachable service do not prove that a judge ran. Unless a
-scorer returns an observed result, report it as `NOT RUN`. Never substitute one
-provider for another, invent a score, or let a judge change the deterministic release
-decision.
+ambient credentials, or a reachable service do not prove that a judge ran. Use the
+exact outcome taxonomy:
+
+- Missing configuration or an unavailable explicit provider, adapter, client, or service is `NOT RUN`.
+- A completed scorer, including a low or disagreeing score, is `COMPLETED`.
+- A timeout or ordinary runtime invocation failure is `ERROR`.
+- All three outcomes are observational and never change deterministic metrics or `release_passed`.
+
+Never substitute one provider for another or invent a score.
 
 ## Evaluation cases and aligned configurations
 
@@ -297,10 +302,12 @@ The rows total 8 minutes. The full slot is 12 + 40 + 8 = 60 minutes, from
 
 5. When should an LLM judge be marked `NOT RUN` instead of being replaced silently?
 
-   **Answer:** Mark it `NOT RUN` whenever the requested explicit provider/model was not
-   executed or returned no observed score, including missing configuration, missing
-   provider support, timeout, or error. Never substitute another route or infer success
-   from configuration inspection.
+   **Answer:** Use the exact three-way taxonomy: missing configuration or an unavailable
+   explicit provider, adapter, client, or service is `NOT RUN`; a completed scorer,
+   including a low or disagreeing score, is `COMPLETED`; and a timeout or ordinary
+   runtime invocation failure is `ERROR`. All three outcomes are observational and
+   never change deterministic metrics or `release_passed`. Never substitute another
+   route or infer success from configuration inspection.
 
 ## Bounded challenge solution contract
 
@@ -347,9 +354,10 @@ credential. Continue the core lesson without the live extension.
 ### Judge timeout or disagreement
 
 Record the provider, model, scorer, version, latency, status, and sanitized rationale as
-an observation. A timeout or disagreement does not overwrite the five deterministic
-scores, change `release_passed`, or justify editing the versioned expectation during
-class.
+an observation. Classify a timeout as `ERROR`; if the scorer completes with a low or
+disagreeing score, classify it as `COMPLETED`. Neither outcome overwrites the five
+deterministic scores, changes `release_passed`, or justifies editing the versioned
+expectation during class.
 
 ### Suspected secret or private-data exposure
 

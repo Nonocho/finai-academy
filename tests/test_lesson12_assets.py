@@ -344,6 +344,25 @@ def test_lesson12_chapter_defines_the_complete_instructor_route() -> None:
     assert "—" not in chapter
 
 
+def test_lesson12_chapter_defines_exact_optional_judge_outcome_taxonomy() -> None:
+    chapter = " ".join(CHAPTER.read_text(encoding="utf-8").split())
+
+    for contract in (
+        (
+            "Missing configuration or an unavailable explicit provider, adapter, "
+            "client, or service is `NOT RUN`"
+        ),
+        "A completed scorer, including a low or disagreeing score, is `COMPLETED`",
+        "A timeout or ordinary runtime invocation failure is `ERROR`",
+        (
+            "All three outcomes are observational and never change deterministic "
+            "metrics or `release_passed`"
+        ),
+    ):
+        assert contract in chapter
+    assert "**Answer:** Use the exact three-way taxonomy:" in chapter
+
+
 def test_lesson12_onboarding_documents_local_mlflow_and_explicit_judges() -> None:
     """Catch accidental Docker, browser, or implicit-provider requirements."""
 

@@ -103,6 +103,25 @@ def run_both_fixture_configurations(tmp_path: Path):
     )
 
 
+def create_judge_test_run(
+    tmp_path: Path,
+    *,
+    name: str,
+    provider: str,
+    model: str,
+) -> str:
+    store = initialize_local_mlflow(tmp_path / name)
+    client = MlflowClient(tracking_uri=store.tracking_uri)
+    experiment_id = client.create_experiment(
+        name,
+        artifact_location=store.artifact_directory.as_uri(),
+    )
+    run = client.create_run(experiment_id)
+    client.log_param(run.info.run_id, "judge_provider", provider)
+    client.log_param(run.info.run_id, "judge_model", model)
+    return run.info.run_id
+
+
 def serialized_traces(run_id: str) -> str:
     experiment_id = mlflow.get_run(run_id).info.experiment_id
     traces = mlflow.search_traces(
@@ -133,7 +152,12 @@ def test_no_explicit_judge_model_returns_four_not_run_results(
     tmp_path: Path,
 ) -> None:
     logged: list[tuple[str, object]] = []
-    initialize_local_mlflow(tmp_path / "judge-not-configured")
+    run_id = create_judge_test_run(
+        tmp_path,
+        name="judge-not-configured",
+        provider="none",
+        model="none",
+    )
     monkeypatch.setattr(
         MlflowClient,
         "log_dict",
@@ -144,7 +168,7 @@ def test_no_explicit_judge_model_returns_four_not_run_results(
 
     assert load_judge_configuration({"OPENAI_API_KEY": "present-but-ambient"}) is None
     results = run_optional_judges(
-        run_id="test-run",
+        run_id=run_id,
         configuration=None,
         traces=(),
     )
@@ -337,13 +361,135 @@ def test_judge_trace_normalization_matches_installed_tool_extractors(
     )
 
 
+def test_judges_reject_a_run_with_different_immutable_provider_and_model(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    summary = run_fixture_configuration(tmp_path, "bounded-agent-v1")
+
+    class PassingScorer:
+        def __call__(self, *, trace: object) -> object:
+            return Feedback(value=True, rationale=f"accepted {trace}")
+
+    monkeypatch.setattr(
+        mlflow_agent_evaluation,
+        "build_optional_genai_scorers",
+        lambda configuration: Mock(
+            scorers=tuple(PassingScorer() for _ in range(4))
+        ),
+    )
+    configuration = load_judge_configuration(
+        {"FINAI_EVAL_JUDGE_MODEL": "ollama_chat:/qwen3:8b"}
+    )
+
+    with pytest.raises(
+        ValueError,
+        match="judge configuration does not match immutable MLflow run parameters",
+    ):
+        run_optional_judges(
+            run_id=summary.run_id,
+            configuration=configuration,
+            traces=tuple(traces_by_case(summary).values()),
+        )
+
+    run = mlflow.get_run(summary.run_id)
+    assert run.data.params["judge_provider"] == "none"
+    assert run.data.params["judge_model"] == "none"
+    assert not any(name.startswith("judge_") for name in run.data.metrics)
+    assert not any(
+        artifact.path.endswith("judge_results.json")
+        for artifact in MlflowClient().list_artifacts(summary.run_id, "evaluation")
+    )
+
+
+def test_judges_attach_only_to_a_run_created_with_the_same_explicit_route(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    base_configuration, cases, predictions = fixture_run_inputs("bounded-agent-v1")
+    evaluation_configuration = base_configuration.model_copy(
+        update={
+            "judge_provider": "ollama",
+            "judge_model": "qwen3:8b",
+        }
+    )
+    summary = run_mlflow_agent_evaluation(
+        tracking_directory=tmp_path / "judge-matching-run",
+        experiment_name="judge-matching-run-test",
+        configuration=evaluation_configuration,
+        cases=cases,
+        predictions=predictions,
+    )
+    deterministic_metrics = dict(summary.metrics)
+    deterministic_release = {
+        case_id: score.release_passed
+        for case_id, score in summary.case_scores_by_id.items()
+    }
+
+    class PassingScorer:
+        def __call__(self, *, trace: object) -> object:
+            return Feedback(value=True, rationale="explicit route accepted")
+
+    monkeypatch.setattr(
+        mlflow_agent_evaluation,
+        "build_optional_genai_scorers",
+        lambda configuration: Mock(
+            configuration=configuration,
+            scorers=tuple(PassingScorer() for _ in range(4)),
+        ),
+    )
+    judge_configuration = load_judge_configuration(
+        {"FINAI_EVAL_JUDGE_MODEL": "ollama_chat:/qwen3:8b"}
+    )
+
+    results = run_optional_judges(
+        run_id=summary.run_id,
+        configuration=judge_configuration,
+        traces=tuple(traces_by_case(summary).values()),
+    )
+
+    client = MlflowClient()
+    run = client.get_run(summary.run_id)
+    judge_artifact = json.loads(
+        Path(
+            client.download_artifacts(
+                summary.run_id,
+                "evaluation/judge_results.json",
+            )
+        ).read_text(encoding="utf-8")
+    )
+    assert run.data.params["judge_provider"] == "ollama"
+    assert run.data.params["judge_model"] == "qwen3:8b"
+    assert {
+        row["provider"] for row in judge_artifact["rows"]
+    } == {run.data.params["judge_provider"]}
+    assert {row["model"] for row in judge_artifact["rows"]} == {
+        run.data.params["judge_model"]
+    }
+    assert all(result.status == "COMPLETED" for result in results)
+    assert {
+        key: value
+        for key, value in run.data.metrics.items()
+        if not key.startswith("judge_")
+    } == pytest.approx(deterministic_metrics)
+    assert {
+        case_id: score.release_passed
+        for case_id, score in summary.case_scores_by_id.items()
+    } == deterministic_release
+
+
 def test_completed_judges_log_four_truthful_rows_and_separate_metrics(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
 ) -> None:
     artifact_logs: list[tuple[str, object]] = []
     metric_logs: list[tuple[str, float]] = []
-    initialize_local_mlflow(tmp_path / "judge-completed")
+    run_id = create_judge_test_run(
+        tmp_path,
+        name="judge-completed",
+        provider="openai",
+        model="gpt-5-mini",
+    )
 
     class PassingScorer:
         def __init__(self, *, model: str) -> None:
@@ -377,7 +523,7 @@ def test_completed_judges_log_four_truthful_rows_and_separate_metrics(
     )
 
     results = run_optional_judges(
-        run_id="test-run",
+        run_id=run_id,
         configuration=configuration,
         traces=("trace-a", "trace-b"),
     )
@@ -424,7 +570,12 @@ def test_call_time_unavailable_judge_is_not_run_and_logs_no_metric(
     artifact_logs: list[tuple[str, object]] = []
     metric_logs: list[tuple[str, float]] = []
     constructed: list[str] = []
-    initialize_local_mlflow(tmp_path / "judge-unavailable")
+    run_id = create_judge_test_run(
+        tmp_path,
+        name="judge-unavailable",
+        provider="openai",
+        model="gpt-5-mini",
+    )
 
     class UnavailableScorer:
         def __init__(self, *, model: str) -> None:
@@ -457,7 +608,7 @@ def test_call_time_unavailable_judge_is_not_run_and_logs_no_metric(
     )
 
     results = run_optional_judges(
-        run_id="test-run",
+        run_id=run_id,
         configuration=configuration,
         traces=("trace-a",),
     )
@@ -501,6 +652,8 @@ def test_judge_error_does_not_mutate_deterministic_metrics_or_release_status(
         artifact_location=store.artifact_directory.as_uri(),
     )
     run = client.create_run(experiment_id)
+    client.log_param(run.info.run_id, "judge_provider", "ollama")
+    client.log_param(run.info.run_id, "judge_model", "qwen3:8b")
     deterministic_metrics = {
         "tool_call_correctness_mean": 1.0,
         "tool_call_efficiency_mean": 1.0,
