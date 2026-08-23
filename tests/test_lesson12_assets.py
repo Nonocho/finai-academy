@@ -5,8 +5,10 @@ from __future__ import annotations
 import re
 import subprocess
 import sys
+import zipfile
 from importlib.util import module_from_spec, spec_from_file_location
 from pathlib import Path
+from xml.etree import ElementTree
 
 import nbformat
 
@@ -16,6 +18,8 @@ BUILDER = ROOT / "scripts" / "build_lesson12_notebook.py"
 EXECUTOR = ROOT / "scripts" / "execute_notebooks.py"
 CHAPTER = ROOT / "chapters" / "12-evaluating-agentic-systems.md"
 GETTING_STARTED = ROOT / "docs" / "getting-started.md"
+DECK = ROOT / "decks" / "12-evaluating-agentic-systems.pptx"
+DRAWING_NS = "http://schemas.openxmlformats.org/drawingml/2006/main"
 DATASET_SHA256 = "c8f81fc59b182df8b2044c70d759fcb1fdac1fa90faead4bb70812b409ba0131"
 METRIC_NAMES = (
     "tool_call_correctness",
@@ -359,3 +363,85 @@ def test_lesson12_indexes_expose_completed_course_links_without_stale_status() -
         assert "Lessons 08-12 are ready for an instructor-led offline test class" in (
             normalized_text
         )
+
+
+def test_lesson12_deck_has_the_complete_sourced_concept_route() -> None:
+    """Catch a missing, partial, unsourced, or visibly non-compliant deck."""
+
+    assert DECK.is_file()
+    with zipfile.ZipFile(DECK) as archive:
+        names = archive.namelist()
+        slide_names = sorted(
+            name
+            for name in names
+            if name.startswith("ppt/slides/slide") and name.endswith(".xml")
+        )
+        notes_names = sorted(
+            name
+            for name in names
+            if name.startswith("ppt/notesSlides/notesSlide")
+            and name.endswith(".xml")
+        )
+        assert len(slide_names) == 9
+        assert len(notes_names) == 9
+
+        visible_text = "\n".join(
+            "".join(
+                node.text or ""
+                for node in ElementTree.fromstring(archive.read(name)).iter(
+                    f"{{{DRAWING_NS}}}t"
+                )
+            )
+            for name in slide_names
+        )
+        notes_text = "\n".join(
+            "".join(
+                node.text or ""
+                for node in ElementTree.fromstring(archive.read(name)).iter(
+                    f"{{{DRAWING_NS}}}t"
+                )
+            )
+            for name in notes_names
+        )
+
+    assert visible_text.count("First Finance - Arnaud Demes") == 9
+    assert "—" not in visible_text
+    for marker in (
+        "Evaluating Agentic Systems with MLflow",
+        "SAME ANSWER",
+        "DIFFERENT PATH",
+        "TRAJECTORY",
+        "ANSWER",
+        "agent-cases-v1",
+        "MLFLOW RUN",
+        "ROOT TRACE",
+        "TOOL",
+        *METRIC_NAMES,
+        "DETERMINISTIC RELEASE GATE",
+        "LLM JUDGE",
+        "CITATION INTEGRITY",
+        "CAPSTONE",
+    ):
+        assert marker.casefold() in visible_text.casefold()
+    assert notes_text.count("Instructor purpose:") == 9
+    assert notes_text.count("Planned timing:") == 9
+    assert notes_text.count("[Sources]") == 9
+    assert notes_text.count("[/Sources]") == 9
+    assert notes_text.count("chapters/12-evaluating-agentic-systems.md") == 9
+    for source_url in (
+        "https://mlflow.org/docs/latest/genai/tracing/",
+        "https://mlflow.org/docs/latest/genai/eval-monitor/quickstart/",
+        "https://mlflow.org/docs/latest/genai/eval-monitor/scorers/index.html",
+    ):
+        assert source_url in notes_text
+
+
+def test_lesson12_deck_uses_native_tables_for_comparison_slides() -> None:
+    """Catch flattened or shape-only substitutes for the three required tables."""
+
+    with zipfile.ZipFile(DECK) as archive:
+        for slide_number in (3, 7, 8):
+            slide = ElementTree.fromstring(
+                archive.read(f"ppt/slides/slide{slide_number}.xml")
+            )
+            assert slide.find(f".//{{{DRAWING_NS}}}tbl") is not None
