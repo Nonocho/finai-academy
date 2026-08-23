@@ -5,8 +5,9 @@ from __future__ import annotations
 import os
 import re
 import tempfile
-from collections.abc import Sequence
+from collections.abc import Mapping, Sequence
 from pathlib import Path
+from time import perf_counter
 from typing import Any, Literal
 from urllib.parse import unquote, urlparse
 
@@ -62,6 +63,19 @@ _SANITIZED_SECRET_PATTERN = re.compile(
     r"(?i)(bearer\s+[a-z0-9._-]+|sk-[a-z0-9_-]{8,})"
 )
 _SECRET_SHAPED_PATTERN = re.compile(r"(?i)\bsk-[a-z0-9_-]{8,}\b")
+_JUDGE_MODEL_PATTERN = re.compile(r"^(openai|ollama_chat):/([^\s]+)$")
+_JUDGE_SCORER_NAMES = (
+    "ToolCallCorrectness",
+    "ToolCallEfficiency",
+    "RelevanceToQuery",
+    "Completeness",
+)
+_JUDGE_METRIC_NAMES = {
+    "ToolCallCorrectness": "judge_tool_call_correctness",
+    "ToolCallEfficiency": "judge_tool_call_efficiency",
+    "RelevanceToQuery": "judge_relevance_to_query",
+    "Completeness": "judge_completeness",
+}
 
 
 class _ArtifactLocationError(ValueError):
@@ -130,6 +144,242 @@ class AgentEvaluationComparison(BaseModel):
     tool_call_rows: tuple[dict[str, object], ...]
     latency_rows: tuple[dict[str, object], ...]
     failure_rows: tuple[dict[str, object], ...]
+
+
+class JudgeConfiguration(BaseModel):
+    """One explicitly selected MLflow judge provider and model."""
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    provider: Literal["openai", "ollama"]
+    model_uri: str
+    model: str
+
+
+class JudgeResult(BaseModel):
+    """Truthful aggregate outcome for one optional MLflow judge."""
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    scorer_name: Literal[
+        "ToolCallCorrectness",
+        "ToolCallEfficiency",
+        "RelevanceToQuery",
+        "Completeness",
+    ]
+    provider: Literal["openai", "ollama"] | None
+    model: str | None
+    mlflow_version: str
+    latency_ms: float = Field(ge=0)
+    status: Literal["COMPLETED", "ERROR", "NOT RUN"]
+    score: float | None = Field(default=None, ge=0, le=1)
+    rationale: str
+
+
+class JudgeScorerSet(BaseModel):
+    """Optional judge configuration paired with constructed MLflow scorers."""
+
+    model_config = ConfigDict(arbitrary_types_allowed=True, frozen=True)
+
+    configuration: JudgeConfiguration | None
+    scorers: tuple[object, ...]
+
+
+def load_judge_configuration(
+    environment: Mapping[str, str] = os.environ,
+) -> JudgeConfiguration | None:
+    """Load only an explicitly configured OpenAI or Ollama MLflow model URI."""
+
+    model_uri = environment.get("FINAI_EVAL_JUDGE_MODEL")
+    if model_uri is None or model_uri == "":
+        return None
+    match = _JUDGE_MODEL_PATTERN.fullmatch(model_uri)
+    if match is None:
+        raise ValueError(
+            "FINAI_EVAL_JUDGE_MODEL must use openai:/<model> or "
+            "ollama_chat:/<model>"
+        )
+    _validate_safe_payload(model_uri)
+    route, model = match.groups()
+    provider: Literal["openai", "ollama"] = (
+        "openai" if route == "openai" else "ollama"
+    )
+    return JudgeConfiguration(
+        provider=provider,
+        model_uri=model_uri,
+        model=model,
+    )
+
+
+def build_optional_genai_scorers(
+    configuration: JudgeConfiguration | None,
+) -> JudgeScorerSet:
+    """Build the four current MLflow scorers only for an explicit judge route."""
+
+    if configuration is None:
+        return JudgeScorerSet(configuration=None, scorers=())
+
+    from mlflow.genai.scorers import (
+        Completeness,
+        RelevanceToQuery,
+        ToolCallCorrectness,
+        ToolCallEfficiency,
+    )
+
+    return JudgeScorerSet(
+        configuration=configuration,
+        scorers=(
+            ToolCallCorrectness(model=configuration.model_uri),
+            ToolCallEfficiency(model=configuration.model_uri),
+            RelevanceToQuery(model=configuration.model_uri),
+            Completeness(model=configuration.model_uri),
+        ),
+    )
+
+
+def _judge_score(value: object) -> float:
+    candidate = getattr(value, "value", value)
+    if isinstance(candidate, bool):
+        return float(candidate)
+    if isinstance(candidate, (int, float)):
+        score = float(candidate)
+        if 0.0 <= score <= 1.0:
+            return score
+    if isinstance(candidate, str):
+        normalized = candidate.casefold()
+        if normalized in {"yes", "true", "pass", "passed"}:
+            return 1.0
+        if normalized in {"no", "false", "fail", "failed"}:
+            return 0.0
+    raise ValueError("MLflow judge returned an unsupported score")
+
+
+def _judge_error_reason(exc: Exception) -> str:
+    reason = _sanitized_error_reason(exc)
+    try:
+        _validate_safe_payload(reason)
+    except ValueError:
+        reason = "details redacted"
+    return f"{type(exc).__name__}: {reason}"
+
+
+def _not_run_judge_results(
+    *,
+    configuration: JudgeConfiguration | None,
+    rationale: str,
+) -> tuple[JudgeResult, ...]:
+    return tuple(
+        JudgeResult(
+            scorer_name=scorer_name,
+            provider=configuration.provider if configuration is not None else None,
+            model=configuration.model if configuration is not None else None,
+            mlflow_version=mlflow.__version__,
+            latency_ms=0.0,
+            status="NOT RUN",
+            score=None,
+            rationale=rationale,
+        )
+        for scorer_name in _JUDGE_SCORER_NAMES
+    )
+
+
+def _run_one_judge(
+    *,
+    scorer_name: str,
+    scorer: object,
+    configuration: JudgeConfiguration,
+    traces: Sequence[object],
+) -> JudgeResult:
+    started = perf_counter()
+    try:
+        scores: list[float] = []
+        rationales: list[str] = []
+        for trace in traces:
+            feedback = scorer(trace=trace)  # type: ignore[operator]
+            feedback_error = getattr(feedback, "error", None)
+            if feedback_error is not None:
+                raise RuntimeError(str(feedback_error))
+            scores.append(_judge_score(getattr(feedback, "value", None)))
+            rationale = getattr(feedback, "rationale", None)
+            if rationale:
+                rationales.append(str(rationale))
+        score = sum(scores) / len(scores)
+        rationale = (
+            f"Completed {len(scores)} trace(s). " + " | ".join(rationales)
+            if rationales
+            else f"Completed {len(scores)} trace(s)."
+        )
+        _validate_safe_payload(rationale)
+        status: Literal["COMPLETED", "ERROR"] = "COMPLETED"
+    except Exception as exc:  # noqa: BLE001 - one failed judge stays observational.
+        score = None
+        rationale = _judge_error_reason(exc)
+        status = "ERROR"
+    return JudgeResult(
+        scorer_name=scorer_name,
+        provider=configuration.provider,
+        model=configuration.model,
+        mlflow_version=mlflow.__version__,
+        latency_ms=(perf_counter() - started) * 1000,
+        status=status,
+        score=score,
+        rationale=rationale,
+    )
+
+
+def run_optional_judges(
+    *,
+    run_id: str,
+    configuration: JudgeConfiguration | None,
+    traces: Sequence[object],
+) -> tuple[JudgeResult, ...]:
+    """Run and log optional judges without changing deterministic evaluation state."""
+
+    if configuration is None:
+        results = _not_run_judge_results(
+            configuration=None,
+            rationale="FINAI_EVAL_JUDGE_MODEL is not configured.",
+        )
+    elif not traces:
+        results = _not_run_judge_results(
+            configuration=configuration,
+            rationale="No MLflow traces were supplied.",
+        )
+    else:
+        try:
+            scorer_set = build_optional_genai_scorers(configuration)
+        except Exception as exc:  # noqa: BLE001 - unavailable optional API is observable.
+            results = _not_run_judge_results(
+                configuration=configuration,
+                rationale=_judge_error_reason(exc),
+            )
+        else:
+            results = tuple(
+                _run_one_judge(
+                    scorer_name=scorer_name,
+                    scorer=scorer,
+                    configuration=configuration,
+                    traces=traces,
+                )
+                for scorer_name, scorer in zip(
+                    _JUDGE_SCORER_NAMES,
+                    scorer_set.scorers,
+                    strict=True,
+                )
+            )
+
+    client = MlflowClient()
+    for result in results:
+        if result.status == "COMPLETED" and result.score is not None:
+            client.log_metric(
+                run_id,
+                _JUDGE_METRIC_NAMES[result.scorer_name],
+                result.score,
+            )
+    rows = [result.model_dump(mode="json") for result in results]
+    _validate_safe_payload(rows)
+    client.log_dict(run_id, {"rows": rows}, "evaluation/judge_results.json")
+    return results
 
 
 def initialize_local_mlflow(tracking_directory: Path | None = None) -> LocalMLflowStore:

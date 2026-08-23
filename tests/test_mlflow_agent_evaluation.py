@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import inspect
 import json
 import traceback
 from pathlib import Path
@@ -9,6 +10,8 @@ from unittest.mock import Mock
 
 import mlflow
 import pytest
+from mlflow.entities import Feedback
+from mlflow.genai import scorers as genai_scorers
 from mlflow.tracking import MlflowClient
 
 from finai_academy import mlflow_agent_evaluation
@@ -20,9 +23,12 @@ from finai_academy.agent_evaluation import (
 )
 from finai_academy.mlflow_agent_evaluation import (
     AgentEvaluationConfiguration,
+    build_optional_genai_scorers,
     compare_agent_configurations,
     initialize_local_mlflow,
+    load_judge_configuration,
     run_mlflow_agent_evaluation,
+    run_optional_judges,
 )
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
@@ -115,6 +121,291 @@ def traces_by_case(summary: object) -> dict[str, object]:
         root = next(span for span in trace.data.spans if span.parent_id is None)
         result[root.inputs["case_id"]] = trace
     return result
+
+
+def test_no_explicit_judge_model_returns_four_not_run_results(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    logged: list[tuple[str, object]] = []
+    initialize_local_mlflow(tmp_path / "judge-not-configured")
+    monkeypatch.setattr(
+        MlflowClient,
+        "log_dict",
+        lambda self, run_id, dictionary, artifact_file: logged.append(
+            (artifact_file, dictionary)
+        ),
+    )
+
+    assert load_judge_configuration({"OPENAI_API_KEY": "present-but-ambient"}) is None
+    results = run_optional_judges(
+        run_id="test-run",
+        configuration=None,
+        traces=(),
+    )
+
+    assert [result.scorer_name for result in results] == [
+        "ToolCallCorrectness",
+        "ToolCallEfficiency",
+        "RelevanceToQuery",
+        "Completeness",
+    ]
+    assert all(result.status == "NOT RUN" for result in results)
+    assert all(result.score is None for result in results)
+    assert logged[0][0] == "evaluation/judge_results.json"
+
+
+@pytest.mark.parametrize(
+    ("uri", "provider", "model"),
+    [
+        ("openai:/gpt-5-mini", "openai", "gpt-5-mini"),
+        ("ollama_chat:/qwen3:8b", "ollama", "qwen3:8b"),
+    ],
+)
+def test_judge_model_uri_selects_exactly_one_explicit_provider(
+    uri: str,
+    provider: str,
+    model: str,
+) -> None:
+    config = load_judge_configuration({"FINAI_EVAL_JUDGE_MODEL": uri})
+
+    assert config is not None
+    assert (config.provider, config.model_uri, config.model) == (
+        provider,
+        uri,
+        model,
+    )
+
+
+def test_invalid_or_credential_only_judge_configuration_never_falls_back() -> None:
+    with pytest.raises(ValueError, match="FINAI_EVAL_JUDGE_MODEL"):
+        load_judge_configuration({"FINAI_EVAL_JUDGE_MODEL": "gpt-5-mini"})
+
+
+def test_explicit_judge_model_rejects_secret_shaped_text() -> None:
+    with pytest.raises(ValueError, match="secret-shaped"):
+        load_judge_configuration(
+            {"FINAI_EVAL_JUDGE_MODEL": "openai:/sk-secret-shaped-value"}
+        )
+
+
+def test_installed_mlflow_judge_signatures_support_explicit_model_and_trace() -> None:
+    for scorer_class in (
+        genai_scorers.ToolCallCorrectness,
+        genai_scorers.ToolCallEfficiency,
+        genai_scorers.RelevanceToQuery,
+        genai_scorers.Completeness,
+    ):
+        assert "model" in inspect.signature(scorer_class).parameters
+        assert "trace" in inspect.signature(scorer_class.__call__).parameters
+
+
+def test_optional_judge_scorers_use_the_explicit_model_uri(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    constructed: list[tuple[str, str]] = []
+
+    def fake_scorer_class(name: str) -> type:
+        class FakeScorer:
+            def __init__(self, *, model: str) -> None:
+                constructed.append((name, model))
+
+        FakeScorer.__name__ = name
+        return FakeScorer
+
+    for name in (
+        "ToolCallCorrectness",
+        "ToolCallEfficiency",
+        "RelevanceToQuery",
+        "Completeness",
+    ):
+        monkeypatch.setattr(genai_scorers, name, fake_scorer_class(name))
+
+    configuration = load_judge_configuration(
+        {"FINAI_EVAL_JUDGE_MODEL": "ollama_chat:/qwen3:8b"}
+    )
+    scorer_set = build_optional_genai_scorers(configuration)
+
+    assert scorer_set.configuration == configuration
+    assert [type(scorer).__name__ for scorer in scorer_set.scorers] == [
+        "ToolCallCorrectness",
+        "ToolCallEfficiency",
+        "RelevanceToQuery",
+        "Completeness",
+    ]
+    assert constructed == [
+        ("ToolCallCorrectness", "ollama_chat:/qwen3:8b"),
+        ("ToolCallEfficiency", "ollama_chat:/qwen3:8b"),
+        ("RelevanceToQuery", "ollama_chat:/qwen3:8b"),
+        ("Completeness", "ollama_chat:/qwen3:8b"),
+    ]
+
+
+def test_completed_judges_log_four_truthful_rows_and_separate_metrics(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    artifact_logs: list[tuple[str, object]] = []
+    metric_logs: list[tuple[str, float]] = []
+    initialize_local_mlflow(tmp_path / "judge-completed")
+
+    class PassingScorer:
+        def __init__(self, *, model: str) -> None:
+            self.model = model
+
+        def __call__(self, *, trace: object) -> object:
+            return Feedback(value=True, rationale=f"accepted {trace}")
+
+    for name in (
+        "ToolCallCorrectness",
+        "ToolCallEfficiency",
+        "RelevanceToQuery",
+        "Completeness",
+    ):
+        monkeypatch.setattr(genai_scorers, name, PassingScorer)
+    monkeypatch.setattr(mlflow, "__version__", "3.15.1-test")
+    monkeypatch.setattr(
+        MlflowClient,
+        "log_dict",
+        lambda self, run_id, dictionary, artifact_file: artifact_logs.append(
+            (artifact_file, dictionary)
+        ),
+    )
+    monkeypatch.setattr(
+        MlflowClient,
+        "log_metric",
+        lambda self, run_id, key, value: metric_logs.append((key, value)),
+    )
+    configuration = load_judge_configuration(
+        {"FINAI_EVAL_JUDGE_MODEL": "openai:/gpt-5-mini"}
+    )
+
+    results = run_optional_judges(
+        run_id="test-run",
+        configuration=configuration,
+        traces=("trace-a", "trace-b"),
+    )
+
+    assert len(results) == 4
+    assert all(result.status == "COMPLETED" for result in results)
+    assert all(result.score == 1.0 for result in results)
+    assert all(result.provider == "openai" for result in results)
+    assert all(result.model == "gpt-5-mini" for result in results)
+    assert all(result.mlflow_version == "3.15.1-test" for result in results)
+    assert all(result.latency_ms >= 0 for result in results)
+    assert artifact_logs == [
+        (
+            "evaluation/judge_results.json",
+            {"rows": [result.model_dump(mode="json") for result in results]},
+        )
+    ]
+    assert metric_logs == [
+        ("judge_tool_call_correctness", 1.0),
+        ("judge_tool_call_efficiency", 1.0),
+        ("judge_relevance_to_query", 1.0),
+        ("judge_completeness", 1.0),
+    ]
+
+
+def test_unavailable_judge_api_is_not_run_and_logs_no_metric(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    artifact_logs: list[tuple[str, object]] = []
+    metric_logs: list[tuple[str, float]] = []
+    initialize_local_mlflow(tmp_path / "judge-unavailable")
+
+    class UnavailableScorer:
+        def __init__(self, *, model: str) -> None:
+            raise ImportError(f"client unavailable for {model}")
+
+    monkeypatch.setattr(genai_scorers, "ToolCallCorrectness", UnavailableScorer)
+    monkeypatch.setattr(
+        MlflowClient,
+        "log_dict",
+        lambda self, run_id, dictionary, artifact_file: artifact_logs.append(
+            (artifact_file, dictionary)
+        ),
+    )
+    monkeypatch.setattr(
+        MlflowClient,
+        "log_metric",
+        lambda self, run_id, key, value: metric_logs.append((key, value)),
+    )
+    configuration = load_judge_configuration(
+        {"FINAI_EVAL_JUDGE_MODEL": "openai:/gpt-5-mini"}
+    )
+
+    results = run_optional_judges(
+        run_id="test-run",
+        configuration=configuration,
+        traces=("trace-a",),
+    )
+
+    assert len(results) == 4
+    assert all(result.status == "NOT RUN" for result in results)
+    assert all(result.score is None for result in results)
+    assert all("ImportError" in result.rationale for result in results)
+    assert metric_logs == []
+    assert artifact_logs[0][0] == "evaluation/judge_results.json"
+
+
+def test_judge_error_does_not_mutate_deterministic_metrics_or_release_status(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    class FailingScorer:
+        def __init__(self, *, model: str) -> None:
+            self.model = model
+
+        def __call__(self, *, trace: object) -> object:
+            raise TimeoutError(
+                "hidden reasoning; Authorization: Bearer private-token at "
+                "/Users/alice/private"
+            )
+
+    for name in (
+        "ToolCallCorrectness",
+        "ToolCallEfficiency",
+        "RelevanceToQuery",
+        "Completeness",
+    ):
+        monkeypatch.setattr(genai_scorers, name, FailingScorer)
+    store = initialize_local_mlflow(tmp_path / "judge-separation")
+    client = MlflowClient(tracking_uri=store.tracking_uri)
+    experiment_id = client.create_experiment(
+        "judge-separation-test",
+        artifact_location=store.artifact_directory.as_uri(),
+    )
+    run = client.create_run(experiment_id)
+    deterministic_metrics = {
+        "tool_call_correctness_mean": 1.0,
+        "tool_call_efficiency_mean": 1.0,
+        "answer_relevance_mean": 1.0,
+        "answer_completeness_mean": 0.75,
+        "citation_integrity_mean": 1.0,
+        "release_passed": 1.0,
+    }
+    for key, value in deterministic_metrics.items():
+        client.log_metric(run.info.run_id, key, value)
+    configuration = load_judge_configuration(
+        {"FINAI_EVAL_JUDGE_MODEL": "ollama_chat:/qwen3:8b"}
+    )
+
+    results = run_optional_judges(
+        run_id=run.info.run_id,
+        configuration=configuration,
+        traces=("trace-a",),
+    )
+
+    persisted_metrics = client.get_run(run.info.run_id).data.metrics
+    assert all(result.status == "ERROR" for result in results)
+    assert all(result.score is None for result in results)
+    assert all("TimeoutError" in result.rationale for result in results)
+    assert all("Authorization" not in result.rationale for result in results)
+    assert all("/Users/" not in result.rationale for result in results)
+    assert all("hidden reasoning" not in result.rationale for result in results)
+    assert persisted_metrics == deterministic_metrics
 
 
 def test_local_store_uses_resolved_sqlite_database_and_local_artifacts(
