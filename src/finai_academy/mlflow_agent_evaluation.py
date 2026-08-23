@@ -47,10 +47,19 @@ _REQUIRED_CHAIN_PHASES = (
     "evidence_gate",
     "report",
 )
-_PERSONAL_PATH_PATTERN = re.compile(r"(?i)(?:/Users/|/home/|[A-Z]:\\Users\\)")
+_PERSONAL_PATH_PATTERN = re.compile(
+    r"(?i)(?:(?:/Users|/home)/[^\r\n]*|[A-Z]:\\Users\\[^\r\n]*)"
+)
 _HIDDEN_REASONING_PATTERN = re.compile(r"(?i)chain[- ]of[- ]thought|hidden reasoning")
+_CREDENTIAL_ASSIGNMENT_PATTERN = re.compile(
+    r"(?i)\b[a-z0-9_-]*api[_-]?key\s*=\s*(?:\"[^\"]*\"|'[^']*'|[^\s,;]+)"
+)
+_AUTHORIZATION_HEADER_PATTERN = re.compile(
+    r"(?i)\bauthorization\s*:\s*(?:basic|bearer)\s+"
+    r"(?:\"[^\"]*\"|'[^']*'|[^\s,;]+)"
+)
 _SANITIZED_SECRET_PATTERN = re.compile(
-    r"(?i)(api[_-]?key|authorization|bearer\s+[a-z0-9._-]+|sk-[a-z0-9_-]{8,})"
+    r"(?i)(bearer\s+[a-z0-9._-]+|sk-[a-z0-9_-]{8,})"
 )
 _SECRET_SHAPED_PATTERN = re.compile(r"(?i)\bsk-[a-z0-9_-]{8,}\b")
 
@@ -161,8 +170,10 @@ def _parameters(configuration: AgentEvaluationConfiguration) -> dict[str, str | 
 
 
 def _sanitized_error_reason(exc: Exception) -> str:
-    reason = _SANITIZED_SECRET_PATTERN.sub("[redacted]", str(exc))
-    reason = _PERSONAL_PATH_PATTERN.sub("[personal-path]/", reason)
+    reason = _CREDENTIAL_ASSIGNMENT_PATTERN.sub("[credential redacted]", str(exc))
+    reason = _AUTHORIZATION_HEADER_PATTERN.sub("[credential redacted]", reason)
+    reason = _SANITIZED_SECRET_PATTERN.sub("[credential redacted]", reason)
+    reason = _PERSONAL_PATH_PATTERN.sub("[personal path redacted]", reason)
     return reason or type(exc).__name__
 
 

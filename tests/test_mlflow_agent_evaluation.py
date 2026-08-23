@@ -446,6 +446,81 @@ def test_backend_failure_sanitizes_secret_and_personal_path_from_reason(
     assert exc_info.value.__cause__ is None
 
 
+@pytest.mark.parametrize(
+    ("reason", "generic_reason", "forbidden_fragments"),
+    [
+        (
+            (
+                "credential rejected: OPENAI_API_KEY=topsecretvalue at "
+                "/Users/alice/private-cache/secret-store.sqlite"
+            ),
+            "credential rejected",
+            (
+                "OPENAI_API_KEY",
+                "topsecretvalue",
+                "alice",
+                "private-cache",
+                "secret-store.sqlite",
+            ),
+        ),
+        (
+            (
+                "authentication failed: Authorization: Basic dXNlcjpwYXNz at "
+                "/home/bob/.config/mlflow/private.sqlite"
+            ),
+            "authentication failed",
+            (
+                "Authorization",
+                "Basic dXNlcjpwYXNz",
+                "bob",
+                ".config/mlflow",
+                "private.sqlite",
+            ),
+        ),
+        (
+            (
+                "authentication failed: Authorization: Bearer bearer-token-value at "
+                "/Users/carol/Library/Application Support/mlflow/private.db"
+            ),
+            "authentication failed",
+            (
+                "Authorization",
+                "Bearer bearer-token-value",
+                "carol",
+                "Library/Application Support",
+                "mlflow/private.db",
+            ),
+        ),
+    ],
+    ids=("api-key-macos", "basic-linux", "bearer-macos-spaces"),
+)
+def test_backend_failure_redacts_complete_credentials_and_home_paths(
+    reason: str,
+    generic_reason: str,
+    forbidden_fragments: tuple[str, ...],
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    tracking_directory = tmp_path / "lesson12-sanitized-store"
+    database_path = (tracking_directory / "mlflow.db").resolve()
+    monkeypatch.setattr(
+        mlflow,
+        "set_tracking_uri",
+        Mock(side_effect=OSError(reason)),
+    )
+
+    with pytest.raises(RuntimeError) as exc_info:
+        initialize_local_mlflow(tracking_directory)
+
+    formatted = "".join(traceback.format_exception(exc_info.value))
+    assert str(database_path) in formatted
+    assert generic_reason in formatted
+    assert "[credential redacted]" in formatted
+    assert "[personal path redacted]" in formatted
+    assert all(fragment not in formatted for fragment in forbidden_fragments)
+    assert exc_info.value.__cause__ is None
+
+
 def test_unusable_tracking_file_is_wrapped_by_safe_initialization(tmp_path: Path) -> None:
     tracking_file = tmp_path / "lesson12-store-file"
     tracking_file.write_text("not a directory", encoding="utf-8")
