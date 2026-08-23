@@ -158,6 +158,38 @@ uv run python scripts/setup_check.py --provider openai
 
 Do not commit `.env`.
 
+## Lesson 12: local MLflow agent evaluation
+
+Lesson 12 uses local SQLite and local artifacts for its deterministic core. Docker is not required for Lesson 12, and the browser UI is not required for Lesson 12. The notebook
+renders the essential run comparison, per-case scorecard, trace, and failure evidence
+inline.
+
+On macOS or Linux, select and print a resolved local directory before executing the
+notebook:
+
+```bash
+export FINAI_MLFLOW_DIR=/private/tmp/finai-lesson12-mlflow
+uv run python -c "import os; from pathlib import Path; print(Path(os.environ['FINAI_MLFLOW_DIR']).resolve())"
+uv run python scripts/execute_notebooks.py notebooks/12_evaluating_agentic_systems.ipynb \
+  --mode offline --output-dir /private/tmp/finai-lesson12-offline
+```
+
+The notebook prints the resolved database path, local artifacts directory, and exact UI
+command. Starting that UI is optional; when started, it is available at
+`http://127.0.0.1:5000`.
+
+The optional judge routes use explicit judge URIs. These examples document the accepted
+forms without enabling either route:
+
+```text
+FINAI_EVAL_JUDGE_MODEL=openai:/<model>
+FINAI_EVAL_JUDGE_MODEL=ollama_chat:/<model>
+```
+
+Select at most one explicit provider/model for an optional extension. If it is not
+actually executed, report the judge as `NOT RUN`; installed clients, credentials, or
+configuration text are not execution evidence.
+
 ## Optional: Docker
 
 Docker is not needed for Day 1. Install [Docker Desktop](https://docs.docker.com/get-started/get-docker/)

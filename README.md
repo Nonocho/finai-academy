@@ -86,12 +86,15 @@ tests/                  Engineering and course contracts
 ```
 
 Day 1 consists of the introduction plus canonical Lessons 01-07. Day 2 adds
-workflows, tools, bounded agents, and MCP. Lessons 08-11 are ready for an
-instructor-led test class. Lesson 11 includes the
+workflows, tools, bounded agents, MCP, and agent evaluation. Lessons 08-12 are ready for an instructor-led offline test class. Lesson 11 includes the
 [Lesson 11 instructor chapter](chapters/11-plan-and-execute-analyst.md),
 [Lesson 11 notebook](notebooks/11_plan_and_execute_analyst.ipynb), and
-[Lesson 11 concept deck](decks/11-plan-and-execute-analyst.pptx). Lesson 12
-remains planned.
+[Lesson 11 concept deck](decks/11-plan-and-execute-analyst.pptx). Lesson 12 includes the
+[Lesson 12 instructor chapter](chapters/12-evaluating-agentic-systems.md),
+[Lesson 12 notebook](notebooks/12_evaluating_agentic_systems.ipynb), and canonical
+[Lesson 12 concept deck](decks/12-evaluating-agentic-systems.pptx) path. The offline
+instructor route and notebook are ready; deck visual certification and the final
+independent readiness review remain separate work.
 
 ## Copyright
 

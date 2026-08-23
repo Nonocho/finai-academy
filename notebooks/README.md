@@ -17,8 +17,10 @@ verification marker.
 | 09 | [Self-correcting financial agent](09_self_correcting_agent.ipynb) |
 | 10 | [Financial MCP](10_financial_mcp.ipynb) |
 | 11 | [Plan-and-execute financial analyst](11_plan_and_execute_analyst.ipynb) |
+| 12 | [Evaluating agentic systems with MLflow](12_evaluating_agentic_systems.ipynb) |
 
-Lessons 01–07 complete Day 1. Lessons 08-11 are ready for an instructor-led
-test class. Lesson 12 remains planned. See the [Day 1 student
-guide](../docs/day-1-student-guide.md) for the completed first-day timings and
-capstone increments.
+Lessons 01–07 complete Day 1. Lessons 08-12 are ready for an instructor-led offline test class.
+Lesson 12 runs its deterministic core with local SQLite and inline evidence; optional
+provider judges do not affect the pass marker. See the [Day 1 student
+guide](../docs/day-1-student-guide.md) for the completed first-day timings and capstone
+increments.

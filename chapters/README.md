@@ -17,7 +17,9 @@ increment for the completed Day 1 course.
 | 09 | [Self-correcting financial agent](09-self-correcting-agent.md) |
 | 10 | [Financial MCP](10-financial-mcp.md) |
 | 11 | [Plan-and-execute financial analyst](11-plan-and-execute-analyst.md) |
+| 12 | [Evaluating agentic systems with MLflow](12-evaluating-agentic-systems.md) |
 
-Lessons 01–07 complete Day 1. Lessons 08-11 are ready for an instructor-led
-test class. Lesson 12 remains planned. Day 1 student order and timing are in
-the [Day 1 student guide](../docs/day-1-student-guide.md).
+Lessons 01–07 complete Day 1. Lessons 08-12 are ready for an instructor-led offline test class.
+Lesson 12 deck visual certification and the final independent readiness review are
+tracked separately. Day 1 student order and timing are in the
+[Day 1 student guide](../docs/day-1-student-guide.md).

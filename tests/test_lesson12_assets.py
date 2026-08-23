@@ -14,6 +14,8 @@ ROOT = Path(__file__).resolve().parents[1]
 NOTEBOOK = ROOT / "notebooks" / "12_evaluating_agentic_systems.ipynb"
 BUILDER = ROOT / "scripts" / "build_lesson12_notebook.py"
 EXECUTOR = ROOT / "scripts" / "execute_notebooks.py"
+CHAPTER = ROOT / "chapters" / "12-evaluating-agentic-systems.md"
+GETTING_STARTED = ROOT / "docs" / "getting-started.md"
 DATASET_SHA256 = "c8f81fc59b182df8b2044c70d759fcb1fdac1fa90faead4bb70812b409ba0131"
 METRIC_NAMES = (
     "tool_call_correctness",
@@ -186,3 +188,112 @@ def test_lesson12_notebook_executes_offline_with_persisted_visual_evidence(
     assert expected_ui_command in _cell_output_text(executed, "lesson12-023")
     assert "http://127.0.0.1:5000" in _cell_output_text(executed, "lesson12-023")
     assert all_output_text.count("LESSON_12_PASS") == 1
+
+
+def test_lesson12_chapter_defines_the_complete_instructor_route() -> None:
+    """Catch loss of the exact route, evaluation contracts, or recovery guidance."""
+
+    assert CHAPTER.is_file()
+    chapter = CHAPTER.read_text(encoding="utf-8")
+    normalized_chapter = " ".join(chapter.split())
+
+    for marker in (
+        "14:30-15:30",
+        "12-minute concept deck",
+        "40-minute notebook",
+        "8-minute verification and debrief",
+        "uv sync --extra ai --extra evaluation --extra dev",
+        "No-network fallback",
+        "Skip if late",
+        "LESSON_12_PASS",
+        "OpenAI",
+        "Ollama",
+        "NOT RUN",
+        "mlflow ui --backend-store-uri sqlite:////absolute/path/to/mlflow.db",
+        "reference_completed",
+        "unsupported_metric_not_recovered",
+        "redundant_metric_call",
+        "missing_schneider_document",
+        "document_fact_without_evidence_id",
+        "wrong_source_evidence_pair",
+        "bounded-agent-v1",
+        "regressed-agent-v0",
+        *METRIC_NAMES,
+        "metric fact",
+        "document fact",
+        "aggregate sources",
+        "dataset/hash mismatch",
+        "local SQLite failure",
+        "trace/run association failure",
+        "judge timeout or disagreement",
+        "suspected secret or private-data exposure",
+        "public serializable state",
+        "no trading",
+        "portfolio mutation",
+        "price target",
+        "investment recommendation",
+        "full Lesson 12 route is ready for an instructor-led offline test class",
+    ):
+        assert marker.casefold() in normalized_chapter.casefold()
+    for cell_index in range(27):
+        assert f"lesson12-{cell_index:03d}" in chapter
+    for figure_purpose in (
+        "Versioned expectations evaluate trajectory and answer separately",
+        "Expected and observed dependency-aware call signatures align",
+        "One public trace retains phase, attempt, revision, status, and latency",
+        "Per-case metrics reveal failures hidden by configuration means",
+        "Aligned configurations compare all five means on one dataset hash",
+        "Failure diagnosis assigns the earliest public owner",
+    ):
+        assert figure_purpose in chapter
+    assert chapter.count("Answer:") >= 5
+    assert "—" not in chapter
+
+
+def test_lesson12_onboarding_documents_local_mlflow_and_explicit_judges() -> None:
+    """Catch accidental Docker, browser, or implicit-provider requirements."""
+
+    onboarding = GETTING_STARTED.read_text(encoding="utf-8")
+    for marker in (
+        "Lesson 12",
+        "FINAI_MLFLOW_DIR",
+        "local SQLite",
+        "local artifacts",
+        "http://127.0.0.1:5000",
+        "Docker is not required for Lesson 12",
+        "browser UI is not required for Lesson 12",
+        "FINAI_EVAL_JUDGE_MODEL=openai:/<model>",
+        "FINAI_EVAL_JUDGE_MODEL=ollama_chat:/<model>",
+        "explicit judge URIs",
+    ):
+        assert marker in onboarding
+
+
+def test_lesson12_indexes_expose_completed_course_links_without_stale_status() -> None:
+    """Catch a hidden Lesson 12 route or obsolete planned-course status."""
+
+    expected_links = {
+        "chapters/README.md": (
+            "[Evaluating agentic systems with MLflow](12-evaluating-agentic-systems.md)",
+        ),
+        "notebooks/README.md": (
+            "[Evaluating agentic systems with MLflow](12_evaluating_agentic_systems.ipynb)",
+        ),
+        "decks/README.md": (
+            "[Evaluating agentic systems with MLflow](12-evaluating-agentic-systems.pptx)",
+        ),
+        "README.md": (
+            "[Lesson 12 instructor chapter](chapters/12-evaluating-agentic-systems.md)",
+            "[Lesson 12 notebook](notebooks/12_evaluating_agentic_systems.ipynb)",
+            "[Lesson 12 concept deck](decks/12-evaluating-agentic-systems.pptx)",
+        ),
+    }
+    for relative_path, links in expected_links.items():
+        text = (ROOT / relative_path).read_text(encoding="utf-8")
+        normalized_text = " ".join(text.split())
+        for link in links:
+            assert link in text
+        assert "Lesson 12 remains planned" not in normalized_text
+        assert "Lessons 08-12 are ready for an instructor-led offline test class" in (
+            normalized_text
+        )

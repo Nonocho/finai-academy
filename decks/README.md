@@ -21,12 +21,13 @@
 | 09 | [Self-correcting financial agent](09-self-correcting-agent.pptx) | Completed |
 | 10 | [Build a financial MCP](10-financial-mcp.pptx) | Ready for instructor delivery |
 | 11 | [Plan-and-execute financial analyst](11-plan-and-execute-analyst.pptx) | Ready for instructor delivery |
-| 12 | Evaluating agentic systems | Planned |
+| 12 | [Evaluating agentic systems with MLflow](12-evaluating-agentic-systems.pptx) | Instructor script ready; visual certification pending |
 
-Lessons 08-11 are ready for an instructor-led test class. Lesson 12 remains
-planned.
+Lessons 08-12 are ready for an instructor-led offline test class. Lesson 12 can use the
+instructor chapter's nine-slide recovery script until the linked deck completes visual
+certification.
 
-Every completed deck is editable, includes speaker notes and sources, uses the
+Every certified deck is editable, includes speaker notes and sources, uses the
 footer `First Finance - Arnaud Demes`, and is accepted only after render and overflow
 checks.
 
