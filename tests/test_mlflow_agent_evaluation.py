@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import traceback
 from pathlib import Path
 from unittest.mock import Mock
 
@@ -10,6 +11,7 @@ import mlflow
 import pytest
 from mlflow.tracking import MlflowClient
 
+from finai_academy import mlflow_agent_evaluation
 from finai_academy.agent_evaluation import (
     AgentEvaluationCase,
     AgentEvaluationPrediction,
@@ -101,6 +103,20 @@ def serialized_traces(run_id: str) -> str:
     return json.dumps([trace.to_dict() for trace in traces], sort_keys=True)
 
 
+def traces_by_case(summary: object) -> dict[str, object]:
+    traces = mlflow.search_traces(
+        run_id=summary.run_id,
+        locations=[summary.experiment_id],
+        return_type="list",
+        flush=True,
+    )
+    result = {}
+    for trace in traces:
+        root = next(span for span in trace.data.spans if span.parent_id is None)
+        result[root.inputs["case_id"]] = trace
+    return result
+
+
 def test_local_store_uses_resolved_sqlite_database_and_local_artifacts(
     tmp_path: Path,
 ) -> None:
@@ -120,29 +136,33 @@ def test_one_configuration_logs_required_parameters_metrics_and_artifacts(
     summary = run_fixture_configuration(tmp_path, "bounded-agent-v1")
     run = mlflow.get_run(summary.run_id)
 
-    assert set(run.data.params) >= {
-        "configuration_id",
-        "dataset_version",
-        "dataset_sha256",
-        "agent_version",
-        "provider",
-        "agent_model",
-        "judge_provider",
-        "judge_model",
-        "prompt_version",
-        "max_steps",
-        "max_replans",
-        "scorer_contract_version",
+    expected_parameters = {
+        "configuration_id": "bounded-agent-v1",
+        "dataset_version": "agent-cases-v1",
+        "dataset_sha256": "c8f81fc59b182df8b2044c70d759fcb1fdac1fa90faead4bb70812b409ba0131",
+        "agent_version": "lesson11-certified-v1",
+        "provider": "recorded",
+        "agent_model": "recorded-public-fixture-v1",
+        "judge_provider": "none",
+        "judge_model": "none",
+        "prompt_version": "lesson11-recorded-policies-v1",
+        "max_steps": 6,
+        "max_replans": 1,
+        "scorer_contract_version": "agent-scorers-v1",
     }
-    assert set(run.data.metrics) >= {
-        "tool_call_correctness_mean",
-        "tool_call_efficiency_mean",
-        "answer_relevance_mean",
-        "answer_completeness_mean",
-        "citation_integrity_mean",
-        "mean_tool_calls",
-        "mean_latency_ms",
+    expected_metrics = {
+        "tool_call_correctness_mean": 1.0,
+        "tool_call_efficiency_mean": 1.0,
+        "answer_relevance_mean": 1.0,
+        "answer_completeness_mean": 0.7777777777777778,
+        "citation_integrity_mean": 1.0,
+        "mean_tool_calls": 4.5,
+        "mean_latency_ms": 53.0,
     }
+    assert summary.parameters == expected_parameters
+    assert run.data.params == {key: str(value) for key, value in expected_parameters.items()}
+    assert summary.metrics == expected_metrics
+    assert run.data.metrics == pytest.approx(expected_metrics)
     assert set(summary.artifact_paths) == {
         "evaluation/case_scores.json",
         "evaluation/failure_rows.json",
@@ -161,19 +181,131 @@ def test_each_case_has_one_root_trace_and_required_public_child_spans(
         flush=True,
     )
 
+    _, _, predictions = fixture_run_inputs("bounded-agent-v1")
+    predictions_by_case = {prediction.case_id: prediction for prediction in predictions}
     assert len(traces) == 6
     assert set(summary.trace_ids) == set(summary.case_scores_by_id)
     assert set(summary.trace_ids.values()) == {trace.info.trace_id for trace in traces}
     required_chain = {"planning", "plan_gate", "replanning", "evidence_gate", "report"}
     for trace in traces:
+        roots = [span for span in trace.data.spans if span.parent_id is None]
+        assert len(roots) == 1
+        root = roots[0]
+        case_id = root.inputs["case_id"]
+        prediction = predictions_by_case[case_id]
+        assert root.name == f"case:{case_id}"
+        assert root.inputs.keys() == {
+            "case_id",
+            "mission",
+            "configuration_id",
+            "expected_tool_calls",
+        }
+        assert root.outputs.keys() == {
+            "observed_status",
+            "expected_status",
+            "plan_revisions",
+            "evidence_gate",
+            "briefing",
+            "scores",
+            "failure_stage",
+            "latency_ms",
+        }
+        children = [span for span in trace.data.spans if span.parent_id is not None]
+        assert all(span.parent_id == root.span_id for span in children)
+        assert trace.info.trace_metadata["mlflow.sourceRun"] == summary.run_id
         names = {span.name for span in trace.data.spans}
         assert required_chain <= names
-        assert sum(span.span_type == "TOOL" for span in trace.data.spans) >= 1
         execution_spans = [
             span for span in trace.data.spans if span.name.startswith("execution:")
         ]
+        assert len(execution_spans) == len(prediction.observations)
+        assert {span.name for span in execution_spans} == {
+            f"execution:{observation.attempt_id}"
+            for observation in prediction.observations
+        }
+        assert all(span.span_type == "TOOL" for span in execution_spans)
         assert all(span.attributes["attempt_id"] >= 1 for span in execution_spans)
         assert all(span.attributes["plan_revision"] >= 0 for span in execution_spans)
+        assert all(
+            span.inputs.keys()
+            == {"capability", "arguments", "step_id", "attempt_id", "plan_revision"}
+            for span in execution_spans
+        )
+        assert all(
+            span.outputs.keys()
+            == {
+                "status",
+                "error_code",
+                "evidence_ids",
+                "source_references",
+                "duration_ms",
+            }
+            for span in execution_spans
+        )
+        replanning_spans = [span for span in children if span.name == "replanning"]
+        assert all("plan_revision" in span.attributes for span in replanning_spans)
+        ordered_names = [
+            span.name for span in sorted(children, key=lambda span: span.start_time_ns)
+        ]
+        assert ordered_names.index("planning") < ordered_names.index("plan_gate")
+        assert ordered_names.index("evidence_gate") < ordered_names.index("report")
+
+    reference_trace = next(
+        trace
+        for trace in traces
+        if next(span for span in trace.data.spans if span.parent_id is None).inputs["case_id"]
+        == "reference_completed"
+    )
+    reference_replanning = sorted(
+        (span for span in reference_trace.data.spans if span.name == "replanning"),
+        key=lambda span: span.start_time_ns,
+    )
+    assert [span.attributes["plan_revision"] for span in reference_replanning] == [
+        0,
+        0,
+        1,
+        1,
+        1,
+    ]
+
+
+def test_guardrail_event_is_preserved_on_owning_execution_span(tmp_path: Path) -> None:
+    summary = run_fixture_configuration(tmp_path, "bounded-agent-v1")
+    trace = traces_by_case(summary)["unsupported_metric_not_recovered"]
+    execution = next(span for span in trace.data.spans if span.name == "execution:3")
+
+    assert [(event.name, event.attributes) for event in execution.events] == [
+        (
+            "guardrail",
+            {
+                "status": "blocked",
+                "summary": "Execution stopped after the unsupported metric was not recovered.",
+                "duration_ms": 1.0,
+                "trajectory_index": 8,
+            },
+        )
+    ]
+
+
+def test_reconstructed_evidence_gate_precedes_existing_report(tmp_path: Path) -> None:
+    summary = run_fixture_configuration(tmp_path, "regressed-agent-v0")
+    trace = traces_by_case(summary)["unsupported_metric_not_recovered"]
+    root = next(span for span in trace.data.spans if span.parent_id is None)
+    ordered = sorted(
+        (span for span in trace.data.spans if span.parent_id == root.span_id),
+        key=lambda span: span.start_time_ns,
+    )
+    names = [span.name for span in ordered]
+    evidence_gate = ordered[names.index("evidence_gate")]
+    report = ordered[names.index("report")]
+
+    assert evidence_gate.start_time_ns < report.start_time_ns
+    assert evidence_gate.attributes["reconstructed"] is True
+    assert report.outputs == {
+        "status": "error",
+        "summary": "Briefing emitted without a recovery strategy.",
+        "duration_ms": 4.0,
+    }
 
 
 def test_trace_contains_only_public_safe_agent_fields(tmp_path: Path) -> None:
@@ -306,8 +438,57 @@ def test_backend_failure_sanitizes_secret_and_personal_path_from_reason(
         )
 
     message = str(exc_info.value)
+    formatted = "".join(traceback.format_exception(exc_info.value))
     assert "sk-secret-shaped-value" not in message
     assert "/Users/" not in message
+    assert "sk-secret-shaped-value" not in formatted
+    assert "/Users/private/mlflow" not in formatted
+    assert exc_info.value.__cause__ is None
+
+
+def test_unusable_tracking_file_is_wrapped_by_safe_initialization(tmp_path: Path) -> None:
+    tracking_file = tmp_path / "lesson12-store-file"
+    tracking_file.write_text("not a directory", encoding="utf-8")
+    database_path = (tracking_file / "mlflow.db").resolve()
+
+    with pytest.raises(RuntimeError) as exc_info:
+        initialize_local_mlflow(tracking_file)
+
+    assert str(database_path) in str(exc_info.value)
+    assert "File exists" in str(exc_info.value)
+    assert exc_info.value.__cause__ is None
+
+
+@pytest.mark.parametrize("error_type", [OSError, ValueError])
+def test_client_initialization_traceback_does_not_retain_raw_backend_cause(
+    error_type: type[Exception],
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    configuration, cases, predictions = fixture_run_inputs("bounded-agent-v1")
+    monkeypatch.setattr(
+        mlflow_agent_evaluation,
+        "MlflowClient",
+        Mock(
+            side_effect=error_type(
+                "sk-client-secret-value unavailable at /Users/private/client"
+            )
+        ),
+    )
+
+    with pytest.raises(RuntimeError) as exc_info:
+        run_mlflow_agent_evaluation(
+            tracking_directory=tmp_path / "lesson12-client-store",
+            experiment_name="lesson-12-client-failure-test",
+            configuration=configuration,
+            cases=cases,
+            predictions=predictions,
+        )
+
+    formatted = "".join(traceback.format_exception(exc_info.value))
+    assert "sk-client-secret-value" not in formatted
+    assert "/Users/private/client" not in formatted
+    assert exc_info.value.__cause__ is None
 
 
 def test_existing_experiment_must_use_an_absolute_local_artifact_uri(
@@ -346,6 +527,10 @@ def test_json_artifacts_have_exact_public_contracts(tmp_path: Path) -> None:
     failure_rows = artifact_payloads["evaluation/failure_rows.json"]["rows"]
     dataset_manifest = artifact_payloads["evaluation/dataset_manifest.json"]
     assert len(score_rows) == 6
+    assert [row["case_id"] for row in failure_rows] == [
+        "unsupported_metric_not_recovered",
+        "missing_schneider_document",
+    ]
     assert {row["case_id"] for row in score_rows} == set(summary.case_scores_by_id)
     assert dataset_manifest == {
         "dataset_version": "agent-cases-v1",
@@ -400,6 +585,68 @@ def test_comparison_rejects_different_case_hashes_and_returns_heatmap_rows(
     assert len(comparison.metric_pass_rows) == 10
     assert len(comparison.tool_call_rows) == 12
     assert len(comparison.latency_rows) == 2
+    regressed_mean = next(
+        row
+        for row in comparison.metric_mean_rows
+        if row["configuration_id"] == "regressed-agent-v0"
+        and row["metric"] == "tool_call_efficiency"
+    )
+    assert regressed_mean == {
+        "configuration_id": "regressed-agent-v0",
+        "metric": "tool_call_efficiency",
+        "mean": 0.9333333333333332,
+    }
+    regressed_pass = next(
+        row
+        for row in comparison.metric_pass_rows
+        if row["configuration_id"] == "regressed-agent-v0"
+        and row["metric"] == "citation_integrity"
+    )
+    assert regressed_pass == {
+        "configuration_id": "regressed-agent-v0",
+        "metric": "citation_integrity",
+        "pass_count": 4,
+        "case_count": 6,
+    }
+    redundant_case = next(
+        row
+        for row in comparison.case_metric_rows
+        if row["configuration_id"] == "regressed-agent-v0"
+        and row["case_id"] == "redundant_metric_call"
+    )
+    assert redundant_case == {
+        "configuration_id": "regressed-agent-v0",
+        "case_id": "redundant_metric_call",
+        "tool_call_correctness": 1.0,
+        "tool_call_efficiency": 0.6,
+        "answer_relevance": 1.0,
+        "answer_completeness": 1.0,
+        "citation_integrity": 1.0,
+        "failure_stage": "replanner",
+        "trace_id": regressed.trace_ids["redundant_metric_call"],
+        "run_id": regressed.run_id,
+    }
+    assert next(
+        row
+        for row in comparison.tool_call_rows
+        if row["configuration_id"] == "regressed-agent-v0"
+        and row["case_id"] == "redundant_metric_call"
+    ) == {
+        "configuration_id": "regressed-agent-v0",
+        "case_id": "redundant_metric_call",
+        "total_tool_calls": 6,
+        "redundant_tool_calls": 1,
+    }
+    assert next(
+        row
+        for row in comparison.latency_rows
+        if row["configuration_id"] == "regressed-agent-v0"
+    ) == {
+        "configuration_id": "regressed-agent-v0",
+        "mean_latency_ms": 55.833333333333336,
+        "max_latency_ms": 70.0,
+    }
+    assert comparison.failure_rows
     with pytest.raises(ValueError, match="dataset version and SHA-256"):
         compare_agent_configurations(
             (
@@ -409,6 +656,58 @@ def test_comparison_rejects_different_case_hashes_and_returns_heatmap_rows(
                         "parameters": {
                             **regressed.parameters,
                             "dataset_sha256": "b" * 64,
+                        }
+                    }
+                ),
+            )
+        )
+
+    with pytest.raises(ValueError, match="dataset version and SHA-256"):
+        compare_agent_configurations(
+            (
+                bounded,
+                regressed.model_copy(
+                    update={
+                        "parameters": {
+                            **regressed.parameters,
+                            "dataset_version": "agent-cases-v2",
+                        }
+                    }
+                ),
+            )
+        )
+
+    missing_case_id = "wrong_source_evidence_pair"
+    with pytest.raises(ValueError, match="identical aligned case IDs"):
+        compare_agent_configurations(
+            (
+                bounded,
+                regressed.model_copy(
+                    update={
+                        "case_scores_by_id": {
+                            case_id: score
+                            for case_id, score in regressed.case_scores_by_id.items()
+                            if case_id != missing_case_id
+                        },
+                        "trace_ids": {
+                            case_id: trace_id
+                            for case_id, trace_id in regressed.trace_ids.items()
+                            if case_id != missing_case_id
+                        },
+                    }
+                ),
+            )
+        )
+
+    with pytest.raises(ValueError, match="unique configuration IDs"):
+        compare_agent_configurations(
+            (
+                bounded,
+                regressed.model_copy(
+                    update={
+                        "parameters": {
+                            **regressed.parameters,
+                            "configuration_id": "bounded-agent-v1",
                         }
                     }
                 ),

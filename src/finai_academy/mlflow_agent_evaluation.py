@@ -11,7 +11,7 @@ from typing import Any, Literal
 from urllib.parse import unquote, urlparse
 
 import mlflow
-from mlflow.entities import Trace
+from mlflow.entities import SpanEvent, Trace
 from mlflow.tracking import MlflowClient
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -53,6 +53,10 @@ _SANITIZED_SECRET_PATTERN = re.compile(
     r"(?i)(api[_-]?key|authorization|bearer\s+[a-z0-9._-]+|sk-[a-z0-9_-]{8,})"
 )
 _SECRET_SHAPED_PATTERN = re.compile(r"(?i)\bsk-[a-z0-9_-]{8,}\b")
+
+
+class _ArtifactLocationError(ValueError):
+    """Raised only for the caller-visible local artifact-location contract."""
 
 
 class AgentEvaluationConfiguration(BaseModel):
@@ -133,16 +137,16 @@ def initialize_local_mlflow(tracking_directory: Path | None = None) -> LocalMLfl
     root_directory = selected.resolve()
     database_path = (root_directory / "mlflow.db").resolve()
     artifact_directory = (root_directory / "artifacts").resolve()
-    root_directory.mkdir(parents=True, exist_ok=True)
-    artifact_directory.mkdir(parents=True, exist_ok=True)
     tracking_uri = f"sqlite:///{database_path}"
     try:
+        root_directory.mkdir(parents=True, exist_ok=True)
+        artifact_directory.mkdir(parents=True, exist_ok=True)
         mlflow.set_tracking_uri(tracking_uri)
-    except Exception as exc:
+    except Exception as exc:  # noqa: BLE001 - sanitize every local-backend failure.
         reason = _sanitized_error_reason(exc)
         raise RuntimeError(
             f"MLflow backend initialization failed for {database_path}: {reason}"
-        ) from exc
+        ) from None
     return LocalMLflowStore(
         root_directory=root_directory,
         database_path=database_path,
@@ -213,7 +217,9 @@ def _require_local_artifact_uri(artifact_uri: str) -> None:
         or parsed.netloc not in {"", "localhost"}
         or not local_path.is_absolute()
     ):
-        raise ValueError("MLflow experiment requires an absolute local artifact URI")
+        raise _ArtifactLocationError(
+            "MLflow experiment requires an absolute local artifact URI"
+        )
 
 
 def _experiment_id(
@@ -236,6 +242,94 @@ def _phase_output(event: TrajectoryEvent) -> dict[str, object]:
         "summary": event.summary,
         "duration_ms": event.duration_ms,
     }
+
+
+def _guardrails_by_owner(
+    trajectory: Sequence[TrajectoryEvent],
+) -> dict[int, tuple[TrajectoryEvent, ...]]:
+    guardrails: dict[int, list[TrajectoryEvent]] = {}
+    owner_index: int | None = None
+    for event in trajectory:
+        if event.phase == "guardrail":
+            if owner_index is not None:
+                guardrails.setdefault(owner_index, []).append(event)
+        else:
+            owner_index = event.index
+    return {index: tuple(events) for index, events in guardrails.items()}
+
+
+def _add_guardrail_events(span: Any, events: Sequence[TrajectoryEvent]) -> None:
+    for event in events:
+        attributes = _validate_safe_payload(
+            {
+                "status": event.status,
+                "summary": event.summary,
+                "duration_ms": event.duration_ms,
+                "trajectory_index": event.index,
+            }
+        )
+        span.add_event(SpanEvent(name="guardrail", attributes=attributes))
+
+
+def _revision_after_replanning(event: TrajectoryEvent, current_revision: int) -> int:
+    """Return the post-decision revision; unchanged decisions retain their revision."""
+
+    if "replace_remaining" in event.summary.casefold():
+        return current_revision + 1
+    return current_revision
+
+
+def _trace_phase(
+    *,
+    phase: str,
+    event: TrajectoryEvent,
+    plan_revision: int,
+    guardrails: Sequence[TrajectoryEvent],
+) -> None:
+    attributes: dict[str, object] = {"trajectory_index": event.index}
+    if phase == "replanning":
+        attributes["plan_revision"] = plan_revision
+    with mlflow.start_span(
+        name=phase,
+        span_type=PHASE_SPAN_TYPES[phase],
+        attributes=attributes,
+    ) as phase_span:
+        phase_span.set_inputs(
+            _validate_safe_payload(
+                {
+                    "step_id": event.step_id,
+                    "attempt_id": event.attempt_id,
+                }
+            )
+        )
+        phase_span.set_outputs(_validate_safe_payload(_phase_output(event)))
+        _add_guardrail_events(phase_span, guardrails)
+
+
+def _trace_reconstructed_phase(
+    *,
+    phase: str,
+    case_id: str,
+    observed_status: str,
+    plan_revision: int,
+) -> None:
+    attributes: dict[str, object] = {"reconstructed": True}
+    if phase == "replanning":
+        attributes["plan_revision"] = plan_revision
+    with mlflow.start_span(
+        name=phase,
+        span_type=PHASE_SPAN_TYPES[phase],
+        attributes=attributes,
+    ) as phase_span:
+        phase_span.set_inputs(_validate_safe_payload({"case_id": case_id}))
+        phase_span.set_outputs(
+            _validate_safe_payload(
+                {
+                    "status": "not_emitted",
+                    "observed_status": observed_status,
+                }
+            )
+        )
 
 
 def _plan_revisions(prediction: AgentEvaluationPrediction) -> list[dict[str, object]]:
@@ -302,66 +396,72 @@ def _trace_case(
         observations_by_attempt = {
             observation.attempt_id: observation for observation in prediction.observations
         }
+        guardrails_by_owner = _guardrails_by_owner(prediction.trajectory)
         emitted_attempts: set[int] = set()
-        owning_phase = "planning"
+        current_revision = 0
+
+        def ensure_phases(phases: Sequence[str]) -> None:
+            for missing_phase in phases:
+                if missing_phase in emitted_chain_phases:
+                    continue
+                _trace_reconstructed_phase(
+                    phase=missing_phase,
+                    case_id=case.case_id,
+                    observed_status=prediction.status,
+                    plan_revision=current_revision,
+                )
+                emitted_chain_phases.add(missing_phase)
 
         for event in prediction.trajectory:
+            if event.phase == "guardrail":
+                continue
             if event.phase == "execution" and event.attempt_id in observations_by_attempt:
+                ensure_phases(("planning", "plan_gate"))
                 observation = observations_by_attempt[event.attempt_id]
-                _trace_execution(observation)
+                _trace_execution(
+                    observation,
+                    guardrails=guardrails_by_owner.get(event.index, ()),
+                )
                 emitted_attempts.add(observation.attempt_id)
-                owning_phase = "execution"
+                current_revision = max(current_revision, observation.plan_revision)
                 continue
 
             mapped_phase = "plan_gate" if event.phase == "policy" else event.phase
-            if mapped_phase == "guardrail":
-                mapped_phase = owning_phase
-            if mapped_phase == "execution":
-                continue
             if mapped_phase not in PHASE_SPAN_TYPES:
                 continue
-            with mlflow.start_span(
-                name=mapped_phase,
-                span_type=PHASE_SPAN_TYPES[mapped_phase],
-                attributes={"trajectory_index": event.index},
-            ) as phase_span:
-                phase_span.set_inputs(
-                    _validate_safe_payload(
-                        {
-                            "step_id": event.step_id,
-                            "attempt_id": event.attempt_id,
-                        }
-                    )
-                )
-                phase_span.set_outputs(_validate_safe_payload(_phase_output(event)))
+            if mapped_phase == "plan_gate":
+                ensure_phases(("planning",))
+            elif mapped_phase in {"replanning", "evidence_gate", "report"}:
+                ensure_phases(("planning", "plan_gate"))
+            if mapped_phase in {"evidence_gate", "report"}:
+                ensure_phases(("replanning",))
+            if mapped_phase == "report":
+                ensure_phases(("evidence_gate",))
+            if mapped_phase == "replanning":
+                current_revision = _revision_after_replanning(event, current_revision)
+            _trace_phase(
+                phase=mapped_phase,
+                event=event,
+                plan_revision=current_revision,
+                guardrails=guardrails_by_owner.get(event.index, ()),
+            )
             emitted_chain_phases.add(mapped_phase)
-            owning_phase = mapped_phase
 
         for observation in prediction.observations:
             if observation.attempt_id not in emitted_attempts:
-                _trace_execution(observation)
+                ensure_phases(("planning", "plan_gate"))
+                _trace_execution(observation, guardrails=())
+                current_revision = max(current_revision, observation.plan_revision)
 
-        for phase in _REQUIRED_CHAIN_PHASES:
-            if phase in emitted_chain_phases:
-                continue
-            with mlflow.start_span(
-                name=phase,
-                span_type=PHASE_SPAN_TYPES[phase],
-                attributes={"reconstructed": True},
-            ) as phase_span:
-                phase_span.set_inputs({"case_id": case.case_id})
-                phase_span.set_outputs(
-                    _validate_safe_payload(
-                        {
-                            "status": "not_emitted",
-                            "observed_status": prediction.status,
-                        }
-                    )
-                )
+        ensure_phases(_REQUIRED_CHAIN_PHASES)
         root_span.set_outputs(root_outputs)
 
 
-def _trace_execution(observation: ResearchObservation) -> None:
+def _trace_execution(
+    observation: ResearchObservation,
+    *,
+    guardrails: Sequence[TrajectoryEvent],
+) -> None:
     inputs = _validate_safe_payload(
         {
             "capability": observation.capability,
@@ -390,6 +490,7 @@ def _trace_execution(observation: ResearchObservation) -> None:
     ) as execution_span:
         execution_span.set_inputs(inputs)
         execution_span.set_outputs(outputs)
+        _add_guardrail_events(execution_span, guardrails)
 
 
 def _failure_row(score: AgentCaseScores) -> dict[str, object]:
@@ -460,13 +561,13 @@ def run_mlflow_agent_evaluation(
             experiment_name=experiment_name,
             store=store,
         )
-    except ValueError:
+    except _ArtifactLocationError:
         raise
-    except Exception as exc:
+    except Exception as exc:  # noqa: BLE001 - sanitize every MLflow-client failure.
         reason = _sanitized_error_reason(exc)
         raise RuntimeError(
             f"MLflow backend initialization failed for {store.database_path}: {reason}"
-        ) from exc
+        ) from None
 
     score_rows = [score.model_dump(mode="json") for score in scores]
     failure_rows = [
