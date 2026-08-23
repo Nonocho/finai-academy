@@ -20,6 +20,7 @@ CHAPTER = ROOT / "chapters" / "12-evaluating-agentic-systems.md"
 GETTING_STARTED = ROOT / "docs" / "getting-started.md"
 DECK = ROOT / "decks" / "12-evaluating-agentic-systems.pptx"
 DRAWING_NS = "http://schemas.openxmlformats.org/drawingml/2006/main"
+PRESENTATION_NS = "http://schemas.openxmlformats.org/presentationml/2006/main"
 DATASET_SHA256 = "c8f81fc59b182df8b2044c70d759fcb1fdac1fa90faead4bb70812b409ba0131"
 METRIC_NAMES = (
     "tool_call_correctness",
@@ -77,6 +78,33 @@ def _cell_output_text(notebook, cell_id: str) -> str:
             if isinstance(value, str):
                 rendered.append(value)
     return "\n".join(rendered)
+
+
+def _slide_root(archive: zipfile.ZipFile, slide_number: int):
+    return ElementTree.fromstring(
+        archive.read(f"ppt/slides/slide{slide_number}.xml")
+    )
+
+
+def _visible_text(root) -> str:
+    return "\n".join(
+        node.text or "" for node in root.iter(f"{{{DRAWING_NS}}}t")
+    )
+
+
+def _shape_context_colors(root, marker: str) -> set[str]:
+    shapes = list(root.iter(f"{{{PRESENTATION_NS}}}sp"))
+    for index, shape in enumerate(shapes):
+        text = " ".join(
+            node.text or "" for node in shape.iter(f"{{{DRAWING_NS}}}t")
+        )
+        if marker in text:
+            return {
+                node.get("val", "")
+                for context_shape in shapes[max(0, index - 1) : index + 1]
+                for node in context_shape.iter(f"{{{DRAWING_NS}}}srgbClr")
+            }
+    raise AssertionError(f"Slide shape containing {marker!r} was not found")
 
 
 def test_lesson12_notebook_is_output_free_stable_and_contains_the_teaching_contract() -> None:
@@ -445,3 +473,64 @@ def test_lesson12_deck_uses_native_tables_for_comparison_slides() -> None:
                 archive.read(f"ppt/slides/slide{slide_number}.xml")
             )
             assert slide.find(f".//{{{DRAWING_NS}}}tbl") is not None
+
+
+def test_lesson12_deck_versioned_case_slide_keeps_dataset_case_and_budget_distinct() -> None:
+    """Catch dataset/case identity swaps or the wrong reference-case budget."""
+
+    with zipfile.ZipFile(DECK) as archive:
+        slide_text = _visible_text(_slide_root(archive, 4))
+
+    normalized = " ".join(slide_text.split())
+    assert re.search(r"dataset_version:\s*agent-cases-v1", normalized)
+    assert re.search(r"case_id:\s*reference_completed", normalized)
+    assert "max_tool_calls: 5" in normalized
+
+
+def test_lesson12_deck_trace_slide_shows_recovery_before_the_evidence_gate() -> None:
+    """Catch collapsed replan/gate stages or missing post-error tool work."""
+
+    with zipfile.ZipFile(DECK) as archive:
+        slide_text = " ".join(_visible_text(_slide_root(archive, 6)).split())
+
+    cursor = 0
+    for marker in (
+        "PLAN",
+        "PLAN GATE",
+        "TOOL ATTEMPTS",
+        "REPLAN",
+        "TOOL ATTEMPTS",
+        "EVIDENCE GATE",
+        "REPORT",
+    ):
+        marker_position = slide_text.find(marker, cursor)
+        assert marker_position >= cursor, f"Missing or out-of-order stage: {marker}"
+        cursor = marker_position + len(marker)
+    assert "unsupported_metric" in slide_text
+    assert "post-error success" in slide_text
+
+
+def test_lesson12_deck_trace_connectors_point_toward_the_next_stage() -> None:
+    """Catch leftward arrowheads that reverse the trace's reading direction."""
+
+    with zipfile.ZipFile(DECK) as archive:
+        slide = _slide_root(archive, 6)
+
+    connectors = list(slide.iter(f"{{{PRESENTATION_NS}}}cxnSp"))
+    assert len(connectors) == 6
+    for connector in connectors:
+        assert connector.find(f".//{{{DRAWING_NS}}}headEnd") is None
+        tail = connector.find(f".//{{{DRAWING_NS}}}tailEnd")
+        assert tail is not None and tail.get("type") == "triangle"
+
+
+def test_lesson12_deck_failure_path_uses_warning_not_pass_color() -> None:
+    """Catch a failure path rendered with the deck's positive green cue."""
+
+    with zipfile.ZipFile(DECK) as archive:
+        slide = _slide_root(archive, 2)
+
+    for marker in ("extra call after gate", "FAIL"):
+        colors = _shape_context_colors(slide, marker)
+        assert "F07D00" in colors
+        assert "2E8B57" not in colors
