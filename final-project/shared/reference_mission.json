@@ -1,0 +1,17 @@
+{
+  "schema_version": 1,
+  "mission_id": "nvidia-schneider-reference-v1",
+  "mission": "Compare NVIDIA and Schneider Electric using official documents and selected financial metrics. Identify the main operating-growth evidence, explain why direct comparison is limited, and cite every factual claim.",
+  "companies": [
+    "NVIDIA",
+    "Schneider Electric"
+  ],
+  "provider": "recorded",
+  "data_mode": "certified",
+  "max_steps": 6,
+  "max_replans": 1,
+  "capabilities": [
+    "get_company_metric",
+    "search_financial_documents"
+  ]
+}
