@@ -10,6 +10,12 @@ From the repository root:
 
 ```bash
 uv sync --extra capstone --extra ai
+```
+
+Use separate terminals for the classroom workflow:
+
+```bash
+# Terminal 1: reference application
 uv run streamlit run final-project/reference/streamlit_app.py
 ```
 
@@ -26,10 +32,17 @@ The result shows the validated plan, tool activity, typed recovery and replan, e
 
 The reference interface has two modes: **Reference mission** for the fixed, certified comparison and **Ask the analyst** for a bounded question in the NVIDIA and Schneider Electric research universe. **Certified snapshots** are versioned course data. **Optional live enrichment** is visibly separate and may use Tavily when configured; it never determines classroom success.
 
-To launch the student route and public verifier:
+The Streamlit server in Terminal 1 stays running. Start the student route in a new terminal, or stop the server with `Ctrl+C` before reusing that terminal:
 
 ```bash
+# Terminal 2: student application
 uv run streamlit run final-project/student/streamlit_app.py
+```
+
+The Streamlit server in Terminal 2 stays running. Run the verifier in another terminal, or stop the server with `Ctrl+C` before reusing that terminal:
+
+```bash
+# Terminal 3: public verifier
 uv run python final-project/student/verify.py
 ```
 

@@ -28,12 +28,26 @@ From the repository root:
 
 ```bash
 uv sync --extra capstone --extra ai
+```
+
+Use separate terminals so each Streamlit server stays running while the next route is started:
+
+```bash
+# Terminal 1: reference application
 uv run streamlit run final-project/reference/streamlit_app.py
+```
+
+```bash
+# Terminal 2: student application
 uv run streamlit run final-project/student/streamlit_app.py
+```
+
+```bash
+# Terminal 3: public verifier
 uv run python final-project/student/verify.py
 ```
 
-Use the reference application only to understand the target route. In the student application, each incomplete seam has a named diagnostic. Re-run the verifier after each seam. A public pass requires the four seam contracts, the recorded reference mission, citation integrity, five deterministic release metrics, and local temporary persistence. `CAPSTONE_PASS` comes from `verify.py`; do not print it from a solution function.
+The Streamlit servers in Terminal 1 and Terminal 2 stay running. Start the next command in its assigned terminal, or stop the active server with `Ctrl+C` before reusing a terminal. Use the reference application only to understand the target route. In the student application, each incomplete seam has a named diagnostic. Re-run the verifier after each seam. A public pass requires the four seam contracts, the recorded reference mission, citation integrity, five deterministic release metrics, and local temporary persistence. `CAPSTONE_PASS` comes from `verify.py`; do not print it from a solution function.
 
 ## Safety constraints
 

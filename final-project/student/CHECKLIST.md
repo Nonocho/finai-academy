@@ -4,8 +4,9 @@
 
 - [ ] Read [../STUDENT_BRIEF.md](../STUDENT_BRIEF.md) and identify the four seams.
 - [ ] Run `uv sync --extra capstone --extra ai` from the repository root.
-- [ ] Launch `uv run streamlit run final-project/student/streamlit_app.py`.
-- [ ] Run `uv run python final-project/student/verify.py` and read each diagnostic.
+- [ ] Launch `uv run streamlit run final-project/student/streamlit_app.py` in Terminal 2.
+- [ ] The Streamlit server in Terminal 2 stays running; run `uv run python final-project/student/verify.py` in Terminal 3.
+- [ ] If Terminal 2 must be reused, stop its Streamlit server with `Ctrl+C` first.
 - [ ] Keep changes inside the four `integration.py` function bodies.
 
 ## 15:40–16:10: complete four seams

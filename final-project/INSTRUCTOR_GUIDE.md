@@ -6,12 +6,26 @@ Use the repository root. Before learners arrive, confirm the working tree contai
 
 ```bash
 uv sync --extra capstone --extra ai
+```
+
+Use the three-terminal classroom allocation:
+
+```bash
+# Terminal 1: reference application
 uv run streamlit run final-project/reference/streamlit_app.py
+```
+
+```bash
+# Terminal 2: student application
 uv run streamlit run final-project/student/streamlit_app.py
+```
+
+```bash
+# Terminal 3: public verifier
 uv run python final-project/student/verify.py
 ```
 
-Keep the reference sidebar on **Recorded demo** and **Certified snapshots**. This is the certified offline fallback, so it does not need network access, OpenAI, Ollama, or Tavily. Do not claim a live provider or timed rehearsal unless it has been observed. On macOS, copy `.env.example` with `cp .env.example .env`; on Windows PowerShell, use `Copy-Item .env.example .env`. OpenAI requires a learner-owned `OPENAI_API_KEY`; Ollama uses `FINAI_MODEL_PROVIDER=ollama` and `qwen3:4b` when available. `TAVILY_API_KEY` is optional and only supports optional live enrichment.
+Each Streamlit server stays running. Start the next route in its assigned terminal, or stop an active server with `Ctrl+C` before reusing that terminal. Keep the reference sidebar on **Recorded demo** and **Certified snapshots**. This is the certified offline fallback, so it does not need network access, OpenAI, Ollama, or Tavily. Do not claim a live provider or timed rehearsal unless it has been observed. On macOS, copy `.env.example` with `cp .env.example .env`; on Windows PowerShell, use `Copy-Item .env.example .env`. OpenAI requires a learner-owned `OPENAI_API_KEY`; Ollama uses `FINAI_MODEL_PROVIDER=ollama` and `qwen3:4b` when available. `TAVILY_API_KEY` is optional and only supports optional live enrichment.
 
 ## Expected reference output
 

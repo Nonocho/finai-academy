@@ -8,7 +8,19 @@ From the repository root:
 
 ```bash
 uv sync --extra capstone --extra ai
+```
+
+Use Terminal 2 for the student application:
+
+```bash
+# Terminal 2: student application
 uv run streamlit run final-project/student/streamlit_app.py
+```
+
+The Streamlit server in Terminal 2 stays running. Run the verifier in Terminal 3, or stop the server with `Ctrl+C` before reusing Terminal 2:
+
+```bash
+# Terminal 3: public verifier
 uv run python final-project/student/verify.py
 ```
 

@@ -16,12 +16,39 @@ MISSION = (
     "financial metrics. Identify the main operating-growth evidence, explain why "
     "direct comparison is limited, and cite every factual claim."
 )
-USER_FACING_DOCUMENTS = (
+CAPSTONE_DOCUMENTS = (
     CAPSTONE / "README.md",
     CAPSTONE / "STUDENT_BRIEF.md",
+    CAPSTONE / "INSTRUCTOR_GUIDE.md",
     CAPSTONE / "reference" / "README.md",
     CAPSTONE / "student" / "README.md",
     CAPSTONE / "student" / "CHECKLIST.md",
+)
+DOCUMENT_COMMANDS = {
+    "README.md": COMMANDS,
+    "STUDENT_BRIEF.md": COMMANDS,
+    "INSTRUCTOR_GUIDE.md": COMMANDS,
+    "reference/README.md": COMMANDS[:2],
+    "student/README.md": (COMMANDS[0], *COMMANDS[2:]),
+    "student/CHECKLIST.md": (COMMANDS[0], *COMMANDS[2:]),
+}
+TIMED_DOCUMENTS = (
+    "STUDENT_BRIEF.md",
+    "INSTRUCTOR_GUIDE.md",
+    "student/CHECKLIST.md",
+)
+TIMETABLE = (
+    "15:30–15:40",
+    "15:40–16:10",
+    "16:10–16:25",
+    "16:25–16:30",
+    "16:30–17:00",
+)
+OBSOLETE_COMMANDS = (
+    ".venv/bin/streamlit run",
+    ".venv/bin/python final-project/student/verify.py",
+    "uv run streamlit run final-project/app.py",
+    "uv run python final-project/app.py",
 )
 
 
@@ -29,11 +56,48 @@ def _read(relative_path: str) -> str:
     return (CAPSTONE / relative_path).read_text(encoding="utf-8")
 
 
+def test_relevant_documents_use_the_final_commands_and_timetable() -> None:
+    for relative_path, commands in DOCUMENT_COMMANDS.items():
+        text = _read(relative_path)
+        for command in commands:
+            assert command in text
+    for relative_path in TIMED_DOCUMENTS:
+        text = _read(relative_path)
+        for time in TIMETABLE:
+            assert time in text
+
+
+def test_terminal_workflow_does_not_treat_streamlit_as_a_completed_command() -> None:
+    for relative_path in (
+        "README.md",
+        "STUDENT_BRIEF.md",
+        "INSTRUCTOR_GUIDE.md",
+        "reference/README.md",
+    ):
+        text = _read(relative_path)
+        assert "Terminal 1" in text
+        assert "Terminal 2" in text
+        assert "Terminal 3" in text
+        assert "stays running" in text
+        assert "Ctrl+C" in text
+    for relative_path in ("student/README.md", "student/CHECKLIST.md"):
+        text = _read(relative_path)
+        assert "Terminal 2" in text
+        assert "Terminal 3" in text
+        assert "stays running" in text
+        assert "Ctrl+C" in text
+
+
+def test_capstone_documents_reject_obsolete_commands() -> None:
+    for document in CAPSTONE_DOCUMENTS:
+        text = document.read_text(encoding="utf-8")
+        for command in OBSOLETE_COMMANDS:
+            assert command not in text
+
+
 def test_canonical_readme_has_the_classroom_start_and_route_boundaries() -> None:
     text = _read("README.md")
 
-    for command in COMMANDS:
-        assert command in text
     for phrase in (
         "Recorded demo",
         "Certified snapshots",
@@ -68,18 +132,11 @@ def test_student_handout_defines_the_fixed_challenge_without_solution_bodies() -
         "assemble_public_briefing_view",
     ):
         assert seam in text
-    for command in COMMANDS:
-        assert command in text
     for phrase in (
         "CAPSTONE_PASS",
         "individual",
         "pair",
         "diagnostic",
-        "15:30–15:40",
-        "15:40–16:10",
-        "16:10–16:25",
-        "16:25–16:30",
-        "16:30–17:00",
         "60-minute",
         "30-minute",
         "credential",
@@ -94,8 +151,6 @@ def test_student_handout_defines_the_fixed_challenge_without_solution_bodies() -
 def test_instructor_guide_covers_facilitation_correction_and_recovery() -> None:
     text = _read("INSTRUCTOR_GUIDE.md")
 
-    for command in COMMANDS:
-        assert command in text
     for phrase in (
         "Prerequisites and preflight",
         "Expected reference output",
@@ -139,7 +194,7 @@ def test_supporting_readmes_keep_the_certified_offline_student_route() -> None:
 
 
 def test_course_copy_has_no_secrets_or_em_dash() -> None:
-    for document in USER_FACING_DOCUMENTS:
+    for document in CAPSTONE_DOCUMENTS:
         text = document.read_text(encoding="utf-8")
         assert "—" not in text
         assert not re.search(r"(?:OPENAI_API_KEY=sk-|TAVILY_API_KEY=tvly-)", text)
