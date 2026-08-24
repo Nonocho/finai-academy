@@ -106,6 +106,21 @@ def test_registry_returns_typed_metric_and_document_outcomes() -> None:
     assert documents.payload.company == "Schneider Electric"
 
 
+def test_registry_document_search_uses_the_existing_default_top_k_when_omitted() -> None:
+    """Requiring a redundant top_k field breaks the documented default-capability call."""
+
+    outcome = AnalystToolRegistry(
+        discovered=("get_company_metric", "search_financial_documents")
+    ).invoke(
+        "search_financial_documents",
+        {"company": "Schneider Electric", "query": "energy management"},
+    )
+
+    assert outcome.status == "ok"
+    assert outcome.payload is not None
+    assert len(outcome.payload.hits) == 2
+
+
 def test_registry_maps_unsupported_metric_to_a_retryable_typed_outcome() -> None:
     """Dropping capability validation details would prevent the later replan to document search."""
 

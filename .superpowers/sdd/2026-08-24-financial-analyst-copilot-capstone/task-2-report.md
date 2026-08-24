@@ -96,3 +96,42 @@ All checks passed
 git diff --check
 exit 0
 ```
+
+## Review round 2 — preserve document-search default
+
+The public schema gate from review round 1 incorrectly required `top_k` for every
+`search_financial_documents` call, preventing the existing capability default of
+`top_k=2` from being used.
+
+Added a focused real-registry test for invoking document search with exactly
+`{"company", "query"}` and asserting its successful two-hit default result.
+
+RED verification:
+
+```text
+.venv/bin/python -m pytest tests/test_capstone_tools.py::test_registry_document_search_uses_the_existing_default_top_k_when_omitted -q
+1 failed
+```
+
+The outcome was the stable `invalid_arguments` error, confirming the failure was
+in the public validation gate rather than in the financial capability.
+
+The gate now permits exactly either `{company, query}` or `{company, query, top_k}`
+for document search. In the first shape it injects `top_k=2`; the explicit shape
+still requires a non-boolean integer, and additional fields remain rejected.
+
+GREEN and regression verification:
+
+```text
+.venv/bin/python -m pytest tests/test_capstone_tools.py::test_registry_document_search_uses_the_existing_default_top_k_when_omitted -q
+1 passed
+
+.venv/bin/python -m pytest tests/test_capstone_tools.py tests/test_hybrid_retrieval.py tests/test_financial_mcp_capabilities.py -q
+67 passed
+
+.venv/bin/ruff check src/finai_academy/capstone/tools.py src/finai_academy/capstone/live_news.py tests/test_capstone_tools.py
+All checks passed
+
+git diff --check
+exit 0
+```

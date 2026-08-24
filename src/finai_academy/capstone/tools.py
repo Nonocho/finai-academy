@@ -179,16 +179,20 @@ def _validated_arguments(name: str, arguments: Mapping[str, Any]) -> dict[str, A
 
     if not isinstance(arguments, Mapping):
         return None
-    expected_fields = (
-        ("ticker", "metric")
-        if name == "get_company_metric"
-        else ("company", "query", "top_k")
-    )
-    if set(arguments) != set(expected_fields):
-        return None
+    if name == "get_company_metric":
+        expected_fields = ("ticker", "metric")
+        if set(arguments) != set(expected_fields):
+            return None
+    else:
+        expected_fields = ("company", "query", "top_k")
+        if set(arguments) not in ({"company", "query"}, set(expected_fields)):
+            return None
 
     validated: dict[str, Any] = {}
     for field in expected_fields:
+        if field == "top_k" and field not in arguments:
+            validated[field] = 2
+            continue
         value = arguments.get(field)
         if field == "top_k":
             if not isinstance(value, int) or isinstance(value, bool):
