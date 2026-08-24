@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 from typing import TypeVar
 
+import pytest
 from pydantic import BaseModel
 
 from finai_academy.capstone import model_gateway
@@ -61,6 +62,39 @@ class WindowsPathWordingModel:
             "interpretation": ["Unsafe provider output."],
             "limitations": ["Unsafe provider output."],
         }
+
+
+class StatementSelectionModel:
+    def __init__(self, *, executive_summary_id: str = "executive_summary:1") -> None:
+        self.executive_summary_id = executive_summary_id
+        self.user_prompt = ""
+
+    def generate(
+        self,
+        *,
+        system_prompt: str,
+        user_prompt: str,
+        response_model: type[ResponseT],
+    ) -> ResponseT:
+        del system_prompt
+        self.user_prompt = user_prompt
+        if "executive_summary" in response_model.model_fields:
+            return response_model.model_validate(
+                {
+                    "executive_summary": self.executive_summary_id,
+                    "cross_company_observations": ["Host-independent provider prose."],
+                    "interpretation": ["Host-independent provider prose."],
+                    "limitations": ["Host-independent provider prose."],
+                }
+            )
+        return response_model.model_validate(
+            {
+                "executive_summary_id": self.executive_summary_id,
+                "cross_company_observation_ids": ["cross_company_observation:1"],
+                "interpretation_ids": ["interpretation:1"],
+                "limitation_ids": ["limitation:2", "limitation:1"],
+            }
+        )
 
 
 def test_openai_without_key_is_unavailable_without_fallback(monkeypatch) -> None:
@@ -188,3 +222,72 @@ def test_live_wording_with_a_windows_personal_path_is_rejected(monkeypatch) -> N
     assert result.status == "provider_error"
     assert result.briefing is None
     assert "C:\\Users\\" not in result.model_dump_json()
+
+
+@pytest.mark.parametrize(
+    "unsupported_selection",
+    [
+        "NVIDIA has an unassailable competitive moat.",
+        "NVIDIA revenue will reach USD 500 billion.",
+        "Investors should buy NVIDIA shares.",
+        "NVIDIA price target is USD 250.",
+    ],
+    ids=["unsupported-claim", "fabricated-number", "recommendation", "price-target"],
+)
+def test_live_provider_cannot_turn_unsupported_prose_into_a_completed_briefing(
+    monkeypatch,
+    unsupported_selection: str,
+) -> None:
+    monkeypatch.setenv("OPENAI_API_KEY", "sk-configured-provider-value")
+    model = StatementSelectionModel(executive_summary_id=unsupported_selection)
+    monkeypatch.setattr(
+        model_gateway,
+        "create_structured_model",
+        lambda settings: model,
+    )
+    request = ResearchRequest.reference(provider="openai", model="gpt-5-mini")
+
+    result = build_copilot_for_request(request, Settings()).run(request)
+    payload = result.model_dump_json()
+
+    assert result.status == "provider_error"
+    assert result.briefing is None
+    assert unsupported_selection not in payload
+
+
+def test_valid_live_provider_selection_reconstructs_only_host_statement_units(
+    monkeypatch,
+) -> None:
+    monkeypatch.setenv("OPENAI_API_KEY", "sk-configured-provider-value")
+    model = StatementSelectionModel()
+    monkeypatch.setattr(
+        model_gateway,
+        "create_structured_model",
+        lambda settings: model,
+    )
+    request = ResearchRequest.reference(provider="openai", model="gpt-5-mini")
+    host_briefing = build_copilot_for_request(
+        ResearchRequest.reference(),
+        Settings(),
+    ).run(ResearchRequest.reference()).briefing
+
+    result = build_copilot_for_request(request, Settings()).run(request)
+
+    assert result.status == "completed"
+    assert result.briefing is not None
+    assert host_briefing is not None
+    assert result.briefing.executive_summary == host_briefing.executive_summary
+    assert result.briefing.cited_facts == host_briefing.cited_facts
+    assert result.briefing.cross_company_observations == (
+        host_briefing.cross_company_observations[0],
+    )
+    assert result.briefing.interpretation == (host_briefing.interpretation[0],)
+    assert result.briefing.limitations == tuple(reversed(host_briefing.limitations))
+    prompt = json.loads(model.user_prompt)
+    assert {unit["id"] for unit in prompt["certified_statement_units"]} == {
+        "executive_summary:1",
+        "cross_company_observation:1",
+        "interpretation:1",
+        "limitation:1",
+        "limitation:2",
+    }

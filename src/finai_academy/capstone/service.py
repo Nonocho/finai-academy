@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import json
-import re
 from collections.abc import Callable, Mapping, Sequence
 from time import perf_counter
 from typing import TYPE_CHECKING, Any, Protocol
@@ -50,7 +49,6 @@ if TYPE_CHECKING:
     from finai_academy.capstone.model_gateway import StructuredModel
 
 _COMPANIES = ("NVIDIA", "Schneider Electric")
-_WINDOWS_PERSONAL_PATH_PATTERN = re.compile(r"(?i)(?:^|[^A-Za-z0-9])[A-Z]:\\+Users\\+")
 
 _INITIAL_PLAN = (
     PlanStep(
@@ -146,15 +144,15 @@ _TOOL_SCHEMAS: dict[str, dict[str, Any]] = {
 }
 
 
-class _LiveReportWording(BaseModel):
-    """Model-proposed prose; evidence and release fields remain host-owned."""
+class _LiveReportSelection(BaseModel):
+    """Provider-selected host statement IDs; the provider authors no final prose."""
 
     model_config = ConfigDict(extra="forbid", frozen=True, str_strip_whitespace=True)
 
-    executive_summary: str = Field(min_length=1)
-    cross_company_observations: tuple[str, ...] = Field(min_length=1)
-    interpretation: tuple[str, ...] = Field(min_length=1)
-    limitations: tuple[str, ...] = Field(min_length=1)
+    executive_summary_id: str = Field(min_length=1)
+    cross_company_observation_ids: tuple[str, ...] = Field(min_length=1)
+    interpretation_ids: tuple[str, ...] = Field(min_length=1)
+    limitation_ids: tuple[str, ...] = Field(min_length=1)
 
 
 class Retriever(Protocol):
@@ -482,49 +480,56 @@ class FinancialAnalystCopilot:
         request: ResearchRequest,
         briefing: CapstoneBriefing,
     ) -> CapstoneBriefing:
-        """Accept prose only; citations, evidence, budgets, and release stay fixed."""
+        """Reconstruct final prose exclusively from host-certified statement units."""
 
         if self._structured_model is None:
             raise RuntimeError("live provider is unavailable")
+        statement_units = _certified_statement_units(briefing)
         prompt_payload = {
             "mission": request.question,
             "certified_cited_facts": [
                 fact.model_dump(mode="json") for fact in briefing.cited_facts
             ],
-            "host_draft": {
-                "executive_summary": briefing.executive_summary,
-                "cross_company_observations": briefing.cross_company_observations,
-                "interpretation": briefing.interpretation,
-                "limitations": briefing.limitations,
-            },
+            "certified_statement_units": [
+                {"id": statement_id, "section": section, "text": text}
+                for section, units in statement_units.items()
+                for statement_id, text in units.items()
+            ],
         }
         proposal = self._structured_model.generate(
             system_prompt=(
-                "Rewrite only the supplied report prose. Use only certified cited facts. "
-                "Do not add facts, citations, recommendations, tools, or hidden reasoning."
+                "Select and order only the supplied certified statement IDs. Do not write or "
+                "rewrite prose, add facts, add recommendations, or change citations. Return "
+                "every supplied ID exactly once in its matching section."
             ),
             user_prompt=json.dumps(prompt_payload, sort_keys=True),
-            response_model=_LiveReportWording,
+            response_model=_LiveReportSelection,
         )
-        wording = _LiveReportWording.model_validate(proposal)
-        _clean_public_value(wording)
-        if any(
-            _WINDOWS_PERSONAL_PATH_PATTERN.search(value)
-            for value in (
-                wording.executive_summary,
-                *wording.cross_company_observations,
-                *wording.interpretation,
-                *wording.limitations,
-            )
-        ):
-            raise ValueError("provider wording contains a personal path")
+        selection = _LiveReportSelection.model_validate(proposal)
+        _clean_public_value(selection)
+        executive_summary = _selected_statements(
+            statement_units["executive_summary"],
+            (selection.executive_summary_id,),
+        )
+        cross_company_observations = _selected_statements(
+            statement_units["cross_company_observation"],
+            selection.cross_company_observation_ids,
+        )
+        interpretation = _selected_statements(
+            statement_units["interpretation"],
+            selection.interpretation_ids,
+        )
+        limitations = _selected_statements(
+            statement_units["limitation"],
+            selection.limitation_ids,
+        )
         return CapstoneBriefing.model_validate(
             {
                 **briefing.model_dump(mode="python"),
-                "executive_summary": wording.executive_summary,
-                "cross_company_observations": wording.cross_company_observations,
-                "interpretation": wording.interpretation,
-                "limitations": wording.limitations,
+                "executive_summary": executive_summary[0],
+                "cross_company_observations": cross_company_observations,
+                "interpretation": interpretation,
+                "limitations": limitations,
             }
         )
 
@@ -841,6 +846,39 @@ def _error_observation(
         error_code=error_code,
         duration_ms=0,
     )
+
+
+def _certified_statement_units(
+    briefing: CapstoneBriefing,
+) -> dict[str, dict[str, str]]:
+    """Assign stable section-scoped IDs to host-authored public prose."""
+
+    return {
+        "executive_summary": {"executive_summary:1": briefing.executive_summary},
+        "cross_company_observation": {
+            f"cross_company_observation:{index}": statement
+            for index, statement in enumerate(briefing.cross_company_observations, start=1)
+        },
+        "interpretation": {
+            f"interpretation:{index}": statement
+            for index, statement in enumerate(briefing.interpretation, start=1)
+        },
+        "limitation": {
+            f"limitation:{index}": statement
+            for index, statement in enumerate(briefing.limitations, start=1)
+        },
+    }
+
+
+def _selected_statements(
+    available: Mapping[str, str],
+    selected_ids: Sequence[str],
+) -> tuple[str, ...]:
+    """Require one permutation of all certified IDs and reconstruct their prose."""
+
+    if len(selected_ids) != len(available) or set(selected_ids) != set(available):
+        raise ValueError("provider selection must contain every certified statement ID once")
+    return tuple(available[statement_id] for statement_id in selected_ids)
 
 
 def _document_hits(

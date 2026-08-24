@@ -5,6 +5,7 @@ import json
 from pathlib import Path
 
 import mlflow
+import pytest
 from mlflow.tracking import MlflowClient
 
 from finai_academy.capstone.models import ResearchRequest
@@ -139,3 +140,31 @@ def test_missing_mlflow_is_typed_unavailable_and_does_not_change_analysis(
     assert result.status == "completed"
     assert result.model_dump(mode="json") == before
     assert "/Users/" not in references.model_dump_json()
+
+
+@pytest.mark.parametrize("import_error", [OSError("loader failure"), RuntimeError("broken ABI")])
+def test_non_importerror_mlflow_import_failures_return_typed_error(
+    monkeypatch,
+    tmp_path: Path,
+    import_error: Exception,
+) -> None:
+    result = completed_result()
+    before = result.model_dump(mode="json")
+    real_import_module = importlib.import_module
+
+    def fail_mlflow_import(name: str, package: str | None = None):
+        del package
+        if name == "mlflow":
+            raise import_error
+        return real_import_module(name)
+
+    monkeypatch.setattr(importlib, "import_module", fail_mlflow_import)
+
+    references = CapstoneRunStore(tmp_path / "capstone-mlflow").persist(result)
+
+    assert references.tracking_status == "error"
+    assert references.run_id is None
+    assert references.trace_id is None
+    assert result.model_dump(mode="json") == before
+    assert "loader failure" not in references.model_dump_json()
+    assert "broken ABI" not in references.model_dump_json()

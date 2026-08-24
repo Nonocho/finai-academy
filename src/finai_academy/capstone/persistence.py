@@ -39,14 +39,6 @@ class CapstoneRunStore:
 
         try:
             mlflow = importlib.import_module("mlflow")
-        except ImportError:
-            return self._references(
-                result,
-                tracking_status="unavailable",
-                guidance="Install the evaluation extra to persist MLflow evidence.",
-            )
-
-        try:
             helper = importlib.import_module("finai_academy.mlflow_agent_evaluation")
             store = helper.initialize_local_mlflow(self._tracking_directory)
             client_class = importlib.import_module("mlflow.tracking").MlflowClient
@@ -129,6 +121,12 @@ class CapstoneRunStore:
                 trace_id=trace_id,
                 tracking_status="persisted",
                 guidance="MLflow evidence was persisted locally.",
+            )
+        except ImportError:
+            return self._references(
+                result,
+                tracking_status="unavailable",
+                guidance="Install the evaluation extra to persist MLflow evidence.",
             )
         except Exception:  # noqa: BLE001 - persistence errors are optional and sanitized
             return self._references(
