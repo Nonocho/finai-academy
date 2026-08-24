@@ -131,6 +131,25 @@ def test_persistence_public_output_and_artifacts_contain_no_paths_or_credentials
     )
     assert "arnauddemes" not in persisted_text.casefold()
     assert "/Users/" not in persisted_text
+    database_bytes = (tracking_directory / "mlflow.db").read_bytes()
+    assert b"file:///private/" not in database_bytes
+    assert b"/private/var/folders/" not in database_bytes
+
+
+def test_privacy_audit_rejects_private_paths_retained_in_sqlite_pages(tmp_path: Path) -> None:
+    database = tmp_path / "mlflow.db"
+    private_value = "file:///private/var/folders/course-secret/" + "x" * 1024
+    with sqlite3.connect(database) as connection:
+        connection.execute("PRAGMA secure_delete = OFF")
+        connection.execute("CREATE TABLE metadata (value TEXT)")
+        connection.execute("INSERT INTO metadata VALUES (?)", (private_value,))
+        connection.commit()
+        connection.execute("DELETE FROM metadata")
+
+    assert private_value.encode() in database.read_bytes()
+    assert list(iter_mlflow_text_values(database)) == []
+    with pytest.raises(ValueError, match="private MLflow database bytes"):
+        audit_capstone_mlflow(database, tmp_path / "artifacts")
 
 
 @pytest.mark.parametrize(

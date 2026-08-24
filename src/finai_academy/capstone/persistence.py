@@ -17,7 +17,8 @@ _PUBLIC_TRACKING_URI = "sqlite:///mlflow.db"
 _EXPERIMENT_NAME = "financial-analyst-copilot-capstone"
 _NEUTRAL_USER = "local-capstone-user"
 _PRIVATE_PATTERN = re.compile(
-    r"(?i)(?:arnauddemes|file:/+(?:Users|home)/|/(?:Users|home)/[^\s\"']+|"
+    r"(?i)(?:arnauddemes|file:/+(?:Users|home|private)/|"
+    r"/(?:Users|home|private)/[^\s\"']+|"
     r"[a-z]:[\\/]+Users[\\/]+[^\s\"']+|authorization\s*:\s*(?:bearer|basic)|"
     r"\b(?:openai|tavily)?[_-]?api[_-]?key\b\s*[:=]|\bsk-[a-z0-9_-]{8,}\b|"
     r"client[_-]?secret|private[_-]?key)"
@@ -264,6 +265,7 @@ def sanitize_capstone_mlflow(
     """Replace MLflow-generated host identity and absolute artifact metadata."""
 
     with sqlite3.connect(database_path) as connection:
+        connection.execute("PRAGMA secure_delete = ON")
         connection.execute(
             "UPDATE experiments SET artifact_location = ?",
             ("artifacts/experiments",),
@@ -283,6 +285,8 @@ def sanitize_capstone_mlflow(
             "UPDATE trace_tags SET value = 'artifacts/traces/' || request_id || '/artifacts' "
             "WHERE key = 'mlflow.artifactLocation'",
         )
+        connection.commit()
+        connection.execute("VACUUM")
 
 
 def _prepare_experiment_storage(database_path: Path, artifact_directory: Path) -> None:
@@ -333,6 +337,9 @@ def audit_capstone_mlflow(database_path: Path, artifact_directory: Path) -> dict
         sqlite_value_count += 1
         if _PRIVATE_PATTERN.search(value):
             raise ValueError("private MLflow metadata detected")
+    database_text = database_path.read_bytes().decode("utf-8", errors="ignore")
+    if _PRIVATE_PATTERN.search(database_text):
+        raise ValueError("private MLflow database bytes detected")
     if artifact_directory.exists():
         for path in sorted(item for item in artifact_directory.rglob("*") if item.is_file()):
             artifact_file_count += 1

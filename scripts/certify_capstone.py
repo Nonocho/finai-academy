@@ -367,11 +367,11 @@ def _certify_mlflow(
     )
     public_artifacts_validated = _safe_public_text(public_payload)
     _require(public_artifacts_validated)
-    privacy_audit = audit_capstone_mlflow(
-        tracking_directory / "mlflow.db", tracking_directory / "artifacts"
+    privacy_audit = _public_privacy_audit(
+        audit_capstone_mlflow(
+            tracking_directory / "mlflow.db", tracking_directory / "artifacts"
+        )
     )
-    _require(privacy_audit["sqlite_text_values_scanned"] > 0)
-    _require(privacy_audit["artifact_files_scanned"] >= len(_MLFLOW_ARTIFACTS))
 
     return {
         "persisted": True,
@@ -383,6 +383,19 @@ def _certify_mlflow(
         "artifact_names": list(_MLFLOW_ARTIFACTS),
         "public_artifacts_validated": public_artifacts_validated,
         "privacy_audit": privacy_audit,
+    }
+
+
+def _public_privacy_audit(audit: Mapping[str, int]) -> dict[str, bool]:
+    """Publish stable coverage without MLflow's asynchronous artifact count."""
+
+    sqlite_metadata_scanned = audit["sqlite_text_values_scanned"] > 0
+    required_artifacts_scanned = audit["artifact_files_scanned"] >= len(_MLFLOW_ARTIFACTS)
+    _require(sqlite_metadata_scanned)
+    _require(required_artifacts_scanned)
+    return {
+        "sqlite_metadata_scanned": sqlite_metadata_scanned,
+        "required_artifacts_scanned": required_artifacts_scanned,
     }
 
 
@@ -409,6 +422,10 @@ def validate_visual_evidence(artifact_directory: Path) -> dict[str, object]:
     captures = inspection.get("captures")
     _require(isinstance(captures, list))
     covered: set[str] = set()
+    filenames: set[str] = set()
+    hashes: set[str] = set()
+    completed_state_present = False
+    typed_stop_state_present = False
     validated: list[dict[str, object]] = []
     for capture in captures:
         _require(isinstance(capture, dict))
@@ -428,10 +445,18 @@ def validate_visual_evidence(artifact_directory: Path) -> dict[str, object]:
         )
         filename = capture["file"]
         _require(isinstance(filename, str) and Path(filename).name == filename)
+        _require(filename not in filenames)
+        filenames.add(filename)
+        sha256 = capture["sha256"]
+        _require(isinstance(sha256, str) and sha256 not in hashes)
+        hashes.add(sha256)
         _require(_safe_public_text(json.dumps(capture, sort_keys=True)))
         _require(capture["browser"] == "Codex in-app Browser")
         _require(isinstance(capture["route"], str) and bool(capture["route"]))
-        _require(isinstance(capture["state"], str) and bool(capture["state"]))
+        state = capture["state"]
+        _require(isinstance(state, str) and bool(state))
+        completed_state_present |= state.startswith("completed mission;")
+        typed_stop_state_present |= state.startswith("typed ") and " stop" in state
         captured_at = capture["captured_at"]
         _require(
             isinstance(captured_at, str) and ("+" in captured_at[10:] or captured_at.endswith("Z"))
@@ -440,7 +465,7 @@ def validate_visual_evidence(artifact_directory: Path) -> dict[str, object]:
         _require(isinstance(visible, list) and all(item in _VISUAL_CHECKS for item in visible))
         path = artifact_directory / filename
         raw = path.read_bytes()
-        _require(hashlib.sha256(raw).hexdigest() == capture["sha256"])
+        _require(hashlib.sha256(raw).hexdigest() == sha256)
         with Image.open(path) as image:
             _require(image.format == "PNG")
             image.verify()
@@ -453,6 +478,8 @@ def validate_visual_evidence(artifact_directory: Path) -> dict[str, object]:
     if status == "PASS":
         _require(len(validated) >= 4)
         _require(covered == set(_VISUAL_CHECKS))
+        _require(completed_state_present)
+        _require(typed_stop_state_present)
     if status == "NOT RUN":
         _require(not validated)
 

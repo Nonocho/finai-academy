@@ -207,6 +207,21 @@ def certification_module():
     return module
 
 
+@pytest.mark.parametrize("artifact_file_count", [3, 4])
+def test_public_privacy_audit_normalizes_optional_trace_artifact_count(
+    certification_module, artifact_file_count: int
+) -> None:
+    assert certification_module._public_privacy_audit(
+        {
+            "sqlite_text_values_scanned": 155,
+            "artifact_files_scanned": artifact_file_count,
+        }
+    ) == {
+        "sqlite_metadata_scanned": True,
+        "required_artifacts_scanned": True,
+    }
+
+
 def _copy_visual_evidence(destination: Path) -> dict[str, object]:
     source = _PROJECT_ROOT / "artifacts" / "capstone"
     destination.mkdir()
@@ -236,6 +251,18 @@ def test_visual_evidence_rejects_tampered_hash(certification_module, tmp_path: P
         certification_module.validate_visual_evidence(tmp_path / "hash")
 
 
+def test_visual_evidence_rejects_duplicate_filename_and_hash_bindings(
+    certification_module, tmp_path: Path
+) -> None:
+    manifest = _copy_visual_evidence(tmp_path / "duplicate")
+    manifest["captures"][1]["file"] = manifest["captures"][0]["file"]
+    manifest["captures"][1]["sha256"] = manifest["captures"][0]["sha256"]
+    (tmp_path / "duplicate" / "visual-inspection.json").write_text(json.dumps(manifest))
+
+    with pytest.raises(certification_module.CertificationFailure):
+        certification_module.validate_visual_evidence(tmp_path / "duplicate")
+
+
 def test_visual_evidence_rejects_truncated_png(certification_module, tmp_path: Path) -> None:
     manifest = _copy_visual_evidence(tmp_path / "truncated")
     image = tmp_path / "truncated" / manifest["captures"][0]["file"]
@@ -259,6 +286,29 @@ def test_visual_evidence_rejects_missing_acceptance_coverage(
 
     with pytest.raises(certification_module.CertificationFailure):
         certification_module.validate_visual_evidence(tmp_path / "coverage")
+
+
+@pytest.mark.parametrize(
+    ("directory_name", "state"),
+    [
+        ("missing-completed", "typed insufficient-evidence stop"),
+        ("missing-typed-stop", "completed mission; certified evidence"),
+    ],
+)
+def test_visual_evidence_requires_completed_and_typed_stop_states(
+    certification_module,
+    tmp_path: Path,
+    directory_name: str,
+    state: str,
+) -> None:
+    directory = tmp_path / directory_name
+    manifest = _copy_visual_evidence(directory)
+    for capture in manifest["captures"]:
+        capture["state"] = state
+    (directory / "visual-inspection.json").write_text(json.dumps(manifest))
+
+    with pytest.raises(certification_module.CertificationFailure):
+        certification_module.validate_visual_evidence(directory)
 
 
 def test_committed_certification_artifacts_match_the_contract() -> None:
