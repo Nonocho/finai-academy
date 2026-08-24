@@ -288,6 +288,7 @@ class PublicTraceEvent(_FrozenPublicModel):
     ]
     status: Literal["ok", "error", "blocked"]
     summary: str = Field(min_length=1)
+    capability: str | None = None
     step_id: int | None = Field(default=None, ge=1)
     attempt_id: int | None = Field(default=None, ge=1)
     plan_revision: int = Field(default=0, ge=0)

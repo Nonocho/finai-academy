@@ -12,6 +12,7 @@ from finai_academy.capstone import (
     EvidenceGateDecision,
     JudgeEvaluation,
     MetricEvaluation,
+    PublicTraceEvent,
     ResearchRequest,
     ResearchRunResult,
 )
@@ -358,6 +359,27 @@ def test_completed_reference_run_requires_nonempty_company_evidence_for_both_com
 
 def test_judge_evaluation_defaults_to_not_run() -> None:
     assert JudgeEvaluation().status == "not_run"
+
+
+def test_public_trace_capability_is_structured_sanitized_and_backward_compatible() -> None:
+    legacy = PublicTraceEvent(
+        index=1,
+        phase="planning",
+        status="ok",
+        summary="Plan created.",
+    )
+    execution = PublicTraceEvent(
+        index=2,
+        phase="execution",
+        status="ok",
+        summary="Tool completed.",
+        capability=" get_company_metric ",
+    )
+
+    assert legacy.capability is None
+    assert execution.capability == "get_company_metric"
+    with pytest.raises(ValidationError, match="blank"):
+        PublicTraceEvent.model_validate({**execution.model_dump(), "capability": " "})
 
 
 @pytest.mark.parametrize(

@@ -97,6 +97,19 @@ def test_unsupported_revenue_metric_replans_to_document_search() -> None:
     assert result.replan_count == 1
     assert [observation.attempt_id for observation in result.observations] == [1, 2, 3, 4, 5]
     assert [observation.plan_revision for observation in result.observations] == [0, 0, 0, 1, 1]
+    execution_events = [event for event in result.trajectory if event.phase == "execution"]
+    assert [event.capability for event in execution_events] == [
+        observation.capability for observation in result.observations
+    ]
+    typed_failure = next(event for event in execution_events if event.status == "error")
+    assert typed_failure.capability == "get_company_metric"
+    replan = next(event for event in result.trajectory if event.phase == "replanning")
+    assert replan.capability == "get_company_metric"
+    assert all(
+        event.capability is None
+        for event in result.trajectory
+        if event.phase in {"planning", "policy", "evidence_gate", "report"}
+    )
 
 
 def test_successful_tool_signatures_are_unique() -> None:
@@ -175,6 +188,7 @@ def test_duplicate_successful_call_stops_before_repeating_it() -> None:
     assert len(result.observations) == 1
     assert result.trajectory[-1].summary == "duplicate_successful_call"
     assert result.trajectory[-1].failure_owner == "replanner"
+    assert result.trajectory[-1].capability == "get_company_metric"
 
 
 def test_exhausted_replan_budget_stops_truthfully() -> None:
@@ -197,6 +211,7 @@ def test_malformed_tool_outcome_stops_truthfully() -> None:
     assert result.status == "execution_stopped"
     assert result.observations[-1].error_code == "malformed_tool_outcome"
     assert result.trajectory[-1].failure_owner == "tool_boundary"
+    assert result.trajectory[-1].capability == "get_company_metric"
     assert result.briefing is None
 
 
