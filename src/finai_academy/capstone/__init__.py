@@ -26,6 +26,10 @@ from finai_academy.capstone.models import (
     ResearchRunResult,
     RunStatus,
 )
+from finai_academy.capstone.service import (
+    FinancialAnalystCopilot,
+    build_reference_copilot,
+)
 
 __all__ = [
     "PROMPT_VERSION",
@@ -40,6 +44,7 @@ __all__ = [
     "DeterministicEvaluation",
     "EvidenceGateDecision",
     "EvidenceType",
+    "FinancialAnalystCopilot",
     "FindingCategory",
     "JudgeEvaluation",
     "MetricEvaluation",
@@ -49,5 +54,6 @@ __all__ = [
     "ResearchRunResult",
     "RunStatus",
     "build_analyst_brief_prompt",
+    "build_reference_copilot",
     "create_structured_model",
 ]
