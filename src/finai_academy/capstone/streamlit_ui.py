@@ -13,7 +13,11 @@ from finai_academy.capstone.service import (
     FinancialAnalystCopilot,
     build_copilot_for_request,
 )
-from finai_academy.capstone.views import CapstoneRunView, to_run_view
+from finai_academy.capstone.views import (
+    CapstoneRunView,
+    build_capstone_request,
+    to_run_view,
+)
 from finai_academy.settings import Settings
 
 _PROVIDERS = {
@@ -31,7 +35,6 @@ _DEFAULT_MODELS = {
     "OpenAI": "gpt-5-mini",
 }
 _STATE_KEYS = ("reference_run", "custom_run", "chat_history", "public_error")
-_COMPANIES = ("NVIDIA", "Schneider Electric")
 
 
 def render_capstone(
@@ -55,6 +58,7 @@ def render_capstone(
             "Provider",
             tuple(_PROVIDERS),
             key="provider_selection",
+            on_change=_clear_retained_outputs,
         )
         selected_default = _DEFAULT_MODELS[provider_label]
         model = st.text_input(
@@ -62,11 +66,13 @@ def render_capstone(
             value=selected_default,
             key=f"model_{_PROVIDERS[provider_label]}",
             help="The exact model route used for a submitted run.",
+            on_change=_clear_retained_outputs,
         )
         data_mode_label = st.selectbox(
             "Data mode",
             tuple(_DATA_MODES),
             key="data_mode_selection",
+            on_change=_clear_retained_outputs,
         )
         st.caption(f"Tavily: {integrations.get('tavily', 'Not checked')}")
         st.caption(f"OpenAI: {integrations.get('openai', 'Not checked')}")
@@ -98,6 +104,10 @@ def render_capstone(
             model=model,
             data_mode=_DATA_MODES[data_mode_label],
         )
+    st.markdown(
+        '<footer data-testid="capstone-footer"><hr>First Finance - Arnaud Demes</footer>',
+        unsafe_allow_html=True,
+    )
 
 
 def _initialize_state() -> None:
@@ -115,6 +125,13 @@ def _initialize_state() -> None:
 def _reset_state() -> None:
     for key in _STATE_KEYS:
         st.session_state.pop(key, None)
+
+
+def _clear_retained_outputs() -> None:
+    st.session_state.reference_run = None
+    st.session_state.custom_run = None
+    st.session_state.chat_history = []
+    st.session_state.public_error = None
 
 
 def _default_service_factory(request: ResearchRequest) -> FinancialAnalystCopilot:
@@ -150,11 +167,12 @@ def _render_reference_tab(
     model: str,
     data_mode: str,
 ) -> None:
-    request = ResearchRequest.reference(
+    request = build_capstone_request(
+        mode="reference",
+        question=None,
         provider=provider,
         model=model,
         data_mode=data_mode,
-        include_news=data_mode == "live_enrichment",
     )
     st.text_area(
         "Fixed reference mission",
@@ -197,14 +215,12 @@ def _render_custom_tab(
         if not cleaned:
             st.session_state.public_error = "Enter a research question before submitting."
         else:
-            request = ResearchRequest(
+            request = build_capstone_request(
                 mode="custom",
                 question=cleaned,
-                companies=_COMPANIES,
                 provider=provider,
                 model=model,
                 data_mode=data_mode,
-                include_news=data_mode == "live_enrichment",
             )
             payload = _execute(factory, request)
             st.session_state.custom_run = payload
@@ -213,7 +229,7 @@ def _render_custom_tab(
                 {"role": "user", "content": cleaned},
                 {
                     "role": "assistant",
-                    "content": _assistant_message(payload),
+                    "content": _assistant_message_from_view(payload),
                 },
             ]
 
@@ -238,13 +254,10 @@ def _execute(
         return None
 
 
-def _assistant_message(payload: dict[str, Any] | None) -> str:
+def _assistant_message_from_view(payload: dict[str, Any] | None) -> str:
     if payload is None:
         return "The selected route did not complete. No briefing was released."
-    release = payload.get("release")
-    if isinstance(release, dict) and release.get("decision") == "Release passed":
-        return "The evidence-backed research run completed. Review the public result below."
-    return "The release checks did not pass. Review the evidence gate and execution trace below."
+    return CapstoneRunView.model_validate(payload).outcome.assistant_message
 
 
 def _render_public_error() -> None:
@@ -255,10 +268,14 @@ def _render_public_error() -> None:
 
 def _render_run(view: CapstoneRunView) -> None:
     st.divider()
+    st.caption(
+        f"Run route: {view.readiness.provider} · {view.readiness.model} · "
+        f"{view.readiness.data_mode}"
+    )
     status_columns = st.columns(4)
     status_columns[0].metric("Run status", view.readiness.run_status)
     status_columns[1].metric("Evidence", view.release.evidence_gate)
-    status_columns[2].metric("Replans", _replan_count(view))
+    status_columns[2].metric("Replans", str(view.replan_count))
     status_columns[3].metric("Duration", view.total_duration)
 
     st.subheader("Research plan")
@@ -320,10 +337,10 @@ def _render_run(view: CapstoneRunView) -> None:
         ],
         hide_index=True,
     )
-    if view.release.decision == "Release passed":
-        st.success("Release passed")
+    if view.outcome.status == "passed":
+        st.success(view.outcome.message)
     else:
-        st.error("Release blocked")
+        st.error(view.outcome.message)
 
     with st.container(border=True):
         st.subheader("Optional judge")
@@ -356,11 +373,6 @@ def _render_briefing(view: CapstoneRunView) -> None:
     st.subheader("Sources and execution")
     for statement in briefing.sources_and_execution:
         st.markdown(f"- {statement}")
-
-
-def _replan_count(view: CapstoneRunView) -> str:
-    revisions = {row.revision for row in view.trace if row.phase == "Replanning"}
-    return str(len(revisions))
 
 
 def _plan_record(row: Mapping[str, str]) -> dict[str, str]:

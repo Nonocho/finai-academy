@@ -57,16 +57,47 @@ def test_view_formats_plan_trace_scores_and_failed_evidence_gate() -> None:
     failed_view = capstone.to_run_view(insufficient)
 
     assert complete_view.plan[0].step == "1"
+    assert complete_view.replan_count == 1
     assert complete_view.trace[2].duration.endswith(" ms")
     assert [row.score for row in complete_view.scores] == ["100%"] * 5
     assert len(complete_view.scores) == 5
     assert complete_view.release.evidence_gate == "Evidence gate passed"
+    assert complete_view.outcome.status == "passed"
+    assert complete_view.outcome.message == "Release passed"
+    assert complete_view.outcome.assistant_message == (
+        "The evidence-backed research run completed. Review the public result below."
+    )
     assert failed_view.release.decision == "Release blocked"
     assert failed_view.release.evidence_gate == "Evidence gate failed"
     assert failed_view.release.missing_requirements == (
         "Schneider Electric document evidence",
     )
     assert failed_view.briefing is None
+    assert failed_view.outcome.status == "blocked"
+    assert failed_view.outcome.message == "Release blocked"
+
+
+def test_request_boundary_maps_data_mode_and_keeps_the_company_universe() -> None:
+    assert hasattr(capstone, "build_capstone_request")
+
+    reference = capstone.build_capstone_request(
+        mode="reference",
+        question=None,
+        provider="recorded",
+        model="recorded-capstone-v1",
+        data_mode="certified",
+    )
+    custom = capstone.build_capstone_request(
+        mode="custom",
+        question="Compare operating-growth evidence.",
+        provider="openai",
+        model="gpt-5-mini",
+        data_mode="live_enrichment",
+    )
+
+    assert reference.include_news is False
+    assert custom.include_news is True
+    assert custom.companies == ("NVIDIA", "Schneider Electric")
 
 
 class _MissingSchneiderRetriever:

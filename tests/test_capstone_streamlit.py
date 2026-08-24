@@ -72,6 +72,46 @@ def test_renderer_is_exported_and_both_product_paths_are_visible() -> None:
     assert "Optional live enrichment" in app.selectbox[1].options
     assert "First Finance - Arnaud Demes" in text
     assert "Research support only. Not investment advice." in text
+    footer = next(
+        item for item in app.main.markdown if 'data-testid="capstone-footer"' in item.value
+    )
+    assert "First Finance - Arnaud Demes" in footer.value
+
+
+def test_route_changes_clear_retained_results_and_show_immutable_run_route() -> None:
+    app = AppTest.from_function(
+        _app,
+        args=(
+            _successful_factory,
+            {"tavily": "Unavailable", "openai": "Unavailable", "ollama": "Unavailable"},
+        ),
+    ).run()
+    app = _run_reference(app)
+
+    assert "Run route: Recorded demo · recorded-capstone-v1 · Certified snapshots" in (
+        _rendered_text(app)
+    )
+    assert app.session_state.filtered_state["reference_run"] is not None
+    app.session_state["custom_run"] = app.session_state.filtered_state["reference_run"]
+    app.session_state["chat_history"] = [
+        {"role": "user", "content": "Retained question."},
+        {"role": "assistant", "content": "Retained answer."},
+    ]
+    app.session_state["public_error"] = "Retained error."
+
+    provider = next(item for item in app.selectbox if item.key == "provider_selection")
+    app = provider.select("OpenAI").run()
+    model = next(item for item in app.text_input if item.key == "model_openai")
+    app = model.input("gpt-5-mini-reviewed").run()
+    data_mode = next(item for item in app.selectbox if item.key == "data_mode_selection")
+    app = data_mode.select("Optional live enrichment").run()
+
+    state = app.session_state.filtered_state
+    assert state["reference_run"] is None
+    assert state["custom_run"] is None
+    assert state["chat_history"] == []
+    assert state["public_error"] is None
+    assert "Release passed" not in _rendered_text(app)
 
 
 def test_recorded_reference_click_renders_complete_release_evidence_and_trace() -> None:

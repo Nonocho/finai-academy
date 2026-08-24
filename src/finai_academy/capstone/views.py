@@ -7,7 +7,15 @@ from typing import Literal
 
 from pydantic import Field
 
-from finai_academy.capstone.models import ResearchRunResult, _FrozenPublicModel
+from finai_academy.capstone.models import (
+    CapstoneProvider,
+    DataMode,
+    ResearchMode,
+    ResearchRequest,
+    ResearchRunResult,
+    RunStatus,
+    _FrozenPublicModel,
+)
 from finai_academy.research_planning import ResearchObservation
 
 _PROVIDER_LABELS = {
@@ -145,6 +153,14 @@ class ReleaseView(_FrozenPublicModel):
     missing_requirements: tuple[str, ...] = ()
 
 
+class OutcomeView(_FrozenPublicModel):
+    """Host-derived public outcome copy and rendering status."""
+
+    status: Literal["passed", "blocked", "error"]
+    message: Literal["Release passed", "Release blocked"]
+    assistant_message: str
+
+
 class CapstoneRunView(_FrozenPublicModel):
     """Complete public, JSON-compatible state rendered by Streamlit."""
 
@@ -161,7 +177,43 @@ class CapstoneRunView(_FrozenPublicModel):
     briefing: BriefingSectionsView | None
     judge: JudgeView
     release: ReleaseView
+    outcome: OutcomeView
+    replan_count: int = Field(ge=0)
     total_duration: str
+
+
+def build_capstone_request(
+    *,
+    mode: ResearchMode | Literal["reference", "custom"],
+    question: str | None,
+    provider: CapstoneProvider | Literal["recorded", "ollama", "openai"],
+    model: str,
+    data_mode: DataMode | Literal["certified", "live_enrichment"],
+) -> ResearchRequest:
+    """Map public route selections to one bounded, validated research request."""
+
+    selected_mode = ResearchMode(mode)
+    selected_provider = CapstoneProvider(provider)
+    selected_data_mode = DataMode(data_mode)
+    include_news = selected_data_mode == DataMode.LIVE_ENRICHMENT
+    route = {
+        "provider": selected_provider,
+        "model": model,
+        "data_mode": selected_data_mode,
+        "include_news": include_news,
+    }
+    if selected_mode == ResearchMode.REFERENCE:
+        if question is not None:
+            raise ValueError("reference mode uses the fixed mission")
+        return ResearchRequest.reference(**route)
+    if question is None:
+        raise ValueError("custom mode requires a question")
+    return ResearchRequest(
+        mode=selected_mode,
+        question=question,
+        companies=("NVIDIA", "Schneider Electric"),
+        **route,
+    )
 
 
 def to_run_view(result: ResearchRunResult) -> CapstoneRunView:
@@ -205,6 +257,7 @@ def to_run_view(result: ResearchRunResult) -> CapstoneRunView:
         )
 
     judge = result.judge_evaluation
+    outcome = _outcome_view(result)
     return CapstoneRunView(
         run_id=result.run_id,
         question=result.request.question,
@@ -280,7 +333,33 @@ def to_run_view(result: ResearchRunResult) -> CapstoneRunView:
             ),
             missing_requirements=result.evidence_gate.missing_requirements,
         ),
+        outcome=outcome,
+        replan_count=result.replan_count,
         total_duration=_format_duration(result.total_duration_ms),
+    )
+
+
+def _outcome_view(result: ResearchRunResult) -> OutcomeView:
+    if result.deterministic_evaluation.release_passed:
+        return OutcomeView(
+            status="passed",
+            message="Release passed",
+            assistant_message=(
+                "The evidence-backed research run completed. Review the public result below."
+            ),
+        )
+    if result.status == RunStatus.PROVIDER_ERROR:
+        return OutcomeView(
+            status="error",
+            message="Release blocked",
+            assistant_message="The selected route did not complete. No briefing was released.",
+        )
+    return OutcomeView(
+        status="blocked",
+        message="Release blocked",
+        assistant_message=(
+            "The release checks did not pass. Review the evidence gate and execution trace below."
+        ),
     )
 
 
@@ -349,11 +428,13 @@ __all__ = [
     "CompanyEvidenceView",
     "EvidenceRowView",
     "JudgeView",
+    "OutcomeView",
     "PlanRowView",
     "ReadinessView",
     "ReleaseView",
     "ScoreRowView",
     "ToolRowView",
     "TraceRowView",
+    "build_capstone_request",
     "to_run_view",
 ]
