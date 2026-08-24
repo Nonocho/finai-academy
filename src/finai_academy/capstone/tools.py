@@ -9,7 +9,7 @@ from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict
 
-from finai_academy.capstone.models import CapstoneEvidenceHit
+from finai_academy.capstone.models import CapstoneEvidenceHit, _clean_public_value
 from finai_academy.financial_mcp_capabilities import (
     CapabilityValidationError,
     DocumentSearchResult,
@@ -31,6 +31,7 @@ MANDATORY_ANALYST_TOOLS = frozenset({"get_company_metric", "search_financial_doc
 _EVIDENCE_CATALOG = (
     Path(__file__).resolve().parents[3] / "assets/course-data/mcp/lesson10_evidence_catalog_v1.json"
 )
+_INVALID_ARGUMENTS_MESSAGE = "Tool arguments must match the approved schema."
 
 
 class ToolOutcome(BaseModel):
@@ -141,15 +142,19 @@ class AnalystToolRegistry:
         """Run an approved, discovered tool or turn validation failures into public outcomes."""
 
         if name not in MANDATORY_ANALYST_TOOLS or name not in ALLOWED_TOOLS:
-            raise ValueError(f"Tool {name!r} is not allowlisted.")
+            raise ValueError("Tool is not allowlisted.")
         if name not in self.discover():
-            raise ValueError(f"Tool {name!r} was not discovered.")
+            raise ValueError("Tool was not discovered.")
+
+        validated_arguments = _validated_arguments(name, arguments)
+        if validated_arguments is None:
+            return _invalid_arguments_outcome()
 
         try:
             if name == "get_company_metric":
-                result = self._capability_registry.get_company_metric(**dict(arguments))
+                result = self._capability_registry.get_company_metric(**validated_arguments)
             else:
-                result = self._capability_registry.search_financial_documents(**dict(arguments))
+                result = self._capability_registry.search_financial_documents(**validated_arguments)
         except CapabilityValidationError as error:
             return ToolOutcome(
                 status="error",
@@ -157,6 +162,8 @@ class AnalystToolRegistry:
                 message=error.error.message,
                 retryable=error.error.retryable,
             )
+        except (AttributeError, TypeError):
+            return _invalid_arguments_outcome()
         return ToolOutcome(status="ok", payload=result)
 
 
@@ -165,3 +172,46 @@ def _required_catalog_string(document: Mapping[str, Any], field: str) -> str:
     if not isinstance(value, str) or not value.strip():
         raise ValueError(f"certified evidence catalog requires non-empty {field}")
     return value
+
+
+def _validated_arguments(name: str, arguments: Mapping[str, Any]) -> dict[str, Any] | None:
+    """Accept only safe, complete schemas before forwarding calls to capability code."""
+
+    if not isinstance(arguments, Mapping):
+        return None
+    expected_fields = (
+        ("ticker", "metric")
+        if name == "get_company_metric"
+        else ("company", "query", "top_k")
+    )
+    if set(arguments) != set(expected_fields):
+        return None
+
+    validated: dict[str, Any] = {}
+    for field in expected_fields:
+        value = arguments.get(field)
+        if field == "top_k":
+            if not isinstance(value, int) or isinstance(value, bool):
+                return None
+            validated[field] = value
+            continue
+        if not isinstance(value, str):
+            return None
+        try:
+            validated[field] = _clean_public_value(value)
+        except ValueError:
+            if value.strip():
+                return None
+            validated[field] = value
+    return validated
+
+
+def _invalid_arguments_outcome() -> ToolOutcome:
+    """Return the stable public schema failure without returning untrusted input."""
+
+    return ToolOutcome(
+        status="error",
+        error_code="invalid_arguments",
+        message=_INVALID_ARGUMENTS_MESSAGE,
+        retryable=True,
+    )

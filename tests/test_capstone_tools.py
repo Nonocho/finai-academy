@@ -72,6 +72,19 @@ def test_registry_fails_closed_for_a_trading_tool_without_echoing_arguments() ->
     assert "quantity" not in str(caught.value)
 
 
+def test_registry_fails_closed_without_echoing_a_malicious_tool_name() -> None:
+    """Echoing an attacker-controlled tool name can expose credential-shaped public text."""
+
+    malicious_name = "place_order Authorization: Bearer provider-secret-token"
+    registry = AnalystToolRegistry(discovered=("get_company_metric",))
+
+    with pytest.raises(ValueError, match="not allowlisted") as caught:
+        registry.invoke(malicious_name, {})
+
+    assert str(caught.value) == "Tool is not allowlisted."
+    assert malicious_name not in str(caught.value)
+
+
 def test_registry_returns_typed_metric_and_document_outcomes() -> None:
     """Returning raw capability models would make successful tool calls inconsistent to consumers."""
 
@@ -103,6 +116,54 @@ def test_registry_maps_unsupported_metric_to_a_retryable_typed_outcome() -> None
     assert outcome.status == "error"
     assert outcome.error_code == "unsupported_metric"
     assert outcome.retryable is True
+    assert outcome.payload is None
+
+
+@pytest.mark.parametrize(
+    "arguments",
+    [
+        {"company": "NVIDIA", "query": "api_key=provider-secret", "top_k": 2},
+        {"company": "NVIDIA", "query": "/Users/analyst/private-notes.txt", "top_k": 2},
+    ],
+)
+def test_registry_rejects_unsafe_document_queries_before_they_reach_public_payloads(
+    arguments: dict[str, object]
+) -> None:
+    """Returning the fixture result unchanged would echo unsafe query text in its public payload."""
+
+    outcome = AnalystToolRegistry(
+        discovered=("get_company_metric", "search_financial_documents")
+    ).invoke("search_financial_documents", arguments)
+
+    assert outcome.status == "error"
+    assert outcome.error_code == "invalid_arguments"
+    assert outcome.payload is None
+    assert "provider-secret" not in outcome.model_dump_json()
+    assert "/Users/" not in outcome.model_dump_json()
+
+
+@pytest.mark.parametrize(
+    ("name", "arguments"),
+    [
+        ("search_financial_documents", {"company": "NVIDIA", "query": 123, "top_k": 2}),
+        ("search_financial_documents", {"company": None, "query": "revenue", "top_k": 2}),
+        ("search_financial_documents", {"company": "NVIDIA", "query": "revenue", "top_k": "2"}),
+        ("get_company_metric", {"ticker": None, "metric": "P/E"}),
+        ("get_company_metric", {"ticker": "NVDA", "metric": {"name": "P/E"}}),
+    ],
+)
+def test_registry_returns_a_stable_typed_error_for_malformed_arguments(
+    name: str, arguments: dict[str, object]
+) -> None:
+    """Forwarding malformed values causes raw AttributeError or TypeError in capability code."""
+
+    outcome = AnalystToolRegistry(
+        discovered=("get_company_metric", "search_financial_documents")
+    ).invoke(name, arguments)
+
+    assert outcome.status == "error"
+    assert outcome.error_code == "invalid_arguments"
+    assert outcome.message == "Tool arguments must match the approved schema."
     assert outcome.payload is None
 
 
