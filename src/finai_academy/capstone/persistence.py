@@ -119,6 +119,7 @@ class CapstoneRunStore:
                             "analysis_run_id": result.run_id,
                             "final_status": result.status.value,
                             "release_decision": parameters["release_decision"],
+                            "failure_owner": _terminal_failure_owner(result),
                         }
                     )
                     trace_id = root_span.trace_id
@@ -192,6 +193,15 @@ def _metrics(result: ResearchRunResult) -> dict[str, float]:
     }
     values["release_passed"] = float(result.deterministic_evaluation.release_passed)
     return values
+
+
+def _terminal_failure_owner(result: ResearchRunResult) -> str:
+    if result.deterministic_evaluation.release_passed:
+        return "none"
+    for event in reversed(result.trajectory):
+        if event.failure_owner:
+            return event.failure_owner
+    return "none"
 
 
 def _mission_id(result: ResearchRunResult) -> str:

@@ -32,6 +32,9 @@ _SOLUTION_PATH = (
     / "reference"
     / "student_integration_solution.py"
 )
+_DIAGNOSTIC_SOLUTION_PATH = (
+    _PROJECT_ROOT / "final-project" / "reference" / "student_diagnostic_solution.json"
+)
 _SEAM_NAMES = (
     "wire_retriever",
     "register_analyst_capabilities",
@@ -77,6 +80,7 @@ def _copy_with_generated_adapter(
         (destination / "integration.py").write_text(source, encoding="utf-8")
     else:
         shutil.copyfile(_SOLUTION_PATH, destination / "integration.py")
+    shutil.copyfile(_DIAGNOSTIC_SOLUTION_PATH, destination / "diagnostic_case.json")
     return destination
 
 
@@ -242,6 +246,21 @@ class TestEvidenceGateContract:
         assert not decision.passed
         assert decision.missing_requirements == missing
         assert decision.evidence_hits == selected
+
+    def test_rejects_a_company_label_that_does_not_match_the_evidence_identity(
+        self, completed_module: ModuleType
+    ) -> None:
+        nvidia = next(hit for hit in _document_hits() if hit.company == "NVIDIA")
+        forged = nvidia.model_copy(update={"company": "Schneider Electric"})
+
+        decision = completed_module.evaluate_student_evidence_gate((nvidia, forged))
+
+        assert not decision.passed
+        assert decision.coverage == {
+            "NVIDIA": ("document",),
+            "Schneider Electric": (),
+        }
+        assert decision.missing_requirements == ("Schneider Electric document evidence",)
 
 
 class TestPublicViewContract:
@@ -425,7 +444,7 @@ def _failure_lines(completed: subprocess.CompletedProcess[str]) -> list[str]:
     return [line for line in completed.stdout.splitlines() if line.startswith("FAIL ")]
 
 
-def test_starter_verifier_reports_only_the_four_incomplete_groups() -> None:
+def test_starter_verifier_reports_four_incomplete_groups_and_the_regressed_diagnostic() -> None:
     completed = _run_verifier(_STUDENT_DIR)
 
     assert completed.returncode != 0
@@ -434,10 +453,92 @@ def test_starter_verifier_reports_only_the_four_incomplete_groups() -> None:
         "FAIL register_analyst_capabilities: incomplete — Apply discovery through the approved read-tool policy.",
         "FAIL evaluate_student_evidence_gate: incomplete — Require document evidence for both companies.",
         "FAIL assemble_public_briefing_view: incomplete — Use the display-safe public view boundary.",
+        "FAIL diagnostic_case: regressed evidence routing still drops Schneider Electric.",
     ]
-    assert tuple(line.split(":", 1)[0].removeprefix("FAIL ") for line in _failure_lines(completed)) == _SEAM_NAMES
+    assert tuple(
+        line.split(":", 1)[0].removeprefix("FAIL ")
+        for line in _failure_lines(completed)[:4]
+    ) == _SEAM_NAMES
     assert "CAPSTONE_PASS" not in completed.stdout
     assert completed.stderr == ""
+
+
+def test_diagnostic_command_persists_inspects_and_then_passes_after_the_correction(
+    tmp_path: Path,
+) -> None:
+    student_dir = tmp_path / "student"
+    shutil.copytree(_STUDENT_DIR, student_dir)
+    artifact_dir = tmp_path / "diagnostic-artifacts"
+    command = [
+        sys.executable,
+        str(student_dir / "diagnose.py"),
+        "run",
+        "--artifact-dir",
+        str(artifact_dir),
+    ]
+    first = subprocess.run(
+        command,
+        cwd=_PROJECT_ROOT,
+        env=_subprocess_environment(),
+        text=True,
+        capture_output=True,
+        check=False,
+        timeout=60,
+    )
+    inspected = subprocess.run(
+        [
+            sys.executable,
+            str(student_dir / "diagnose.py"),
+            "inspect",
+            "--artifact-dir",
+            str(artifact_dir),
+        ],
+        cwd=_PROJECT_ROOT,
+        env=_subprocess_environment(),
+        text=True,
+        capture_output=True,
+        check=False,
+        timeout=60,
+    )
+
+    assert first.returncode != 0
+    assert "DIAGNOSTIC_STATUS=insufficient_evidence" in first.stdout
+    assert "MLFLOW_RUN_ID=" in first.stdout
+    assert "MLFLOW_TRACE_ID=" in first.stdout
+    assert inspected.returncode == 0
+    assert "FAILURE_OWNER=evidence_gate" in inspected.stdout
+
+    shutil.copyfile(_DIAGNOSTIC_SOLUTION_PATH, student_dir / "diagnostic_case.json")
+    corrected = subprocess.run(
+        command,
+        cwd=_PROJECT_ROOT,
+        env=_subprocess_environment(),
+        text=True,
+        capture_output=True,
+        check=False,
+        timeout=60,
+    )
+    corrected_inspection = subprocess.run(
+        [
+            sys.executable,
+            str(student_dir / "diagnose.py"),
+            "inspect",
+            "--artifact-dir",
+            str(artifact_dir),
+        ],
+        cwd=_PROJECT_ROOT,
+        env=_subprocess_environment(),
+        text=True,
+        capture_output=True,
+        check=False,
+        timeout=60,
+    )
+
+    assert corrected.returncode == 0, corrected.stdout + corrected.stderr
+    assert "DIAGNOSTIC_STATUS=completed" in corrected.stdout
+    assert "RELEASE=passed" in corrected.stdout
+    assert corrected_inspection.returncode == 0
+    assert "FAILURE_OWNER=none" in corrected_inspection.stdout
 
 
 def test_completed_copy_passes_full_verifier_with_exactly_one_marker(

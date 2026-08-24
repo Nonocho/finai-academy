@@ -273,6 +273,81 @@ def test_custom_question_stays_in_the_two_company_universe_and_keeps_result_shap
         for observation in result.observations
         if observation.status == "ok" and observation.result is not None
     } == {"NVIDIA", "Schneider Electric"}
+    assert "operating-growth" in result.initial_plan[0].purpose.casefold()
+    assert result.briefing is not None
+    assert "operating-growth" in result.briefing.executive_summary.casefold()
+    relevance = next(
+        metric
+        for metric in result.deterministic_evaluation.metrics
+        if metric.name == "answer_relevance"
+    )
+    assert relevance.value == 1.0
+
+
+def test_supported_valuation_question_changes_the_visible_plan_and_briefing() -> None:
+    request = ResearchRequest(
+        mode="custom",
+        question="Compare NVIDIA and Schneider Electric valuation using P/E evidence.",
+        companies=("NVIDIA", "Schneider Electric"),
+        provider="recorded",
+        model="recorded-capstone-v1",
+        data_mode="certified",
+    )
+
+    result = build_reference_copilot().run(request)
+
+    assert result.status == "completed"
+    assert "valuation" in result.initial_plan[0].purpose.casefold()
+    assert result.briefing is not None
+    assert "valuation" in result.briefing.executive_summary.casefold()
+    relevance = next(
+        metric
+        for metric in result.deterministic_evaluation.metrics
+        if metric.name == "answer_relevance"
+    )
+    assert relevance.value == 1.0
+
+
+def test_revenue_growth_evidence_question_uses_the_specific_revenue_intent() -> None:
+    request = ResearchRequest(
+        mode="custom",
+        question="Compare the revenue growth evidence for both companies.",
+        companies=("NVIDIA", "Schneider Electric"),
+        provider="recorded",
+        model="recorded-capstone-v1",
+        data_mode="certified",
+    )
+
+    result = build_reference_copilot().run(request)
+
+    assert result.status == "completed"
+    assert result.briefing is not None
+    assert "revenue-growth" in result.briefing.executive_summary.casefold()
+
+
+def test_unsupported_custom_question_stops_before_tools_and_scores_zero_relevance() -> None:
+    request = ResearchRequest(
+        mode="custom",
+        question="Should I buy NVIDIA, and what price target should I use?",
+        companies=("NVIDIA", "Schneider Electric"),
+        provider="recorded",
+        model="recorded-capstone-v1",
+        data_mode="certified",
+    )
+
+    result = build_reference_copilot().run(request)
+
+    assert result.status == "plan_blocked"
+    assert result.observations == ()
+    assert result.briefing is None
+    assert result.trajectory[-1].summary == "unsupported_question"
+    assert result.trajectory[-1].failure_owner == "planner"
+    relevance = next(
+        metric
+        for metric in result.deterministic_evaluation.metrics
+        if metric.name == "answer_relevance"
+    )
+    assert relevance.value == 0.0
 
 
 def test_custom_question_with_an_unapproved_company_is_blocked() -> None:

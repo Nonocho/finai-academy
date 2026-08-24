@@ -18,6 +18,16 @@ from finai_academy.capstone.persistence import (
 from finai_academy.capstone.service import build_reference_copilot
 
 
+class _MissingSchneiderRetriever:
+    def __init__(self, wrapped: object) -> None:
+        self._wrapped = wrapped
+
+    def search(self, company: str, query: str, top_k: int = 2):
+        if company == "Schneider Electric":
+            return ()
+        return self._wrapped.search(company, query, top_k)
+
+
 def completed_result():
     return build_reference_copilot(run_id_factory=lambda: "analysis-run-001").run(
         ResearchRequest.reference()
@@ -34,6 +44,30 @@ def test_persisted_run_and_trace_share_the_analysis_identity(tmp_path: Path) -> 
     assert references.trace_id
     assert references.analysis_run_id == result.run_id
     assert references.tracking_uri.startswith("sqlite:")
+
+
+def test_insufficient_evidence_trace_persists_the_failure_owner(tmp_path: Path) -> None:
+    tracking_directory = tmp_path / "capstone-mlflow"
+    complete = build_reference_copilot()
+    result = build_reference_copilot(
+        retriever=_MissingSchneiderRetriever(complete.retriever)
+    ).run(ResearchRequest.reference())
+    references = CapstoneRunStore(tracking_directory).persist(result)
+    mlflow.flush_trace_async_logging(terminate=True)
+    client = MlflowClient(
+        tracking_uri=f"sqlite:///{(tracking_directory / 'mlflow.db').resolve()}"
+    )
+    run = client.get_run(references.run_id)
+    traces = mlflow.search_traces(
+        run_id=references.run_id,
+        locations=[run.info.experiment_id],
+        return_type="list",
+        flush=True,
+    )
+    root = next(span for span in traces[0].data.spans if span.parent_id is None)
+
+    assert result.status == "insufficient_evidence"
+    assert root.outputs["failure_owner"] == "evidence_gate"
 
 
 def test_sqlite_run_contains_metrics_release_trajectory_briefing_and_datasets(

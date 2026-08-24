@@ -167,8 +167,10 @@
       "assemble_public_briefing_view"
     ],
     "incomplete_group_count": 4,
+    "starter_diagnostic_failed": true,
     "starter_marker_count": 0,
     "solved_exit_zero": true,
+    "solved_diagnostic_passed": true,
     "solved_marker_count": 1
   },
   "mlflow": {
@@ -191,8 +193,8 @@
     ],
     "public_artifacts_validated": true,
     "privacy_audit": {
-      "sqlite_text_values_scanned": 1145,
-      "artifact_files_scanned": 27
+      "sqlite_metadata_scanned": true,
+      "required_artifacts_scanned": true
     }
   },
   "repository": {

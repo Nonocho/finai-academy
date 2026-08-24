@@ -111,6 +111,8 @@ def test_certification_artifact_records_all_mandatory_gates(certification_runs) 
     assert payload["student"]["starter_launches"] is True
     assert payload["student"]["incomplete_groups"] == _INCOMPLETE_GROUPS
     assert payload["student"]["incomplete_group_count"] == 4
+    assert payload["student"]["starter_diagnostic_failed"] is True
+    assert payload["student"]["solved_diagnostic_passed"] is True
     assert payload["student"]["solved_exit_zero"] is True
     assert payload["student"]["solved_marker_count"] == 1
     assert payload["mlflow"]["persisted"] is True

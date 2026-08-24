@@ -52,7 +52,17 @@ def evaluate_student_evidence_gate(
     """Require document evidence for both companies in the fixed mission."""
 
     companies = ("NVIDIA", "Schneider Electric")
-    covered = {hit.company for hit in hits}
+    retriever = build_certified_retriever()
+    certified_identities = {
+        (hit.company, hit.evidence_id, hit.source_reference)
+        for company in companies
+        for hit in retriever.search(company, "operating growth")
+    }
+    covered = {
+        hit.company
+        for hit in hits
+        if (hit.company, hit.evidence_id, hit.source_reference) in certified_identities
+    }
     missing = tuple(
         f"{company} document evidence" for company in companies if company not in covered
     )

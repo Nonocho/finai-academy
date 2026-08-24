@@ -30,7 +30,7 @@ The result shows the validated plan, tool activity, typed recovery and replan, e
 - [STUDENT_BRIEF.md](STUDENT_BRIEF.md) is the learner handout.
 - [INSTRUCTOR_GUIDE.md](INSTRUCTOR_GUIDE.md) is the facilitation, correction, and recovery runbook.
 
-The reference interface has two modes: **Reference mission** for the fixed, certified comparison and **Ask the analyst** for a bounded question in the NVIDIA and Schneider Electric research universe. **Certified snapshots** are versioned course data. **Optional live enrichment** is visibly separate and may use Tavily when configured; it never determines classroom success.
+The reference interface has two modes: **Reference mission** for the fixed, certified comparison and **Ask the analyst** for a bounded operating-growth, valuation, or revenue-growth question in the NVIDIA and Schneider Electric universe. Unsupported questions stop before tools. The app uses **Certified snapshots** only, including when OpenAI or Ollama is selected.
 
 The Streamlit server in Terminal 1 stays running. Start the student route in a new terminal, or stop the server with `Ctrl+C` before reusing that terminal:
 
@@ -46,7 +46,7 @@ The Streamlit server in Terminal 2 stays running. Run the verifier in another te
 uv run python final-project/student/verify.py
 ```
 
-The verifier prints one standalone `CAPSTONE_PASS` line only after all four seams, the recorded mission, citations, deterministic metrics, and local persistence pass.
+The verifier prints one standalone `CAPSTONE_PASS` line only after all four seams, the diagnostic correction, the recorded mission, citations, deterministic metrics, and local persistence pass.
 
 ## Provider choices and setup
 
@@ -80,9 +80,9 @@ uv sync --extra capstone --extra ai
 
 For an Ollama route, install Ollama, run `ollama pull qwen3:4b`, then set `FINAI_MODEL_PROVIDER=ollama` and `FINAI_CHAT_MODEL=qwen3:4b` in `.env`.
 
-### OpenAI and optional Tavily
+### OpenAI, Ollama, and Tavily scope
 
-For OpenAI, set `FINAI_MODEL_PROVIDER=openai` and add your own `OPENAI_API_KEY` to `.env`. Do not commit `.env` or paste keys into course files. Optional live enrichment checks `TAVILY_API_KEY`; leaving it unset keeps the certified route fully available. Never use a live provider or Tavily as a substitute for the recorded classroom route.
+For OpenAI, set `FINAI_MODEL_PROVIDER=openai` and add your own `OPENAI_API_KEY` to `.env`. Do not commit `.env` or paste keys into course files. OpenAI and Ollama may select and order host-certified statement units, but they do not replace evidence or policy. The repository includes a tested standalone Tavily adapter for earlier tool lessons; it is deliberately not composed into this capstone Streamlit route, so the app makes no live-news claim and needs no `TAVILY_API_KEY`.
 
 ## Output boundary
 

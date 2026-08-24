@@ -101,15 +101,14 @@ def test_canonical_readme_has_the_classroom_start_and_route_boundaries() -> None
     for phrase in (
         "Recorded demo",
         "Certified snapshots",
-        "Optional live enrichment",
         "Reference mission",
         "Ask the analyst",
         "Ollama",
         "OpenAI",
         "Tavily",
+        "not composed into this capstone Streamlit route",
         ".env.example",
         "OPENAI_API_KEY",
-        "TAVILY_API_KEY",
         "FINAI_MODEL_PROVIDER",
         "qwen3:4b",
         "macOS",
@@ -141,6 +140,11 @@ def test_student_handout_defines_the_fixed_challenge_without_solution_bodies() -
         "30-minute",
         "credential",
         "path-free",
+        "diagnose.py run",
+        "diagnose.py inspect",
+        "diagnostic_case.json",
+        "MLFLOW_RUN_ID",
+        "evidence_gate",
     ):
         assert phrase in text
     assert "return build_certified_retriever().search" not in text
@@ -164,6 +168,8 @@ def test_instructor_guide_covers_facilitation_correction_and_recovery() -> None:
         "MLflow",
         "trace",
         "failure owner",
+        "student_diagnostic_solution.json",
+        "DIAGNOSTIC_STATUS=completed",
         "recorded fallback",
         "Windows recovery",
         "macOS recovery",

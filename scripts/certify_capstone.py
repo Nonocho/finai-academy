@@ -43,7 +43,10 @@ _INCOMPLETE_GROUPS = (
     "evaluate_student_evidence_gate",
     "assemble_public_briefing_view",
 )
-_EXPECTED_STARTER_FAILURES = tuple(f"FAIL {name}" for name in _INCOMPLETE_GROUPS)
+_EXPECTED_STARTER_FAILURES = (
+    *(f"FAIL {name}" for name in _INCOMPLETE_GROUPS),
+    "FAIL diagnostic_case",
+)
 _MLFLOW_ARTIFACTS = (
     "evidence/briefing.json",
     "evidence/dataset_identities.json",
@@ -287,6 +290,10 @@ def _certify_student() -> dict[str, object]:
         solved_directory = Path(directory) / "student"
         shutil.copytree(_STUDENT_DIRECTORY, solved_directory)
         shutil.copyfile(_SOLUTION_PATH, solved_directory / "integration.py")
+        shutil.copyfile(
+            _PROJECT_ROOT / "final-project/reference/student_diagnostic_solution.json",
+            solved_directory / "diagnostic_case.json",
+        )
         solved = _run_verifier(solved_directory)
     marker_count = solved.stdout.splitlines().count("CAPSTONE_PASS")
     _require(solved.returncode == 0)
@@ -298,8 +305,10 @@ def _certify_student() -> dict[str, object]:
         "starter_launches": True,
         "incomplete_groups": list(_INCOMPLETE_GROUPS),
         "incomplete_group_count": 4,
+        "starter_diagnostic_failed": True,
         "starter_marker_count": 0,
         "solved_exit_zero": True,
+        "solved_diagnostic_passed": True,
         "solved_marker_count": marker_count,
     }
 
@@ -506,8 +515,8 @@ def _readiness_markdown(payload: Mapping[str, Any]) -> str:
         "| --- | --- | --- |",
         "| Recorded reference mission | PASS | Completed with one bounded replan, both-company evidence, valid citation pairs, five 100% metrics, and deterministic release. |",
         "| Streamlit AppTest journey | PASS | Recorded mission renders plan, tools, evidence, citations, trace, release, optional judge, and the exact footer. |",
-        "| Student starter | PASS | Launches with exactly four intended incomplete groups and no success marker. |",
-        "| Solved student copy | PASS | Verifier exits zero and prints exactly one `CAPSTONE_PASS`. |",
+        "| Student starter | PASS | Launches with four intended incomplete groups plus one regressed diagnostic and no success marker. |",
+        "| Solved student copy | PASS | Four seams and the diagnostic correction pass; verifier prints exactly one `CAPSTONE_PASS`. |",
         "| MLflow | PASS | Run, linked trace, five metrics, release decision, and three sanitized public artifacts persisted. |",
         "| Public artifact scan | PASS | Certification outputs contain no credentials or personal filesystem paths. |",
         "",

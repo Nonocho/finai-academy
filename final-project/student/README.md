@@ -24,16 +24,25 @@ The Streamlit server in Terminal 2 stays running. Run the verifier in Terminal 3
 uv run python final-project/student/verify.py
 ```
 
-The starter exits nonzero with one diagnostic per unfinished seam. A complete integration prints diagnostics followed by one standalone `CAPSTONE_PASS` line. Do not print that marker from your function bodies.
+The starter exits nonzero with one diagnostic per unfinished seam plus the deliberate evidence-routing regression. A complete integration and corrected diagnostic print diagnostics followed by one standalone `CAPSTONE_PASS` line. Do not print that marker from your function bodies.
 
 ## Scope
 
-Edit only the four function bodies in `integration.py`:
+For the implementation phase, edit only the four function bodies in `integration.py`:
 
 1. `wire_retriever`
 2. `register_analyst_capabilities`
 3. `evaluate_student_evidence_gate`
 4. `assemble_public_briefing_view`
+
+After those seams pass, the diagnostic phase asks you to edit only `diagnostic_case.json`. Run:
+
+```bash
+uv run python final-project/student/diagnose.py run
+uv run python final-project/student/diagnose.py inspect
+```
+
+Inspect the persisted trace owner, set the deliberate `drop_company` regression to JSON `null`, rerun the diagnostic, then rerun `uv run python final-project/student/verify.py`.
 
 The recorded mission uses repository fixtures only. Keep output path-free and credential-free. Do not add shell commands, provider fallback, trading actions, or learner-controlled process execution.
 

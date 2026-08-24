@@ -27,7 +27,6 @@ _PROVIDERS = {
 }
 _DATA_MODES = {
     "Certified snapshots": "certified",
-    "Optional live enrichment": "live_enrichment",
 }
 _DEFAULT_MODELS = {
     "Recorded demo": "recorded-capstone-v1",
@@ -74,7 +73,6 @@ def render_capstone(
             key="data_mode_selection",
             on_change=_clear_retained_outputs,
         )
-        st.caption(f"Tavily: {integrations.get('tavily', 'Not checked')}")
         st.caption(f"OpenAI: {integrations.get('openai', 'Not checked')}")
         st.caption(f"Ollama: {integrations.get('ollama', 'Not checked')}")
         st.info("Research support only. Not investment advice.")
@@ -140,7 +138,6 @@ def _default_service_factory(request: ResearchRequest) -> FinancialAnalystCopilo
 
 def _default_integration_status() -> dict[str, str]:
     return {
-        "tavily": "Available" if os.environ.get("TAVILY_API_KEY", "").strip() else "Unavailable",
         "openai": "Available" if os.environ.get("OPENAI_API_KEY", "").strip() else "Unavailable",
         "ollama": "Not checked",
     }
@@ -153,11 +150,10 @@ def _render_readiness_strip(
     integrations: Mapping[str, str],
 ) -> None:
     with st.container(border=True):
-        columns = st.columns(4)
+        columns = st.columns(3)
         _render_status_value(columns[0], "Provider", provider)
         _render_status_value(columns[1], "Model", model)
         _render_status_value(columns[2], "Data", data_mode)
-        _render_status_value(columns[3], "Tavily", integrations.get("tavily", "Not checked"))
 
 
 def _render_status_value(column: Any, label: str, value: str) -> None:
@@ -204,7 +200,10 @@ def _render_custom_tab(
     model: str,
     data_mode: str,
 ) -> None:
-    st.caption("Questions are limited to the NVIDIA and Schneider Electric research universe.")
+    st.caption(
+        "Questions are limited to operating-growth, valuation, or revenue-growth evidence "
+        "for NVIDIA and Schneider Electric. Unsupported questions stop before tools."
+    )
     for message in st.session_state.chat_history:
         with st.chat_message(message["role"]):
             st.markdown(message["content"])

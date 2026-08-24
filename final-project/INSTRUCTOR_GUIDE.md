@@ -25,7 +25,7 @@ uv run streamlit run final-project/student/streamlit_app.py
 uv run python final-project/student/verify.py
 ```
 
-Each Streamlit server stays running. Start the next route in its assigned terminal, or stop an active server with `Ctrl+C` before reusing that terminal. Keep the reference sidebar on **Recorded demo** and **Certified snapshots**. This is the certified offline fallback, so it does not need network access, OpenAI, Ollama, or Tavily. Do not claim a live provider or timed rehearsal unless it has been observed. On macOS, copy `.env.example` with `cp .env.example .env`; on Windows PowerShell, use `Copy-Item .env.example .env`. OpenAI requires a learner-owned `OPENAI_API_KEY`; Ollama uses `FINAI_MODEL_PROVIDER=ollama` and `qwen3:4b` when available. `TAVILY_API_KEY` is optional and only supports optional live enrichment.
+Each Streamlit server stays running. Start the next route in its assigned terminal, or stop an active server with `Ctrl+C` before reusing that terminal. Keep the reference sidebar on **Recorded demo** and **Certified snapshots**. This is the certified offline fallback, so it does not need network access, OpenAI, Ollama, or Tavily. Do not claim a live provider or timed rehearsal unless it has been observed. On macOS, copy `.env.example` with `cp .env.example .env`; on Windows PowerShell, use `Copy-Item .env.example .env`. OpenAI requires a learner-owned `OPENAI_API_KEY`; Ollama uses `FINAI_MODEL_PROVIDER=ollama` and `qwen3:4b` when available. The standalone Tavily adapter is not wired into the capstone app.
 
 ## Expected reference output
 
@@ -79,7 +79,17 @@ def evaluate_student_evidence_gate(
     """Require document evidence for both companies in the fixed mission."""
 
     companies = ("NVIDIA", "Schneider Electric")
-    covered = {hit.company for hit in hits}
+    retriever = build_certified_retriever()
+    certified_identities = {
+        (hit.company, hit.evidence_id, hit.source_reference)
+        for company in companies
+        for hit in retriever.search(company, "operating growth")
+    }
+    covered = {
+        hit.company
+        for hit in hits
+        if (hit.company, hit.evidence_id, hit.source_reference) in certified_identities
+    }
     missing = tuple(
         f"{company} document evidence" for company in companies if company not in covered
     )
@@ -102,9 +112,9 @@ def assemble_public_briefing_view(result: ResearchRunResult) -> CapstoneRunView:
 
 ## Diagnostic regression and MLflow trace
 
-The verifier includes a deliberately regressed retrieval case that returns no Schneider Electric evidence. It should produce an evidence-gate block, no briefing, and missing requirement `Schneider Electric document evidence`. The expected failure owner in the public trace is `evidence_gate`, not a provider. Use this to discuss why release is withheld even when part of the route completed.
+After the four seams pass, learners run `uv run python final-project/student/diagnose.py run`. The maintained regression in `diagnostic_case.json` drops Schneider Electric evidence, persists an `insufficient_evidence` run, and prints public MLflow run and trace IDs. Learners then run `uv run python final-project/student/diagnose.py inspect`, identify `evidence_gate` as the root trace failure owner, and explain why no briefing or release was allowed.
 
-For the recorded completed route, persistence records public evidence in local MLflow when the evaluation dependency is installed. Inspect the returned run and trace IDs from the persistence result, then use the local MLflow UI only if it is already configured for the session. Inspect trace inputs, outputs, release decision, trajectory, evidence identities, and briefing artifact. Do not expose local file paths or credentials during the demonstration. If MLflow is unavailable, the analysis output remains valid and the verifier reports the typed persistence state.
+The correction is one bounded integration configuration change: set `drop_company` to JSON `null` in `diagnostic_case.json`. Rerun both commands and confirm `DIAGNOSTIC_STATUS=completed`, `FAILURE_OWNER=none`, and `RELEASE=passed`; then rerun the public verifier. The reference correction is `reference/student_diagnostic_solution.json`. Do not expose local file paths or credentials during the demonstration.
 
 ## Common failures, recorded fallback, and recovery
 
@@ -113,7 +123,7 @@ For the recorded completed route, persistence records public evidence in local M
 | A seam reports incomplete. | Read its verifier diagnostic, give the matching progressive hint, and keep edits inside `integration.py`. |
 | A verifier contract does not complete. | Check return type, company order, and whether the existing certified component was used. |
 | `CAPSTONE_PASS` is missing. | Confirm no learner function prints output and rerun the verifier from the repository root. |
-| OpenAI, Ollama, or Tavily is unavailable. | Select Recorded demo and Certified snapshots. Do not troubleshoot a live route during the challenge. |
+| OpenAI or Ollama is unavailable. | Select Recorded demo and Certified snapshots. Do not troubleshoot a live route during the challenge. Tavily is not part of the app route. |
 | Windows command differs from macOS. | Use Windows recovery: PowerShell `Copy-Item .env.example .env`; continue with the same `uv` commands. |
 | macOS local setup is incomplete. | Use macOS recovery: `cp .env.example .env`, then run `uv sync --extra capstone --extra ai`. |
 

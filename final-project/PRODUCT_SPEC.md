@@ -83,7 +83,7 @@ Capability layer ├── filing search
                  ├── financial facts
                  ├── market prices
                  ├── calculator and FX
-                 └── Tavily news search
+                 └── Tavily news adapter (standalone lesson component, not in the shipped capstone UI)
 ```
 
 At least one capability will also be exposed through an MCP server. MCP is added

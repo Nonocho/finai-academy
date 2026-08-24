@@ -11,7 +11,8 @@ Complete this 60-minute challenge individually or in a pair, followed by a 30-mi
 1. Complete the four function bodies in `final-project/student/integration.py`.
 2. Show the student interface with all four seams ready.
 3. Run the public verifier and show its single standalone `CAPSTONE_PASS` line.
-4. Prepare a short explanation of one seam, the evidence gate, and the public view boundary.
+4. Run and inspect the regressed MLflow diagnostic, assign its failure owner, correct `diagnostic_case.json`, and rerun it.
+5. Prepare a short explanation of one seam, the evidence gate, and the public view boundary.
 
 ## The four seams
 
@@ -47,7 +48,18 @@ uv run streamlit run final-project/student/streamlit_app.py
 uv run python final-project/student/verify.py
 ```
 
-The Streamlit servers in Terminal 1 and Terminal 2 stay running. Start the next command in its assigned terminal, or stop the active server with `Ctrl+C` before reusing a terminal. Use the reference application only to understand the target route. In the student application, each incomplete seam has a named diagnostic. Re-run the verifier after each seam. A public pass requires the four seam contracts, the recorded reference mission, citation integrity, five deterministic release metrics, and local temporary persistence. `CAPSTONE_PASS` comes from `verify.py`; do not print it from a solution function.
+The Streamlit servers in Terminal 1 and Terminal 2 stay running. Start the next command in its assigned terminal, or stop the active server with `Ctrl+C` before reusing a terminal. Use the reference application only to understand the target route. In the student application, each incomplete seam has a named diagnostic. Re-run the verifier after each seam. A public pass requires the four seam contracts, the corrected diagnostic case, the recorded reference mission, citation integrity, five deterministic release metrics, and local temporary persistence. `CAPSTONE_PASS` comes from `verify.py`; do not print it from a solution function.
+
+## MLflow diagnostic exercise
+
+After the four seams pass, run the deliberately regressed case:
+
+```bash
+uv run python final-project/student/diagnose.py run
+uv run python final-project/student/diagnose.py inspect
+```
+
+The first command persists an insufficient-evidence run and prints public `MLFLOW_RUN_ID` and `MLFLOW_TRACE_ID` values. The second reads the persisted root trace so you can identify the final failure owner. Then inspect `final-project/student/diagnostic_case.json`, correct the routing regression by setting `drop_company` to JSON `null`, rerun both commands, and confirm `DIAGNOSTIC_STATUS=completed` and `RELEASE=passed`. Finally rerun the public verifier.
 
 ## Safety constraints
 
@@ -61,7 +73,7 @@ This application provides research support, not investment advice.
 | --- | --- |
 | 15:30–15:40 | Understand mission |
 | 15:40–16:10 | Complete four seams |
-| 16:10–16:25 | Evaluate and diagnose |
+| 16:10–16:25 | Persist, inspect, correct, and rerun the diagnostic |
 | 16:25–16:30 | Prepare demo |
 | 16:30–17:00 | Demonstration and architecture review |
 

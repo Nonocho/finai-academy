@@ -83,6 +83,10 @@ class _IntegratedContractFailure(Exception):
         super().__init__(seam)
 
 
+class _DiagnosticRegression(Exception):
+    pass
+
+
 class _OperationIncomplete(Exception):
     pass
 
@@ -103,6 +107,19 @@ class _MissingSchneiderRetriever:
         self, company: str, query: str, top_k: int = 2
     ) -> tuple[CapstoneEvidenceHit, ...]:
         if company == "Schneider Electric":
+            return ()
+        return self._wrapped.search(company, query, top_k)
+
+
+class _DiagnosticRetriever:
+    def __init__(self, drop_company: str | None) -> None:
+        self._drop_company = drop_company
+        self._wrapped = build_certified_retriever()
+
+    def search(
+        self, company: str, query: str, top_k: int = 2
+    ) -> tuple[CapstoneEvidenceHit, ...]:
+        if company == self._drop_company:
             return ()
         return self._wrapped.search(company, query, top_k)
 
@@ -207,6 +224,20 @@ def _check_evidence_gate(
             coverage=coverage,
             missing=missing,
         )
+    nvidia = nvidia_only[0]
+    forged = nvidia.model_copy(update={"company": "Schneider Electric"})
+    selected = (nvidia, forged)
+    candidate = run_operation(
+        "evaluate_student_evidence_gate",
+        {"hits": [hit.model_dump(mode="json") for hit in selected]},
+    )
+    _validate_evidence_gate(
+        candidate,
+        selected,
+        passed=False,
+        coverage={"NVIDIA": ("document",), "Schneider Electric": ()},
+        missing=("Schneider Electric document evidence",),
+    )
 
 
 def _validate_evidence_gate(
@@ -415,6 +446,29 @@ def _check_persistence(result: ResearchRunResult) -> None:
         raise ValueError("persistence contract failed")
 
 
+def _check_diagnostic_case() -> None:
+    payload = json.loads(Path(__file__).with_name("diagnostic_case.json").read_text())
+    if not isinstance(payload, dict) or set(payload) != {"schema_version", "drop_company"}:
+        raise ValueError("diagnostic case contract failed")
+    if payload["schema_version"] != 1 or payload["drop_company"] not in {
+        None,
+        "Schneider Electric",
+    }:
+        raise ValueError("diagnostic case contract failed")
+    result = build_reference_copilot(
+        retriever=_DiagnosticRetriever(payload["drop_company"]),
+        run_id_factory=lambda: "student-diagnostic-gate",
+    ).run(ResearchRequest.reference())
+    if (
+        result.status == "insufficient_evidence"
+        and result.evidence_gate.missing_requirements
+        == ("Schneider Electric document evidence",)
+    ):
+        raise _DiagnosticRegression
+    if result.status != "completed" or not result.deterministic_evaluation.release_passed:
+        raise ValueError("diagnostic case contract failed")
+
+
 def _serialize_candidate(operation: str, value: object) -> dict[str, object] | None:
     if operation == "wire_retriever":
         if type(value) is not tuple or any(
@@ -602,6 +656,11 @@ def _run_check(name: str, check: Callable[[], None]) -> tuple[bool, str]:
     except _OperationIncomplete:
         hint = _INCOMPLETE_HINTS.get(name, "Complete this integration seam.")
         return False, f"FAIL {name}: incomplete — {hint}"
+    except _DiagnosticRegression:
+        return (
+            False,
+            "FAIL diagnostic_case: regressed evidence routing still drops Schneider Electric.",
+        )
     except BaseException:  # noqa: BLE001 - diagnostics must remain sanitized
         return False, f"FAIL {name}: contract did not complete."
     return True, f"PASS {name}"
@@ -672,6 +731,7 @@ def _parent_main() -> int:
         return 1
 
     trusted_checks: tuple[tuple[str, Callable[[], None]], ...] = (
+        ("diagnostic_case", _check_diagnostic_case),
         ("reference_mission", lambda: _check_reference_mission(require_result())),
         ("citation_integrity", lambda: _check_citation_integrity(require_result())),
         ("deterministic_release", lambda: _check_release(require_result())),

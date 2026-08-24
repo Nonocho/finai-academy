@@ -5,7 +5,7 @@ from __future__ import annotations
 import json
 from collections.abc import Callable, Mapping, Sequence
 from time import perf_counter
-from typing import TYPE_CHECKING, Any, Protocol
+from typing import TYPE_CHECKING, Any, Literal, Protocol
 from uuid import uuid4
 
 from pydantic import BaseModel, ConfigDict, Field
@@ -49,6 +49,7 @@ if TYPE_CHECKING:
     from finai_academy.capstone.model_gateway import StructuredModel
 
 _COMPANIES = ("NVIDIA", "Schneider Electric")
+_QuestionIntent = Literal["reference", "operating_growth", "valuation", "revenue_growth"]
 
 _INITIAL_PLAN = (
     PlanStep(
@@ -201,8 +202,10 @@ class FinancialAnalystCopilot:
         run_started = self._clock()
         trajectory: list[PublicTraceEvent] = []
         observations: list[ResearchObservation] = []
-        initial_plan: tuple[PlanStep, ...] = self._initial_plan
+        question_intent = _classify_question_intent(request)
+        initial_plan: tuple[PlanStep, ...] = self._plan_for_intent(question_intent)
         final_plan: tuple[PlanStep, ...] = initial_plan
+        replacement_tail = self._replacement_for_intent(question_intent)
         replan_count = 0
 
         self._event(
@@ -211,6 +214,22 @@ class FinancialAnalystCopilot:
             status="ok",
             summary=f"Prepared {len(initial_plan)} bounded research steps.",
         )
+
+        if question_intent is None:
+            return self._result(
+                request=request,
+                status=RunStatus.PLAN_BLOCKED,
+                initial_plan=(),
+                final_plan=(),
+                observations=(),
+                trajectory=self._blocked_event(
+                    trajectory,
+                    summary="unsupported_question",
+                    owner="planner",
+                ),
+                replan_count=0,
+                run_started=run_started,
+            )
 
         if request.data_mode != "certified":
             return self._result(
@@ -364,7 +383,7 @@ class FinancialAnalystCopilot:
                 )
                 break
 
-            candidate = final_plan[: current_index + 1] + self._replacement_tail
+            candidate = final_plan[: current_index + 1] + replacement_tail
             if not self._replacement_is_valid(
                 executed_prefix=final_plan[: current_index + 1],
                 candidate=candidate,
@@ -439,7 +458,11 @@ class FinancialAnalystCopilot:
                 evidence_gate=evidence_gate,
             )
 
-        briefing = _build_briefing(tuple(observations), evidence_gate)
+        briefing = _build_briefing(
+            tuple(observations),
+            evidence_gate,
+            question_intent=question_intent,
+        )
         if request.provider != "recorded":
             try:
                 briefing = self._apply_live_wording(request, briefing)
@@ -473,6 +496,36 @@ class FinancialAnalystCopilot:
             run_started=run_started,
             evidence_gate=evidence_gate,
             briefing=briefing,
+        )
+
+    def _plan_for_intent(
+        self, question_intent: _QuestionIntent | None
+    ) -> tuple[PlanStep, ...]:
+        if question_intent in {None, "reference"}:
+            return self._initial_plan
+        label = _intent_label(question_intent)
+        return tuple(
+            step.model_copy(
+                update={
+                    "purpose": f"Use {step.expected_evidence[0]} for the submitted {label} question."
+                }
+            )
+            for step in self._initial_plan
+        )
+
+    def _replacement_for_intent(
+        self, question_intent: _QuestionIntent | None
+    ) -> tuple[PlanStep, ...]:
+        if question_intent in {None, "reference"}:
+            return self._replacement_tail
+        label = _intent_label(question_intent)
+        return tuple(
+            step.model_copy(
+                update={
+                    "purpose": f"Use {step.expected_evidence[0]} for the submitted {label} question."
+                }
+            )
+            for step in self._replacement_tail
         )
 
     def _apply_live_wording(
@@ -953,9 +1006,47 @@ def _evaluate_evidence(observations: Sequence[ResearchObservation]) -> EvidenceG
     )
 
 
+def _classify_question_intent(request: ResearchRequest) -> _QuestionIntent | None:
+    """Map a custom question to one small certified intent or reject it explicitly."""
+
+    if request.mode == "reference":
+        return "reference"
+    question = request.question.casefold()
+    padded = f" {question} "
+    prohibited = (
+        " buy ",
+        " sell ",
+        "recommend",
+        "price target",
+        "target price",
+        "forecast",
+        "predict",
+    )
+    if any(term in padded for term in prohibited):
+        return None
+    if any(term in question for term in ("revenue growth", "revenue evidence")):
+        return "revenue_growth"
+    if any(term in question for term in ("operating-growth", "operating growth", "growth evidence")):
+        return "operating_growth"
+    if any(term in question for term in ("valuation", "p/e", "price-to-earnings", "multiple")):
+        return "valuation"
+    return None
+
+
+def _intent_label(question_intent: _QuestionIntent) -> str:
+    return {
+        "reference": "two-company research",
+        "operating_growth": "operating-growth",
+        "valuation": "valuation",
+        "revenue_growth": "revenue-growth",
+    }[question_intent]
+
+
 def _build_briefing(
     observations: Sequence[ResearchObservation],
     evidence_gate: EvidenceGateDecision,
+    *,
+    question_intent: _QuestionIntent = "reference",
 ) -> CapstoneBriefing:
     facts: list[CitedFact] = []
     for observation in observations:
@@ -995,8 +1086,18 @@ def _build_briefing(
             )
         )
     sources = tuple(dict.fromkeys(fact.source_reference for fact in facts))
+    executive_summary = (
+        "Evidence-backed comparison prepared for the bounded research request."
+        if question_intent == "reference"
+        else f"Evidence-backed {_intent_label(question_intent)} comparison prepared for the submitted question."
+    )
+    interpretation = (
+        "The verified evidence supports a qualified operating-growth comparison, not a like-for-like ranking."
+        if question_intent in {"reference", "operating_growth"}
+        else f"The verified evidence supports a qualified {_intent_label(question_intent)} comparison, not an investment recommendation."
+    )
     return CapstoneBriefing(
-        executive_summary="Evidence-backed comparison prepared for the bounded research request.",
+        executive_summary=executive_summary,
         cited_facts=tuple(facts),
         company_evidence={
             company: tuple(hit for hit in evidence_gate.evidence_hits if hit.company == company)
@@ -1005,9 +1106,7 @@ def _build_briefing(
         cross_company_observations=(
             "Direct comparability is limited by different reporting periods, currencies, and business mixes.",
         ),
-        interpretation=(
-            "The verified evidence supports a qualified operating-growth comparison, not a like-for-like ranking.",
-        ),
+        interpretation=(interpretation,),
         limitations=(
             "The companies report in different currencies and periods.",
             "Their business mixes and disclosed operating measures are not directly comparable.",
@@ -1050,10 +1149,16 @@ def _evaluate_run(
         and replan_count <= request.max_replans
         and len(successful_signatures) == len(set(successful_signatures))
     )
-    relevance = (
+    question_intent = _classify_question_intent(request)
+    relevance = bool(
         status == RunStatus.COMPLETED
         and briefing is not None
+        and question_intent is not None
         and {fact.company for fact in briefing.cited_facts} == set(_COMPANIES)
+        and (
+            question_intent == "reference"
+            or _intent_label(question_intent) in briefing.executive_summary.casefold()
+        )
     )
     completeness = bool(
         briefing is not None

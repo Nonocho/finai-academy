@@ -7,6 +7,7 @@ from streamlit.testing.v1 import AppTest
 
 from finai_academy import capstone
 from finai_academy.capstone import ResearchRequest, build_reference_copilot
+from finai_academy.capstone.views import build_capstone_request
 
 
 def _app(service_factory, integration_status):
@@ -68,8 +69,7 @@ def test_renderer_is_exported_and_both_product_paths_are_visible() -> None:
     assert "Recorded demo" in app.selectbox[0].options
     assert "Ollama" in app.selectbox[0].options
     assert "OpenAI" in app.selectbox[0].options
-    assert "Certified snapshots" in app.selectbox[1].options
-    assert "Optional live enrichment" in app.selectbox[1].options
+    assert app.selectbox[1].options == ["Certified snapshots"]
     assert "First Finance - Arnaud Demes" in text
     assert "Research support only. Not investment advice." in text
     footer = next(
@@ -103,9 +103,6 @@ def test_route_changes_clear_retained_results_and_show_immutable_run_route() -> 
     app = provider.select("OpenAI").run()
     model = next(item for item in app.text_input if item.key == "model_openai")
     app = model.input("gpt-5-mini-reviewed").run()
-    data_mode = next(item for item in app.selectbox if item.key == "data_mode_selection")
-    app = data_mode.select("Optional live enrichment").run()
-
     state = app.session_state.filtered_state
     assert state["reference_run"] is None
     assert state["custom_run"] is None
@@ -316,10 +313,62 @@ def test_missing_integrations_are_truthful_and_never_claim_a_silent_route() -> N
     ).run()
     text = _rendered_text(app)
 
-    assert "Tavily: Unavailable" in text
+    assert "Tavily" not in text
     assert "OpenAI: Unavailable" in text
     assert "Ollama: Unavailable" in text
     assert "fallback" not in text.casefold()
+
+
+def test_default_streamlit_factory_routes_openai_and_ollama_through_provider_builder(
+    monkeypatch,
+) -> None:
+    from finai_academy.capstone import streamlit_ui
+
+    routed: list[ResearchRequest] = []
+
+    def recording_builder(request: ResearchRequest, settings: object):
+        del settings
+        routed.append(request)
+        return build_reference_copilot()
+
+    monkeypatch.setattr(streamlit_ui, "build_copilot_for_request", recording_builder)
+
+    for expected in ("openai", "ollama"):
+        request = build_capstone_request(
+            mode="custom",
+            question="Compare the operating-growth evidence.",
+            provider=expected,
+            model="gpt-5-mini" if expected == "openai" else "qwen3:4b",
+            data_mode="certified",
+        )
+        service = streamlit_ui._default_service_factory(request)
+
+        assert service is not None
+        assert routed[-1].provider == expected
+
+
+def test_reference_entrypoint_uses_the_default_routed_factory(monkeypatch) -> None:
+    from finai_academy.capstone import streamlit_ui
+
+    routed: list[ResearchRequest] = []
+
+    def recording_builder(request: ResearchRequest, settings: object):
+        del settings
+        routed.append(request)
+        return build_reference_copilot()
+
+    monkeypatch.setattr(streamlit_ui, "build_copilot_for_request", recording_builder)
+    entrypoint = Path(__file__).parents[1] / "final-project" / "reference" / "streamlit_app.py"
+    app = AppTest.from_file(entrypoint).run()
+    provider = next(item for item in app.selectbox if item.key == "provider_selection")
+    app = provider.select("OpenAI").run()
+    question = next(item for item in app.text_input if item.key == "custom_question")
+    app = question.input("Compare the operating-growth evidence.").run()
+    submit = next(item for item in app.button if item.key == "ask_analyst")
+    app = submit.click().run()
+
+    assert not app.exception
+    assert routed and routed[-1].provider == "openai"
 
 
 def test_session_state_is_json_compatible_and_custom_request_stays_bounded() -> None:

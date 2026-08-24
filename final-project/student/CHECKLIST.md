@@ -2,6 +2,7 @@
 
 ## 15:30–15:40: understand mission
 
+- [ ] Keep the certified recorded route as the offline classroom baseline.
 - [ ] Read [../STUDENT_BRIEF.md](../STUDENT_BRIEF.md) and identify the four seams.
 - [ ] Run `uv sync --extra capstone --extra ai` from the repository root.
 - [ ] Launch `uv run streamlit run final-project/student/streamlit_app.py` in Terminal 2.
@@ -19,9 +20,11 @@
 
 ## 16:10–16:25: evaluate and diagnose
 
-- [ ] Confirm the recorded reference mission passes offline.
-- [ ] Confirm citation integrity and five deterministic metrics pass.
-- [ ] Confirm local persistence passes without exposing a path.
+- [ ] Run `uv run python final-project/student/diagnose.py run` and record the public run and trace IDs.
+- [ ] Run `uv run python final-project/student/diagnose.py inspect` and assign the final failure owner.
+- [ ] Correct only `diagnostic_case.json` by setting `drop_company` to JSON `null`.
+- [ ] Rerun the diagnostic and confirm `DIAGNOSTIC_STATUS=completed` and `RELEASE=passed`.
+- [ ] Rerun the verifier and confirm citation integrity, five metrics, and local persistence pass.
 - [ ] Confirm stdout contains one standalone `CAPSTONE_PASS` and stderr is empty.
 - [ ] Confirm no API key, network connection, Tavily, or Ollama is required.
 
