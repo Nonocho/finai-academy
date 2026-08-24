@@ -279,8 +279,8 @@ def test_lesson11_deck_has_the_complete_sourced_concept_route() -> None:
             for name in names
             if name.startswith("ppt/notesSlides/notesSlide") and name.endswith(".xml")
         )
-        assert len(slide_names) == 9
-        assert len(notes_names) == 9
+        assert len(slide_names) == 11
+        assert len(notes_names) == 11
 
         visible_text = "\n".join(
             "".join(
@@ -301,7 +301,7 @@ def test_lesson11_deck_has_the_complete_sourced_concept_route() -> None:
             for name in notes_names
         )
 
-    assert visible_text.count("First Finance - Arnaud Demes") == 9
+    assert visible_text.count("First Finance - Arnaud Demes") == 11
     assert "—" not in visible_text
     for marker in (
         "Plan-and-Execute Financial Analyst",
@@ -317,9 +317,9 @@ def test_lesson11_deck_has_the_complete_sourced_concept_route() -> None:
         "LESSON 12",
     ):
         assert marker.casefold() in visible_text.casefold()
-    assert notes_text.count("[Sources]") == 9
-    assert notes_text.count("[/Sources]") == 9
-    assert notes_text.count("chapters/11-plan-and-execute-analyst.md") == 9
+    assert notes_text.count("[Sources]") == 11
+    assert notes_text.count("[/Sources]") == 11
+    assert notes_text.count("chapters/11-plan-and-execute-analyst.md") == 11
 
 
 def test_lesson11_deck_shares_central_host_state_across_four_roles() -> None:

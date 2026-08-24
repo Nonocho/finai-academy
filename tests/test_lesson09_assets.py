@@ -165,8 +165,8 @@ def test_lesson09_deck_is_visual_simple_and_fully_sourced() -> None:
     note_texts = _pptx_part_texts("ppt/notesSlides/notesSlide")
     joined = " ".join(slide_texts)
 
-    assert len(slide_texts) == 9
-    assert len(note_texts) == 9
+    assert len(slide_texts) == 11
+    assert len(note_texts) == 11
     assert all("First Finance - Arnaud Demes" in text for text in slide_texts)
     assert all("[Sources]" in text and "[/Sources]" in text for text in note_texts)
     assert "—" not in joined

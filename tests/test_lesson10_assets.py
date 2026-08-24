@@ -197,8 +197,8 @@ def test_lesson10_deck_has_the_complete_sourced_concept_route() -> None:
             for name in names
             if name.startswith("ppt/notesSlides/notesSlide") and name.endswith(".xml")
         )
-        assert len(slide_names) == 9
-        assert len(notes_names) == 9
+        assert len(slide_names) == 11
+        assert len(notes_names) == 11
 
         visible_text = "\n".join(
             "".join(
@@ -219,7 +219,7 @@ def test_lesson10_deck_has_the_complete_sourced_concept_route() -> None:
             for name in notes_names
         )
 
-    assert visible_text.count("First Finance - Arnaud Demes") == 9
+    assert visible_text.count("First Finance - Arnaud Demes") == 11
     assert "—" not in visible_text
     for marker in (
         "Build a Financial MCP",
@@ -240,7 +240,7 @@ def test_lesson10_deck_has_the_complete_sourced_concept_route() -> None:
         "LESSON 11",
     ):
         assert marker.casefold() in visible_text.casefold()
-    assert notes_text.count("[Sources]") == 9
-    assert notes_text.count("[/Sources]") == 9
+    assert notes_text.count("[Sources]") == 11
+    assert notes_text.count("[/Sources]") == 11
     assert "chapters/10-financial-mcp.md" in notes_text
     assert "https://modelcontextprotocol.io" in notes_text

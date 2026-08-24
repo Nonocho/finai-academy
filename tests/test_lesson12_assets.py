@@ -429,8 +429,8 @@ def test_lesson12_deck_has_the_complete_sourced_concept_route() -> None:
             if name.startswith("ppt/notesSlides/notesSlide")
             and name.endswith(".xml")
         )
-        assert len(slide_names) == 9
-        assert len(notes_names) == 9
+        assert len(slide_names) == 11
+        assert len(notes_names) == 11
 
         visible_text = "\n".join(
             "".join(
@@ -451,7 +451,7 @@ def test_lesson12_deck_has_the_complete_sourced_concept_route() -> None:
             for name in notes_names
         )
 
-    assert visible_text.count("First Finance - Arnaud Demes") == 9
+    assert visible_text.count("First Finance - Arnaud Demes") == 11
     assert "—" not in visible_text
     for marker in (
         "Evaluating Agentic Systems with MLflow",
@@ -470,11 +470,11 @@ def test_lesson12_deck_has_the_complete_sourced_concept_route() -> None:
         "CAPSTONE",
     ):
         assert marker.casefold() in visible_text.casefold()
-    assert notes_text.count("Instructor purpose:") == 9
-    assert notes_text.count("Planned timing:") == 9
-    assert notes_text.count("[Sources]") == 9
-    assert notes_text.count("[/Sources]") == 9
-    assert notes_text.count("chapters/12-evaluating-agentic-systems.md") == 9
+    assert notes_text.count("Instructor purpose:") == 11
+    assert notes_text.count("Planned timing:") == 11
+    assert notes_text.count("[Sources]") == 11
+    assert notes_text.count("[/Sources]") == 11
+    assert notes_text.count("chapters/12-evaluating-agentic-systems.md") == 11
     for source_url in (
         "https://mlflow.org/docs/latest/genai/tracing/",
         "https://mlflow.org/docs/latest/genai/eval-monitor/quickstart/",
