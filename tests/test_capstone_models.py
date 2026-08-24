@@ -6,6 +6,7 @@ from pydantic import ValidationError
 
 from finai_academy.capstone import (
     CapstoneBriefing,
+    CapstoneEvidenceHit,
     CitedFact,
     DeterministicEvaluation,
     EvidenceGateDecision,
@@ -42,28 +43,61 @@ def complete_evaluation(*, release_passed: bool = True) -> DeterministicEvaluati
     )
 
 
-def sample_briefing() -> CapstoneBriefing:
-    evidence = {
-        "NVIDIA": (),
-        "Schneider Electric": (),
-    }
+def reference_evidence() -> tuple[CapstoneEvidenceHit, CapstoneEvidenceHit]:
+    return (
+        CapstoneEvidenceHit(
+            company="NVIDIA",
+            text="NVIDIA reported operating growth.",
+            evidence_id="nvidia-fy2026-growth",
+            document_id="nvidia-fy2026-results",
+            section="Operating results",
+            period="FY2026",
+            source_reference="NVIDIA FY2026 results",
+        ),
+        CapstoneEvidenceHit(
+            company="Schneider Electric",
+            text="Schneider Electric reported operating growth.",
+            evidence_id="schneider-fy2025-growth",
+            document_id="schneider-fy2025-results",
+            section="Financial results",
+            period="FY2025",
+            source_reference="Schneider Electric FY2025 results",
+        ),
+    )
+
+
+def sample_briefing(
+    *,
+    company_evidence: dict[str, tuple[CapstoneEvidenceHit, ...]] | None = None,
+    cited_facts: tuple[CitedFact, ...] | None = None,
+) -> CapstoneBriefing:
+    nvidia_hit, schneider_hit = reference_evidence()
+    facts = cited_facts or (
+        CitedFact(
+            claim="NVIDIA published an operating-growth statement.",
+            company="NVIDIA",
+            provenance_kind="document",
+            source_reference=nvidia_hit.source_reference,
+            evidence_id=nvidia_hit.evidence_id,
+        ),
+        CitedFact(
+            claim="Schneider Electric published an operating-growth statement.",
+            company="Schneider Electric",
+            provenance_kind="document",
+            source_reference=schneider_hit.source_reference,
+            evidence_id=schneider_hit.evidence_id,
+        ),
+    )
     return CapstoneBriefing(
         executive_summary="Both companies have documented operating-growth evidence.",
-        cited_facts=(
-            CitedFact(
-                claim="NVIDIA published an operating-growth statement.",
-                company="NVIDIA",
-                provenance_kind="document",
-                source_reference="NVIDIA FY2026 results",
-                evidence_id="nvidia-fy2026-growth",
-            ),
-        ),
-        company_evidence=evidence,
+        cited_facts=facts,
+        company_evidence=company_evidence
+        or {"NVIDIA": (nvidia_hit,), "Schneider Electric": (schneider_hit,)},
         cross_company_observations=("Direct comparison is limited by different businesses.",),
         interpretation=("The evidence supports a qualified comparison.",),
         limitations=("The reported periods and metrics are not fully comparable.",),
         open_questions=("Which aligned operating metric is most decision-useful?",),
-        aggregate_sources=("NVIDIA FY2026 results",),
+        aggregate_sources=tuple(dict.fromkeys(fact.source_reference for fact in facts)),
     )
 
 
@@ -73,8 +107,9 @@ def result_payload(
     evidence_gate: EvidenceGateDecision | dict[str, object] | None = None,
     briefing: CapstoneBriefing | None = None,
     deterministic_evaluation: DeterministicEvaluation | None = None,
+    **overrides: object,
 ) -> dict[str, object]:
-    return {
+    payload = {
         "run_id": "reference-run-001",
         "request": ResearchRequest.reference(),
         "provider": "recorded",
@@ -96,6 +131,8 @@ def result_payload(
         "replan_count": 0,
         "total_duration_ms": 1.0,
     }
+    payload.update(overrides)
+    return payload
 
 
 def test_reference_factory_matches_the_versioned_mission_fixture() -> None:
@@ -125,6 +162,23 @@ def test_reference_request_locks_company_universe_and_safety_limits() -> None:
         ResearchRequest.reference(max_replans=2)
     with pytest.raises(ValidationError):
         ResearchRequest.reference(companies=("NVIDIA", "Other"))
+    with pytest.raises(ValidationError, match="reference mode requires the fixed mission"):
+        ResearchRequest.reference(question="Compare a different company set.")
+
+
+def test_reference_request_permits_explicit_live_provider_selection() -> None:
+    request = ResearchRequest.reference(
+        provider="openai",
+        model="gpt-5-mini",
+        data_mode="live_enrichment",
+        include_news=True,
+    )
+
+    assert request.question == reference_fixture()["mission"]
+    assert request.companies == ("NVIDIA", "Schneider Electric")
+    assert request.provider == "openai"
+    assert request.data_mode == "live_enrichment"
+    assert request.include_news
 
 
 @pytest.mark.parametrize("question", ["", "   "])
@@ -198,6 +252,110 @@ def test_release_decision_must_match_all_five_metric_values() -> None:
         )
 
 
+@pytest.mark.parametrize(
+    ("field_name", "value", "message"),
+    [
+        ("provider", "openai", "provider must match request"),
+        ("model", "different-recorded-model", "model must match request"),
+        ("data_mode", "live_enrichment", "data_mode must match request"),
+    ],
+)
+def test_run_result_requires_labels_to_match_its_request(
+    field_name: str, value: str, message: str
+) -> None:
+    with pytest.raises(ValidationError, match=message):
+        ResearchRunResult.model_validate(result_payload(**{field_name: value}))
+
+
+def test_completed_reference_run_rejects_document_fact_without_matching_collected_evidence() -> (
+    None
+):
+    nvidia_hit, schneider_hit = reference_evidence()
+    briefing = sample_briefing(
+        cited_facts=(
+            CitedFact(
+                claim="NVIDIA published an operating-growth statement.",
+                company="NVIDIA",
+                provenance_kind="document",
+                source_reference="Different NVIDIA source",
+                evidence_id=nvidia_hit.evidence_id,
+            ),
+            CitedFact(
+                claim="Schneider Electric published an operating-growth statement.",
+                company="Schneider Electric",
+                provenance_kind="document",
+                source_reference=schneider_hit.source_reference,
+                evidence_id=schneider_hit.evidence_id,
+            ),
+        )
+    )
+    payload = result_payload(
+        status="completed",
+        evidence_gate={
+            "passed": True,
+            "coverage": {"NVIDIA": ("document",), "Schneider Electric": ("document",)},
+            "evidence_hits": (nvidia_hit, schneider_hit),
+        },
+        briefing=briefing,
+    )
+    with pytest.raises(ValidationError, match="source_reference"):
+        ResearchRunResult.model_validate(payload)
+
+
+def test_completed_reference_run_rejects_unknown_document_evidence_id() -> None:
+    nvidia_hit, schneider_hit = reference_evidence()
+    briefing = sample_briefing(
+        cited_facts=(
+            CitedFact(
+                claim="NVIDIA published an operating-growth statement.",
+                company="NVIDIA",
+                provenance_kind="document",
+                source_reference=nvidia_hit.source_reference,
+                evidence_id="unknown-evidence-id",
+            ),
+            CitedFact(
+                claim="Schneider Electric published an operating-growth statement.",
+                company="Schneider Electric",
+                provenance_kind="document",
+                source_reference=schneider_hit.source_reference,
+                evidence_id=schneider_hit.evidence_id,
+            ),
+        )
+    )
+
+    with pytest.raises(ValidationError, match="evidence_id"):
+        ResearchRunResult.model_validate(
+            result_payload(
+                status="completed",
+                evidence_gate={
+                    "passed": True,
+                    "coverage": {
+                        "NVIDIA": ("document",),
+                        "Schneider Electric": ("document",),
+                    },
+                    "evidence_hits": (nvidia_hit, schneider_hit),
+                },
+                briefing=briefing,
+            )
+        )
+
+
+def test_completed_reference_run_requires_nonempty_company_evidence_for_both_companies() -> None:
+    nvidia_hit, schneider_hit = reference_evidence()
+    payload = result_payload(
+        status="completed",
+        evidence_gate={
+            "passed": True,
+            "coverage": {"NVIDIA": ("document",), "Schneider Electric": ("document",)},
+            "evidence_hits": (nvidia_hit, schneider_hit),
+        },
+        briefing=sample_briefing(company_evidence={"NVIDIA": (nvidia_hit,)}),
+    )
+
+    with pytest.raises(ValidationError, match="company evidence"):
+        ResearchRunResult.model_validate(payload)
+
+
 def test_judge_evaluation_defaults_to_not_run() -> None:
     assert JudgeEvaluation().status == "not_run"
 
@@ -206,6 +364,11 @@ def test_judge_evaluation_defaults_to_not_run() -> None:
     "unsafe_text",
     [
         "Authorization: Bearer super-secret-token",
+        "password=secret-value",
+        "token=secret-value",
+        "client_secret=secret-value",
+        "access_token=secret-value",
+        "private_key=secret-value",
         "/Users/analyst/private-notes.txt",
         "file:///Users/analyst/private-notes.txt",
     ],

@@ -13,7 +13,15 @@ from pydantic import BaseModel, ConfigDict, Field, model_validator
 from finai_academy.research_planning import PlanStep, ResearchObservation
 
 _SECRET_PATTERN = re.compile(
-    r"(?i)(api[_-]?key|authorization|bearer\s+[a-z0-9._-]+|sk-[a-z0-9]{12,})"
+    r"""(?ix)(
+        api[_-]?key
+        | authorization
+        | bearer\s+[a-z0-9._-]+
+        | sk-[a-z0-9]{12,}
+        | \b(?:password|secret|token|client[_-]?secret|access[_-]?token|private[_-]?key)\b
+          \s*["']?\s*(?:=|:)\s*\S+
+        | -----BEGIN(?:[A-Z ]+)?PRIVATE KEY-----
+    )"""
 )
 _PERSONAL_PATH_PATTERN = re.compile(r"(?i)(?:^|[^A-Za-z0-9])/(?:Users|home)/")
 _METRIC_NAMES = (
@@ -194,11 +202,13 @@ class ResearchRequest(_FrozenPublicModel):
 
     @model_validator(mode="after")
     def validate_request_limits(self) -> ResearchRequest:
-        if self.mode == ResearchMode.REFERENCE and self.companies != (
-            "NVIDIA",
-            "Schneider Electric",
-        ):
-            raise ValueError("reference mode requires exactly NVIDIA and Schneider Electric")
+        if self.mode == ResearchMode.REFERENCE:
+            fixture_path = (
+                Path(__file__).resolve().parents[3] / "final-project/shared/reference_mission.json"
+            )
+            fixture = json.loads(fixture_path.read_text(encoding="utf-8"))
+            if self.question != fixture["mission"] or self.companies != tuple(fixture["companies"]):
+                raise ValueError("reference mode requires the fixed mission and company universe")
         if self.include_news and self.data_mode != DataMode.LIVE_ENRICHMENT:
             raise ValueError("include_news requires data_mode='live_enrichment'")
         return self
@@ -260,6 +270,7 @@ class EvidenceGateDecision(_FrozenPublicModel):
     passed: bool
     coverage: dict[str, tuple[Literal["document", "metric"], ...]]
     missing_requirements: tuple[str, ...] = ()
+    evidence_hits: tuple[CapstoneEvidenceHit, ...] = ()
 
 
 class PublicTraceEvent(_FrozenPublicModel):
@@ -344,6 +355,12 @@ class ResearchRunResult(_FrozenPublicModel):
 
     @model_validator(mode="after")
     def validate_run_state(self) -> ResearchRunResult:
+        if self.provider != self.request.provider:
+            raise ValueError("provider must match request")
+        if self.model != self.request.model:
+            raise ValueError("model must match request")
+        if self.data_mode != self.request.data_mode:
+            raise ValueError("data_mode must match request")
         if self.status == RunStatus.COMPLETED and (
             not self.evidence_gate.passed or self.briefing is None
         ):
@@ -354,4 +371,39 @@ class ResearchRunResult(_FrozenPublicModel):
             metric.value == 1.0 for metric in self.deterministic_evaluation.metrics
         ):
             raise ValueError("release decision must match deterministic metrics")
+        if self.briefing is not None:
+            self._validate_briefing_provenance()
         return self
+
+    def _validate_briefing_provenance(self) -> None:
+        """Bind every displayed document fact and evidence section to collected hits."""
+
+        assert self.briefing is not None
+        hits_by_id = {hit.evidence_id: hit for hit in self.evidence_gate.evidence_hits}
+        if len(hits_by_id) != len(self.evidence_gate.evidence_hits):
+            raise ValueError("collected evidence IDs must be unique")
+        for fact in self.briefing.cited_facts:
+            if fact.provenance_kind != "document":
+                continue
+            hit = hits_by_id.get(fact.evidence_id)
+            if hit is None:
+                raise ValueError("document fact evidence_id is not in collected evidence")
+            if hit.source_reference != fact.source_reference:
+                raise ValueError("document fact source_reference must match collected evidence")
+            if hit.company != fact.company:
+                raise ValueError("document fact company must match collected evidence")
+
+        if self.status != RunStatus.COMPLETED or self.request.mode != ResearchMode.REFERENCE:
+            return
+        for company in self.request.companies:
+            company_evidence = self.briefing.company_evidence.get(company, ())
+            if not company_evidence:
+                raise ValueError(
+                    "completed reference briefing requires company evidence for both companies"
+                )
+            for hit in company_evidence:
+                if hit.company != company:
+                    raise ValueError("company evidence must remain in its company section")
+                collected = hits_by_id.get(hit.evidence_id)
+                if collected != hit:
+                    raise ValueError("company evidence must match collected evidence")
