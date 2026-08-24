@@ -172,14 +172,29 @@ def test_public_certification_outputs_contain_no_secrets_or_personal_paths(
         assert forbidden not in public_text
 
 
-def test_visual_evidence_truthfully_records_missing_four_state_capture(
+def test_bound_visual_evidence_passes_with_all_real_browser_captures(
     certification_runs,
 ) -> None:
     artifact_directory, _, _, _ = certification_runs
     payload = json.loads((artifact_directory / "certification.json").read_text())
     visual = payload["streamlit"]["visual_evidence"]
-    assert visual["status"] == "NOT RUN"
-    assert visual["captures"] == []
+    assert visual["status"] == "PASS"
+    assert len(visual["captures"]) == 7
+    assert all(
+        (capture["width"], capture["height"]) == (1440, 1000) for capture in visual["captures"]
+    )
+    assert set(visual["covered_elements"]) == {
+        "readable_hierarchy",
+        "no_clipping",
+        "provider_data_labels",
+        "plan_replan_tool_states",
+        "briefing_readability",
+        "evidence_citation_readability",
+        "trace_readability",
+        "status_distinctions",
+        "release_judge_separation",
+        "exact_footer",
+    }
     assert visual["limitation"]
 
 
@@ -193,44 +208,12 @@ def certification_module():
 
 
 def _copy_visual_evidence(destination: Path) -> dict[str, object]:
-    source = _PROJECT_ROOT / "artifacts" / "capstone" / "reference-mission.png"
+    source = _PROJECT_ROOT / "artifacts" / "capstone"
     destination.mkdir()
-    checks = [
-        "readable_hierarchy",
-        "no_clipping",
-        "provider_data_labels",
-        "plan_replan_tool_states",
-        "briefing_readability",
-        "evidence_citation_readability",
-        "trace_readability",
-        "status_distinctions",
-        "release_judge_separation",
-        "exact_footer",
-    ]
-    captures = []
-    for index in range(4):
-        filename = f"copied-browser-fixture-{index}.png"
-        shutil.copyfile(source, destination / filename)
-        captures.append(
-            {
-                "file": filename,
-                "sha256": hashlib.sha256((destination / filename).read_bytes()).hexdigest(),
-                "width": 1440,
-                "height": 1000,
-                "browser": "Codex in-app Browser",
-                "route": "recorded/reference/test-fixture",
-                "state": f"validator-fixture-{index}",
-                "captured_at": "2026-08-24T10:00:00+02:00",
-                "visible_elements": checks if index == 0 else [],
-            }
-        )
-    manifest = {
-        "schema_version": 2,
-        "status": "PASS",
-        "captures": captures,
-        "limitation": "Validator fixture only.",
-    }
-    (destination / "visual-inspection.json").write_text(json.dumps(manifest))
+    manifest = json.loads((source / "visual-inspection.json").read_text())
+    shutil.copyfile(source / "visual-inspection.json", destination / "visual-inspection.json")
+    for capture in manifest["captures"]:
+        shutil.copyfile(source / capture["file"], destination / capture["file"])
     return manifest
 
 
@@ -241,7 +224,7 @@ def test_visual_pass_path_fully_decodes_copied_bound_images(
     _copy_visual_evidence(directory)
     result = certification_module.validate_visual_evidence(directory)
     assert result["status"] == "PASS"
-    assert len(result["captures"]) == 4
+    assert len(result["captures"]) == 7
 
 
 def test_visual_evidence_rejects_tampered_hash(certification_module, tmp_path: Path) -> None:
@@ -287,7 +270,11 @@ def test_committed_certification_artifacts_match_the_contract() -> None:
     assert payload["offline_release_passed"] is True
     assert payload["reference_mission"]["citation_integrity"] == 1.0
     assert payload["streamlit"]["app_test_passed"] is True
-    assert payload["streamlit"]["visual_evidence"]["status"] == "NOT RUN"
+    assert payload["streamlit"]["visual_evidence"]["status"] == "PASS"
     assert payload["student"]["solved_marker_count"] == 1
     assert payload["mlflow"]["persisted"] is True
-    assert manifest["captures"] == []
+    assert len(manifest["captures"]) == 7
+    for capture in manifest["captures"]:
+        image = artifact_directory / capture["file"]
+        assert image.is_file()
+        assert hashlib.sha256(image.read_bytes()).hexdigest() == capture["sha256"]

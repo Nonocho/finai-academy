@@ -13,9 +13,11 @@ Offline certification: **PASS**
 
 ## Visual evidence
 
-Status: **NOT RUN**
+Status: **PASS**
 
-Limitation: The local application ran, but no controllable browser was available for the required four-state recapture. The earlier single viewport is not accepted as full visual certification.
+Limitation: Separate fixed-view browser captures cover below-fold completed-run evidence and the injected typed-stop state.
+
+The hash-bound 1440×1000 browser captures were fully decoded and inspected for readable hierarchy, no clipping, provider/data labels, plan/replan/tool states, briefing, evidence and citation readability, trace readability, status distinctions, release/judge separation, and the exact footer.
 
 ## Optional coverage
 

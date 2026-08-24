@@ -74,7 +74,7 @@ Certification now enumerates every SQLite table and every persisted string value
 
 The result-view regression is now exact rather than sentinel-based: it checks six citation cards and every claim/company/source/evidence-ID tuple, plus all ten trace events in order with phase/status, capability, error, and revision. The visual manifest contract was upgraded to schema 2: a PASS requires at least four hash-bound 1440×1000 PNG captures, full Pillow verify-and-load decoding, per-image browser/route/state/timestamp provenance, safe PNG metadata, and union coverage of every required acceptance element. Tests exercise a copied-image PASS fixture and reject a changed hash, a re-hashed but truncated PNG, and missing acceptance coverage.
 
-The requested four-state browser recapture could not be completed in this review turn. The local Streamlit server started successfully, but browser discovery returned no controllable browser instances. In accordance with the brief, the earlier single top viewport was not relabeled or duplicated as below-fold proof. `visual-inspection.json` and the generated certification/readiness artifacts now truthfully record visual evidence as `NOT RUN`; the unbound earlier PNG remains only as historical evidence. This is the only unmet review item and is explicitly not presented as a visual PASS.
+At the first review checkpoint, the requested browser recapture could not be completed: the local Streamlit server started successfully, but browser discovery returned no controllable browser instances. In accordance with the brief, the earlier single top viewport was not relabeled or duplicated as below-fold proof, and that checkpoint truthfully recorded visual evidence as `NOT RUN`. Browser capture later recovered and the final completion evidence is recorded below.
 
 Review-round verification observed:
 
@@ -89,3 +89,17 @@ Review-round verification observed:
 - `git diff --check`: passed.
 
 The original full-suite baseline diagnosis remains unchanged and separate: ten notebook PNG-output failures and one Lesson 12 auto-generated MLflow source host-path failure. No full-green claim is made.
+
+## Review round 1 visual completion
+
+The in-app browser became available after the initial truthful `NOT RUN` result. Seven real localhost captures were subsequently recorded at a 1440×1000 browser viewport and visually inspected: top/readiness/route, plan/tools/typed error/replan/gate/briefing start, both-company briefing evidence and limitations, claim/source/evidence-ID cards, remaining citations plus expanded trace, release metrics/judge/footer, and the separate missing-Schneider typed insufficient-evidence stop. The browser returned JPEG-encoded bytes despite `.png` filenames; those real pixels were re-encoded to genuine PNG without synthesizing or altering application state. Pillow then verified and fully loaded every final file at exactly 1440×1000.
+
+`visual-inspection.json` now records schema-v2 `PASS` with seven per-image SHA256 values, dimensions, browser, route, state, timezone-aware capture timestamp, and visible-element bindings. Coverage is derived exclusively from the bound images and its union exactly matches the ten required checks. The limitation note truthfully states that separate fixed-view captures cover below-fold and typed-stop states. Certification was rerun against the final manifest and returned `CAPSTONE_CERTIFICATION_PASS` with visual status `PASS`.
+
+Final visual-completion verification:
+
+- `.venv/bin/pytest -q tests/test_capstone_certification.py tests/test_capstone_streamlit.py`: `20 passed in 88.98s`.
+- `.venv/bin/pytest -q tests/test_capstone_*.py`: `166 passed in 267.07s`.
+- Independent hash comparison plus Pillow verify/load: `VISUAL_BOUND_IMAGES_PASS 7`.
+- `.venv/bin/ruff check src tests scripts final-project`, repository validation, and `git diff --check`: passed.
+- Recursive public-artifact scan and explicit experiment/run/tag/trace-info/trace-request/trace-tag/span SQLite queries: zero privacy matches.

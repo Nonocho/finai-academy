@@ -494,7 +494,7 @@ def _readiness_markdown(payload: Mapping[str, Any]) -> str:
         lines.extend(
             [
                 "",
-                "The real 1440×1000 browser capture was inspected for readable hierarchy, no clipping, provider/data labels, plan/replan/tool states, evidence and citation readability, trace readability, status distinctions, release/judge separation, and the exact footer.",
+                "The hash-bound 1440×1000 browser captures were fully decoded and inspected for readable hierarchy, no clipping, provider/data labels, plan/replan/tool states, briefing, evidence and citation readability, trace readability, status distinctions, release/judge separation, and the exact footer.",
             ]
         )
     lines.extend(
