@@ -44,13 +44,13 @@
       "captures": [
         {
           "file": "reference-top.png",
-          "sha256": "316b49ef4c12f69f39be77259589d789835f99ae9e3490d1c878e006a9539d32",
+          "sha256": "a2a146e32dce1d9168140964f90395509fdee788dfe1ceadfaf71dacb4a5c64b",
           "width": 1440,
           "height": 1000,
           "browser": "Codex in-app Browser",
           "route": "localhost reference renderer; recorded provider; certified snapshots",
           "state": "completed mission; top, route, readiness, and research-plan start",
-          "captured_at": "2026-08-24T11:43:47+02:00",
+          "captured_at": "2026-08-24T19:48:58+02:00",
           "visible_elements": [
             "readable_hierarchy",
             "no_clipping",
@@ -59,13 +59,13 @@
         },
         {
           "file": "reference-citations.png",
-          "sha256": "a1c9b878bf6612614e4e7c82d650b5fad1bcc0c98ac4e594c4b1cd628c63baf2",
+          "sha256": "2c01623a17fa59da5cc44cd52d620c904390bc81def297861a68045ff8e7fe26",
           "width": 1440,
           "height": 1000,
           "browser": "Codex in-app Browser",
           "route": "localhost reference renderer; recorded provider; certified snapshots",
           "state": "completed mission; plan tail, tool activity, typed error, replan, evidence gate, and briefing start",
-          "captured_at": "2026-08-24T11:43:47+02:00",
+          "captured_at": "2026-08-24T19:48:58+02:00",
           "visible_elements": [
             "plan_replan_tool_states",
             "briefing_readability",
@@ -74,39 +74,39 @@
         },
         {
           "file": "reference-evidence.png",
-          "sha256": "7411b77428d01ca6bfb79b30a9e23abfa3dbf2e717f45be255abcedd8457a21e",
+          "sha256": "0c074697875f64163efce7afefffc2134a5ea24987abfc3ac41ae4418f3bd4bb",
           "width": 1440,
           "height": 1000,
           "browser": "Codex in-app Browser",
           "route": "localhost reference renderer; recorded provider; certified snapshots",
           "state": "completed mission; both-company evidence, comparison, limitations, and sources",
-          "captured_at": "2026-08-24T11:43:47+02:00",
+          "captured_at": "2026-08-24T19:48:58+02:00",
           "visible_elements": [
             "briefing_readability"
           ]
         },
         {
           "file": "reference-citation-cards.png",
-          "sha256": "55e85a7d947bab62efee98a91c7c9ecd5b620036b5c012cf367cae27cadce247",
+          "sha256": "a2283c409f761dea5b17b9aede0fc303b7f0a53ecb764262f7c6db44a415ce77",
           "width": 1440,
           "height": 1000,
           "browser": "Codex in-app Browser",
           "route": "localhost reference renderer; recorded provider; certified snapshots",
           "state": "completed mission; source list and first four claim/source/evidence-ID cards",
-          "captured_at": "2026-08-24T11:43:47+02:00",
+          "captured_at": "2026-08-24T19:48:58+02:00",
           "visible_elements": [
             "evidence_citation_readability"
           ]
         },
         {
           "file": "reference-trace.png",
-          "sha256": "e529e86422376c1f37bc76edb9245a826b7cff46c17e83be2a86f9ea23292b9d",
+          "sha256": "d93539625b77f229623ef82e0983b0f5a693028cda8e76735347b84573a992e5",
           "width": 1440,
           "height": 1000,
           "browser": "Codex in-app Browser",
           "route": "localhost reference renderer; recorded provider; certified snapshots",
           "state": "completed mission; remaining citation cards and expanded execution-trace start",
-          "captured_at": "2026-08-24T11:43:47+02:00",
+          "captured_at": "2026-08-24T19:48:58+02:00",
           "visible_elements": [
             "evidence_citation_readability",
             "trace_readability"
@@ -114,13 +114,13 @@
         },
         {
           "file": "reference-footer.png",
-          "sha256": "8deec0e57ccd373ab9d0d23e97a59b0a0bdae1cb61d927e52e3dcdcd40f34e4f",
+          "sha256": "b522dc1c65e4c28686425cb4674b5d48db62e21ec8383afdc61fef95b64dad42",
           "width": 1440,
           "height": 1000,
           "browser": "Codex in-app Browser",
           "route": "localhost reference renderer; recorded provider; certified snapshots",
           "state": "completed mission; trace end, five release metrics, release result, optional judge, and footer",
-          "captured_at": "2026-08-24T11:43:47+02:00",
+          "captured_at": "2026-08-24T19:48:58+02:00",
           "visible_elements": [
             "trace_readability",
             "status_distinctions",
@@ -130,13 +130,13 @@
         },
         {
           "file": "typed-stop.png",
-          "sha256": "6ac344dca94963624d58bfe9bdc24d455f7f4ffa40781b03a052fff290d3b145",
+          "sha256": "7eeddf57a9de163f7c3daa7109bc697711aaa7a640c636d6a8d229158d3c9656",
           "width": 1440,
           "height": 1000,
           "browser": "Codex in-app Browser",
           "route": "localhost reference renderer; recorded provider; certified snapshots; injected missing-Schneider retriever",
           "state": "typed insufficient-evidence stop with failed evidence gate and no briefing",
-          "captured_at": "2026-08-24T11:43:47+02:00",
+          "captured_at": "2026-08-24T19:49:18+02:00",
           "visible_elements": [
             "provider_data_labels",
             "status_distinctions"
