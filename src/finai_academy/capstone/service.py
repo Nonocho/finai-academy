@@ -2,10 +2,14 @@
 
 from __future__ import annotations
 
+import json
+import re
 from collections.abc import Callable, Mapping, Sequence
 from time import perf_counter
-from typing import Any, Protocol
+from typing import TYPE_CHECKING, Any, Protocol
 from uuid import uuid4
+
+from pydantic import BaseModel, ConfigDict, Field
 
 from finai_academy.agent_evaluation import METRIC_NAMES, canonical_call_signature
 from finai_academy.capstone.models import (
@@ -40,8 +44,13 @@ from finai_academy.research_planning import (
     ResearchPlan,
     validate_plan,
 )
+from finai_academy.settings import Settings
+
+if TYPE_CHECKING:
+    from finai_academy.capstone.model_gateway import StructuredModel
 
 _COMPANIES = ("NVIDIA", "Schneider Electric")
+_WINDOWS_PERSONAL_PATH_PATTERN = re.compile(r"(?i)(?:^|[^A-Za-z0-9])[A-Z]:\\+Users\\+")
 
 _INITIAL_PLAN = (
     PlanStep(
@@ -137,6 +146,17 @@ _TOOL_SCHEMAS: dict[str, dict[str, Any]] = {
 }
 
 
+class _LiveReportWording(BaseModel):
+    """Model-proposed prose; evidence and release fields remain host-owned."""
+
+    model_config = ConfigDict(extra="forbid", frozen=True, str_strip_whitespace=True)
+
+    executive_summary: str = Field(min_length=1)
+    cross_company_observations: tuple[str, ...] = Field(min_length=1)
+    interpretation: tuple[str, ...] = Field(min_length=1)
+    limitations: tuple[str, ...] = Field(min_length=1)
+
+
 class Retriever(Protocol):
     """The company-bounded retrieval operation used by the service."""
 
@@ -165,6 +185,8 @@ class FinancialAnalystCopilot:
         clock: Callable[[], float] | None = None,
         initial_plan: Sequence[PlanStep] = _INITIAL_PLAN,
         replacement_tail: Sequence[PlanStep] = _REPLACEMENT_TAIL,
+        structured_model: StructuredModel | None = None,
+        provider_available: bool = True,
     ) -> None:
         self.retriever = retriever
         self._registry = registry
@@ -172,9 +194,11 @@ class FinancialAnalystCopilot:
         self._clock = clock or perf_counter
         self._initial_plan = tuple(initial_plan)
         self._replacement_tail = tuple(replacement_tail)
+        self._structured_model = structured_model
+        self._provider_available = provider_available
 
     def run(self, request: ResearchRequest) -> ResearchRunResult:
-        """Execute the recorded policy without provider or network calls."""
+        """Execute host-controlled research with an optional wording provider."""
 
         run_started = self._clock()
         trajectory: list[PublicTraceEvent] = []
@@ -190,7 +214,7 @@ class FinancialAnalystCopilot:
             summary=f"Prepared {len(initial_plan)} bounded research steps.",
         )
 
-        if request.provider != "recorded" or request.data_mode != "certified":
+        if request.data_mode != "certified":
             return self._result(
                 request=request,
                 status=RunStatus.PROVIDER_ERROR,
@@ -199,9 +223,23 @@ class FinancialAnalystCopilot:
                 observations=(),
                 trajectory=self._blocked_event(
                     trajectory,
-                    summary="recorded_route_requires_certified_data",
+                    summary="certified_data_required",
                     owner="provider",
                 ),
+                replan_count=0,
+                run_started=run_started,
+            )
+
+        if request.provider != "recorded" and (
+            not self._provider_available or self._structured_model is None
+        ):
+            return self._result(
+                request=request,
+                status=RunStatus.PROVIDER_ERROR,
+                initial_plan=(),
+                final_plan=(),
+                observations=(),
+                trajectory=self._provider_error_event(trajectory),
                 replan_count=0,
                 run_started=run_started,
             )
@@ -404,6 +442,21 @@ class FinancialAnalystCopilot:
             )
 
         briefing = _build_briefing(tuple(observations), evidence_gate)
+        if request.provider != "recorded":
+            try:
+                briefing = self._apply_live_wording(request, briefing)
+            except Exception:  # noqa: BLE001 - provider details must never become public
+                return self._result(
+                    request=request,
+                    status=RunStatus.PROVIDER_ERROR,
+                    initial_plan=initial_plan,
+                    final_plan=final_plan,
+                    observations=tuple(observations),
+                    trajectory=self._provider_error_event(trajectory),
+                    replan_count=replan_count,
+                    run_started=run_started,
+                    evidence_gate=evidence_gate,
+                )
         self._event(
             trajectory,
             phase="report",
@@ -422,6 +475,57 @@ class FinancialAnalystCopilot:
             run_started=run_started,
             evidence_gate=evidence_gate,
             briefing=briefing,
+        )
+
+    def _apply_live_wording(
+        self,
+        request: ResearchRequest,
+        briefing: CapstoneBriefing,
+    ) -> CapstoneBriefing:
+        """Accept prose only; citations, evidence, budgets, and release stay fixed."""
+
+        if self._structured_model is None:
+            raise RuntimeError("live provider is unavailable")
+        prompt_payload = {
+            "mission": request.question,
+            "certified_cited_facts": [
+                fact.model_dump(mode="json") for fact in briefing.cited_facts
+            ],
+            "host_draft": {
+                "executive_summary": briefing.executive_summary,
+                "cross_company_observations": briefing.cross_company_observations,
+                "interpretation": briefing.interpretation,
+                "limitations": briefing.limitations,
+            },
+        }
+        proposal = self._structured_model.generate(
+            system_prompt=(
+                "Rewrite only the supplied report prose. Use only certified cited facts. "
+                "Do not add facts, citations, recommendations, tools, or hidden reasoning."
+            ),
+            user_prompt=json.dumps(prompt_payload, sort_keys=True),
+            response_model=_LiveReportWording,
+        )
+        wording = _LiveReportWording.model_validate(proposal)
+        _clean_public_value(wording)
+        if any(
+            _WINDOWS_PERSONAL_PATH_PATTERN.search(value)
+            for value in (
+                wording.executive_summary,
+                *wording.cross_company_observations,
+                *wording.interpretation,
+                *wording.limitations,
+            )
+        ):
+            raise ValueError("provider wording contains a personal path")
+        return CapstoneBriefing.model_validate(
+            {
+                **briefing.model_dump(mode="python"),
+                "executive_summary": wording.executive_summary,
+                "cross_company_observations": wording.cross_company_observations,
+                "interpretation": wording.interpretation,
+                "limitations": wording.limitations,
+            }
         )
 
     def _catalog(self) -> tuple[PlannerToolSpec, ...] | None:
@@ -706,6 +810,19 @@ class FinancialAnalystCopilot:
         )
         return tuple(trajectory)
 
+    def _provider_error_event(
+        self,
+        trajectory: list[PublicTraceEvent],
+    ) -> tuple[PublicTraceEvent, ...]:
+        self._event(
+            trajectory,
+            phase="guardrail",
+            status="error",
+            summary="The selected provider could not complete structured generation.",
+            failure_owner="provider",
+        )
+        return tuple(trajectory)
+
 
 def _error_observation(
     step: PlanStep,
@@ -973,4 +1090,49 @@ def build_reference_copilot(
         registry=registry or AnalystToolRegistry(discovered=tuple(MANDATORY_ANALYST_TOOLS)),
         run_id_factory=run_id_factory,
         clock=clock,
+    )
+
+
+def build_copilot_for_request(
+    request: ResearchRequest,
+    settings: Settings,
+    *,
+    ollama_probe: Callable[[], bool] | None = None,
+) -> FinancialAnalystCopilot:
+    """Compose exactly the requested provider route with no silent fallback."""
+
+    if request.provider == "recorded":
+        return build_reference_copilot()
+
+    from finai_academy.capstone import model_gateway
+
+    readiness = model_gateway.provider_readiness(
+        request.provider,
+        request.model,
+        settings=settings,
+        ollama_probe=ollama_probe,
+    )
+    if not readiness.available:
+        return FinancialAnalystCopilot(
+            retriever=build_certified_retriever(),
+            registry=AnalystToolRegistry(discovered=tuple(MANDATORY_ANALYST_TOOLS)),
+            provider_available=False,
+        )
+
+    routed_settings = Settings(
+        provider=request.provider,
+        chat_model=request.model,
+        embedding_provider=settings.embedding_provider,
+        embedding_model=settings.embedding_model,
+        ollama_base_url=settings.ollama_base_url,
+    )
+    try:
+        structured_model = model_gateway.create_structured_model(routed_settings)
+    except Exception:  # noqa: BLE001 - construction failures become public typed results
+        structured_model = None
+    return FinancialAnalystCopilot(
+        retriever=build_certified_retriever(),
+        registry=AnalystToolRegistry(discovered=tuple(MANDATORY_ANALYST_TOOLS)),
+        structured_model=structured_model,
+        provider_available=structured_model is not None,
     )

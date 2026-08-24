@@ -5,7 +5,11 @@ from finai_academy.capstone.briefing import (
     AnalystBriefService,
     build_analyst_brief_prompt,
 )
-from finai_academy.capstone.model_gateway import create_structured_model
+from finai_academy.capstone.model_gateway import (
+    ProviderReadiness,
+    create_structured_model,
+    provider_readiness,
+)
 from finai_academy.capstone.models import (
     AnalystBrief,
     AnalystFinding,
@@ -26,8 +30,13 @@ from finai_academy.capstone.models import (
     ResearchRunResult,
     RunStatus,
 )
+from finai_academy.capstone.persistence import (
+    CapstoneRunStore,
+    PersistedRunReferences,
+)
 from finai_academy.capstone.service import (
     FinancialAnalystCopilot,
+    build_copilot_for_request,
     build_reference_copilot,
 )
 
@@ -39,6 +48,7 @@ __all__ = [
     "CapstoneBriefing",
     "CapstoneEvidenceHit",
     "CapstoneProvider",
+    "CapstoneRunStore",
     "CitedFact",
     "DataMode",
     "DeterministicEvaluation",
@@ -48,12 +58,16 @@ __all__ = [
     "FindingCategory",
     "JudgeEvaluation",
     "MetricEvaluation",
+    "PersistedRunReferences",
+    "ProviderReadiness",
     "PublicTraceEvent",
     "ResearchMode",
     "ResearchRequest",
     "ResearchRunResult",
     "RunStatus",
     "build_analyst_brief_prompt",
+    "build_copilot_for_request",
     "build_reference_copilot",
     "create_structured_model",
+    "provider_readiness",
 ]
