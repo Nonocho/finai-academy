@@ -5,18 +5,14 @@ from __future__ import annotations
 import contextlib
 import importlib
 import io
+import json
+import os
+import subprocess
+import sys
 import tempfile
 import warnings
 from collections.abc import Callable, Sequence
 from pathlib import Path
-
-from integration import (
-    StudentIntegrationIncomplete,
-    assemble_public_briefing_view,
-    evaluate_student_evidence_gate,
-    register_analyst_capabilities,
-    wire_retriever,
-)
 
 from finai_academy.capstone import ResearchRequest, build_reference_copilot
 from finai_academy.capstone.models import (
@@ -29,6 +25,14 @@ from finai_academy.capstone.tools import build_certified_retriever
 from finai_academy.capstone.views import CapstoneRunView
 
 _SUCCESS_MARKER = "CAPSTONE_PASS"
+_WORKER_FLAG = "--_isolated-worker-fd"
+_RESULT_VERSION = 1
+_OS_WRITE = os.write
+StudentIntegrationIncomplete: type[BaseException]
+assemble_public_briefing_view: Callable[[ResearchRunResult], object]
+evaluate_student_evidence_gate: Callable[[Sequence[CapstoneEvidenceHit]], object]
+register_analyst_capabilities: Callable[[Sequence[str]], object]
+wire_retriever: Callable[[str, str], object]
 _METRIC_NAMES = (
     "tool_call_correctness",
     "tool_call_efficiency",
@@ -353,37 +357,58 @@ def _check_persistence(result: ResearchRunResult) -> None:
         raise ValueError("persistence contract failed")
 
 
-def _run_check(name: str, check: Callable[[], None]) -> bool:
-    captured_stdout = io.StringIO()
-    captured_stderr = io.StringIO()
-    failure: BaseException | None = None
-    with (
-        contextlib.redirect_stdout(captured_stdout),
-        contextlib.redirect_stderr(captured_stderr),
-    ):
-        try:
-            check()
-        except BaseException as error:  # noqa: BLE001 - learner exits must be sanitized
-            failure = error
+def _run_check(name: str, check: Callable[[], None]) -> tuple[bool, str]:
+    try:
+        check()
+    except BaseException as error:  # noqa: BLE001 - learner exits must be sanitized
+        failure: BaseException | None = error
+    else:
+        failure = None
 
-    if captured_stdout.getvalue() or captured_stderr.getvalue():
-        print(f"FAIL {name}: student output is not allowed.")
-        return False
     if isinstance(failure, _IntegratedContractFailure):
-        print(f"FAIL {failure.seam}: integrated contract did not complete.")
-        return False
+        return False, f"FAIL {failure.seam}: integrated contract did not complete."
     if isinstance(failure, StudentIntegrationIncomplete):
         hint = _INCOMPLETE_HINTS.get(name, "Complete this integration seam.")
-        print(f"FAIL {name}: incomplete — {hint}")
-        return False
+        return False, f"FAIL {name}: incomplete — {hint}"
     if failure is not None:
-        print(f"FAIL {name}: contract did not complete.")
-        return False
-    print(f"PASS {name}")
-    return True
+        return False, f"FAIL {name}: contract did not complete."
+    return True, f"PASS {name}"
 
 
-def main() -> int:
+def _load_student_integration() -> None:
+    student = importlib.import_module("integration")
+    required = (
+        "StudentIntegrationIncomplete",
+        "assemble_public_briefing_view",
+        "evaluate_student_evidence_gate",
+        "register_analyst_capabilities",
+        "wire_retriever",
+    )
+    if any(not hasattr(student, name) for name in required):
+        raise ImportError("student integration contract is incomplete")
+
+    global StudentIntegrationIncomplete
+    global assemble_public_briefing_view
+    global evaluate_student_evidence_gate
+    global register_analyst_capabilities
+    global wire_retriever
+    StudentIntegrationIncomplete = student.StudentIntegrationIncomplete
+    assemble_public_briefing_view = student.assemble_public_briefing_view
+    evaluate_student_evidence_gate = student.evaluate_student_evidence_gate
+    register_analyst_capabilities = student.register_analyst_capabilities
+    wire_retriever = student.wire_retriever
+
+
+def _worker_result() -> dict[str, object]:
+    try:
+        _load_student_integration()
+    except BaseException:  # noqa: BLE001 - imports must fail without disclosure
+        return {
+            "version": _RESULT_VERSION,
+            "passed": False,
+            "lines": ["FAIL verifier: worker could not load integration."],
+        }
+
     try:
         result = build_reference_copilot(run_id_factory=lambda: "student-verification-run").run(
             ResearchRequest.reference()
@@ -426,20 +451,141 @@ def main() -> int:
         ("deterministic_release", with_result(_check_release)),
         ("persistence", with_result(_check_persistence)),
     )
-    passed = True
     seam_results = tuple(_run_check(name, check) for name, check in seam_checks)
-    passed = all(seam_results)
+    lines = [line for _, line in seam_results]
+    passed = all(status for status, _ in seam_results)
     if passed:
-        passed = _run_check(
+        integrated_passed, integrated_line = _run_check(
             "integrated_student_path",
             with_result(_check_integrated_student_path),
         )
+        lines.append(integrated_line)
+        passed = integrated_passed
     for name, check in other_checks:
-        passed = _run_check(name, check) and passed
+        check_passed, line = _run_check(name, check)
+        lines.append(line)
+        passed = check_passed and passed
+    return {"version": _RESULT_VERSION, "passed": passed, "lines": lines}
+
+
+def _worker_main(result_fd: int) -> int:
+    payload = json.dumps(_worker_result(), separators=(",", ":")).encode("utf-8")
+    try:
+        _OS_WRITE(result_fd, payload)
+    except OSError:
+        return 2
+    finally:
+        os.close(result_fd)
+    return 0
+
+
+def _allowed_result_lines() -> set[str]:
+    check_names = (
+        *_INCOMPLETE_HINTS,
+        "reference_mission",
+        "citation_integrity",
+        "deterministic_release",
+        "persistence",
+        "integrated_student_path",
+    )
+    lines = {f"PASS {name}" for name in check_names}
+    lines.update(f"FAIL {name}: contract did not complete." for name in check_names)
+    lines.update(
+        f"FAIL {name}: incomplete — {hint}"
+        for name, hint in _INCOMPLETE_HINTS.items()
+    )
+    lines.update(
+        f"FAIL {name}: integrated contract did not complete."
+        for name in _INCOMPLETE_HINTS
+    )
+    lines.add("FAIL verifier: worker could not load integration.")
+    return lines
+
+
+def _validate_worker_result(raw: bytes) -> tuple[bool, list[str]] | None:
+    if not raw or len(raw) > 16_384:
+        return None
+    try:
+        payload = json.loads(raw)
+    except (UnicodeDecodeError, json.JSONDecodeError):
+        return None
+    if not isinstance(payload, dict) or set(payload) != {"version", "passed", "lines"}:
+        return None
+    if payload["version"] != _RESULT_VERSION or type(payload["passed"]) is not bool:
+        return None
+    lines = payload["lines"]
+    if not isinstance(lines, list) or not 1 <= len(lines) <= 9:
+        return None
+    allowed = _allowed_result_lines()
+    if any(type(line) is not str or line not in allowed for line in lines):
+        return None
+    passed = payload["passed"]
+    if passed != all(line.startswith("PASS ") for line in lines):
+        return None
+    expected_success = [
+        *(f"PASS {name}" for name in _INCOMPLETE_HINTS),
+        "PASS integrated_student_path",
+        "PASS reference_mission",
+        "PASS citation_integrity",
+        "PASS deterministic_release",
+        "PASS persistence",
+    ]
+    if passed and lines != expected_success:
+        return None
+    return passed, lines
+
+
+def _parent_main() -> int:
+    read_fd, write_fd = os.pipe()
+    try:
+        try:
+            completed = subprocess.run(
+                [sys.executable, __file__, _WORKER_FLAG, str(write_fd)],
+                stdin=subprocess.DEVNULL,
+                capture_output=True,
+                check=False,
+                timeout=60,
+                pass_fds=(write_fd,),
+            )
+        except (OSError, subprocess.SubprocessError):
+            print("FAIL verifier: isolated worker failed safely.")
+            return 1
+        finally:
+            os.close(write_fd)
+        raw_result = os.read(read_fd, 16_385)
+    finally:
+        os.close(read_fd)
+
+    if completed.stdout or completed.stderr:
+        print("FAIL verifier: isolated worker emitted output.")
+        return 1
+    if completed.returncode != 0:
+        print("FAIL verifier: isolated worker failed safely.")
+        return 1
+    validated = _validate_worker_result(raw_result)
+    if validated is None:
+        print("FAIL verifier: isolated worker returned an invalid result.")
+        return 1
+    passed, lines = validated
+    for line in lines:
+        print(line)
     if not passed:
         return 1
     print(_SUCCESS_MARKER)
     return 0
+
+
+def main() -> int:
+    if len(sys.argv) == 3 and sys.argv[1] == _WORKER_FLAG:
+        try:
+            result_fd = int(sys.argv[2])
+        except ValueError:
+            return 2
+        return _worker_main(result_fd)
+    if len(sys.argv) != 1:
+        print("FAIL verifier: unsupported invocation.")
+        return 1
+    return _parent_main()
 
 
 if __name__ == "__main__":

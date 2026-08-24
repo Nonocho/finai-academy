@@ -97,15 +97,14 @@ def _render_statuses() -> None:
         check, is_valid = checks[seam]
         try:
             value = check()
+            if not is_valid(value):
+                raise ValueError("invalid integration result")
         except StudentIntegrationIncomplete:
             st.warning(f"{seam} — Incomplete: {_INCOMPLETE_HINTS[seam]}")
         except Exception:  # noqa: BLE001 - learner errors must remain sanitized per seam
             st.error(f"{seam} — Error: {_ERROR_MESSAGE}")
         else:
-            if is_valid(value):
-                st.success(f"{seam} — Ready")
-            else:
-                st.error(f"{seam} — Error: {_ERROR_MESSAGE}")
+            st.success(f"{seam} — Ready")
 
 
 st.set_page_config(

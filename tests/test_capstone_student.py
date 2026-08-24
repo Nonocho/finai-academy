@@ -6,7 +6,7 @@ import os
 import shutil
 import subprocess
 import sys
-from collections.abc import Callable, Mapping, Sequence
+from collections.abc import Callable, Mapping
 from pathlib import Path
 from types import ModuleType
 
@@ -19,12 +19,18 @@ from finai_academy.capstone.models import (
     EvidenceGateDecision,
     ResearchRunResult,
 )
-from finai_academy.capstone.tools import AnalystToolRegistry, build_certified_retriever
-from finai_academy.capstone.views import CapstoneRunView, to_run_view
+from finai_academy.capstone.tools import build_certified_retriever
+from finai_academy.capstone.views import CapstoneRunView
 
 _PROJECT_ROOT = Path(__file__).resolve().parents[1]
 _STUDENT_DIR = _PROJECT_ROOT / "final-project" / "student"
 _INTEGRATION_PATH = _STUDENT_DIR / "integration.py"
+_SOLUTION_PATH = (
+    _PROJECT_ROOT
+    / "final-project"
+    / "reference"
+    / "student_integration_solution.py"
+)
 _SEAM_NAMES = (
     "wire_retriever",
     "register_analyst_capabilities",
@@ -33,65 +39,16 @@ _SEAM_NAMES = (
 )
 
 
-def _reference_wire_retriever(
-    company: str, query: str
-) -> tuple[CapstoneEvidenceHit, ...]:
-    return build_certified_retriever().search(company, query)
-
-
-def _reference_register_analyst_capabilities(
-    discovered: Sequence[str],
-) -> tuple[str, ...]:
-    return AnalystToolRegistry(discovered=discovered).discover()
-
-
-def _reference_evaluate_student_evidence_gate(
-    hits: Sequence[CapstoneEvidenceHit],
-) -> EvidenceGateDecision:
-    companies = ("NVIDIA", "Schneider Electric")
-    covered = {hit.company for hit in hits}
-    missing = tuple(f"{company} document evidence" for company in companies if company not in covered)
-    return EvidenceGateDecision(
-        passed=not missing,
-        coverage={company: (("document",) if company in covered else ()) for company in companies},
-        missing_requirements=missing,
-        evidence_hits=tuple(hits),
-    )
-
-
-def _reference_assemble_public_briefing_view(
-    result: ResearchRunResult,
-) -> CapstoneRunView:
-    return to_run_view(result)
-
-
-_REFERENCE_ADAPTERS = (
-    _reference_wire_retriever,
-    _reference_register_analyst_capabilities,
-    _reference_evaluate_student_evidence_gate,
-    _reference_assemble_public_briefing_view,
-)
-_ADAPTER_HEADER = '''"""Generated contract adapter; not a student answer source."""
-from __future__ import annotations
-
-import dataclasses
+_ADAPTER_HEADER = '''"""Generated mutation adapter; not a student answer source."""
+import os
+import subprocess
 import sys
-from collections.abc import Sequence
 
 from finai_academy.capstone import ResearchRequest, build_reference_copilot
-from finai_academy.capstone.models import (
-    CapstoneEvidenceHit,
-    EvidenceGateDecision,
-    ResearchRunResult,
-)
-from finai_academy.capstone.tools import AnalystToolRegistry, build_certified_retriever
-from finai_academy.capstone.views import CapstoneRunView, to_run_view
-
-
-@dataclasses.dataclass(frozen=True, slots=True)
-class StudentIntegrationIncomplete(Exception):
-    seam: str
-    hint: str
+from finai_academy.capstone.models import EvidenceGateDecision
+from finai_academy.capstone.tools import build_certified_retriever
+from finai_academy.capstone.views import to_run_view
+from _reference_solution import *
 '''
 
 
@@ -105,27 +62,20 @@ def _load_module(path: Path, name: str) -> ModuleType:
     return module
 
 
-def _generated_adapter_source(overrides: Mapping[str, str] | None = None) -> str:
-    replacements = dict(overrides or {})
-    blocks: list[str] = []
-    for reference in _REFERENCE_ADAPTERS:
-        seam = reference.__name__.removeprefix("_reference_")
-        source = inspect.getsource(reference).replace(
-            f"def _reference_{seam}", f"def {seam}", 1
-        )
-        blocks.append(replacements.get(seam, source))
-    return _ADAPTER_HEADER + "\n\n" + "\n\n".join(blocks)
-
-
 def _copy_with_generated_adapter(
     destination: Path,
     *,
     overrides: Mapping[str, str] | None = None,
+    prefix_source: str = "",
 ) -> Path:
     shutil.copytree(_STUDENT_DIR, destination)
-    (destination / "integration.py").write_text(
-        _generated_adapter_source(overrides), encoding="utf-8"
-    )
+    shutil.copyfile(_SOLUTION_PATH, destination / "_reference_solution.py")
+    if overrides or prefix_source:
+        blocks = "\n\n".join(dict(overrides or {}).values())
+        source = prefix_source + _ADAPTER_HEADER + "\n\n" + blocks
+        (destination / "integration.py").write_text(source, encoding="utf-8")
+    else:
+        shutil.copyfile(_SOLUTION_PATH, destination / "integration.py")
     return destination
 
 
@@ -416,6 +366,32 @@ def test_student_app_sanitizes_generic_errors_and_rejects_wrong_types(tmp_path: 
     assert "/Users/" not in text
 
 
+def test_student_app_catches_validator_exceptions_and_continues(tmp_path: Path) -> None:
+    explosive_capabilities = '''class _ExplosiveComparison:
+    def __eq__(self, other):
+        raise RuntimeError("OPENAI_API_KEY=sk-validator at /Users/private")
+
+
+def register_analyst_capabilities(discovered):
+    return _ExplosiveComparison()
+'''
+    student_dir = _copy_with_generated_adapter(
+        tmp_path / "student",
+        overrides={"register_analyst_capabilities": explosive_capabilities},
+    )
+    sys.modules.pop("integration", None)
+
+    app = AppTest.from_file(student_dir / "streamlit_app.py").run(timeout=20)
+    text = _rendered_text(app)
+
+    assert not app.exception
+    assert text.count("Ready") == 3
+    assert "register_analyst_capabilities — Error:" in text
+    assert "OPENAI_API_KEY" not in text
+    assert "sk-validator" not in text
+    assert "/Users/" not in text
+
+
 def _subprocess_environment() -> dict[str, str]:
     environment = os.environ.copy()
     python_path = [str(_PROJECT_ROOT / "src")]
@@ -452,8 +428,13 @@ def test_starter_verifier_reports_only_the_four_incomplete_groups() -> None:
     completed = _run_verifier(_STUDENT_DIR)
 
     assert completed.returncode != 0
-    assert len(_failure_lines(completed)) == 4
-    assert all(seam in completed.stdout for seam in _SEAM_NAMES)
+    assert _failure_lines(completed) == [
+        "FAIL wire_retriever: incomplete — Connect the certified company-scoped retrieval boundary.",
+        "FAIL register_analyst_capabilities: incomplete — Apply discovery through the approved read-tool policy.",
+        "FAIL evaluate_student_evidence_gate: incomplete — Require document evidence for both companies.",
+        "FAIL assemble_public_briefing_view: incomplete — Use the display-safe public view boundary.",
+    ]
+    assert tuple(line.split(":", 1)[0].removeprefix("FAIL ") for line in _failure_lines(completed)) == _SEAM_NAMES
     assert "CAPSTONE_PASS" not in completed.stdout
     assert completed.stderr == ""
 
@@ -496,11 +477,68 @@ def test_verifier_captures_and_sanitizes_malicious_student_output(
 
     assert completed.returncode != 0
     assert _failure_lines(completed) == [
-        "FAIL wire_retriever: student output is not allowed."
+        "FAIL verifier: isolated worker emitted output."
     ]
     assert completed.stdout.splitlines().count("CAPSTONE_PASS") == 0
     assert "OPENAI_API_KEY" not in completed.stdout
     assert "sk-malicious" not in completed.stdout
+    assert "/Users/" not in completed.stdout
+    assert completed.stderr == ""
+
+
+@pytest.mark.parametrize(
+    ("prefix_source", "override"),
+    [
+        ("print('CAPSTONE_PASS')\n", None),
+        (
+            "",
+            '''def wire_retriever(company: str, query: str):
+    print("OPENAI_API_KEY=sk-malicious", file=sys.__stdout__)
+    return build_certified_retriever().search(company, query)
+''',
+        ),
+        (
+            "",
+            '''def wire_retriever(company: str, query: str):
+    os.write(1, b"CAPSTONE_PASS\\n")
+    os.write(2, b"/Users/private/credentials.txt\\n")
+    return build_certified_retriever().search(company, query)
+''',
+        ),
+        (
+            "",
+            '''def wire_retriever(company: str, query: str):
+    subprocess.run(
+        [sys.executable, "-c", "import os; os.write(1, b'CAPSTONE_PASS\\\\n'); os.write(2, b'OPENAI_API_KEY=sk-child /Users/private\\\\n')"],
+        check=True,
+    )
+    return build_certified_retriever().search(company, query)
+''',
+        ),
+    ],
+)
+def test_verifier_isolates_process_level_student_output(
+    tmp_path: Path,
+    prefix_source: str,
+    override: str | None,
+) -> None:
+    overrides = {"wire_retriever": override} if override is not None else None
+    student_dir = _copy_with_generated_adapter(
+        tmp_path / "student",
+        overrides=overrides,
+        prefix_source=prefix_source,
+    )
+
+    completed = _run_verifier(student_dir)
+
+    assert completed.returncode != 0
+    assert _failure_lines(completed) == [
+        "FAIL verifier: isolated worker emitted output."
+    ]
+    assert completed.stdout.splitlines().count("CAPSTONE_PASS") == 0
+    assert "OPENAI_API_KEY" not in completed.stdout
+    assert "sk-malicious" not in completed.stdout
+    assert "sk-child" not in completed.stdout
     assert "/Users/" not in completed.stdout
     assert completed.stderr == ""
 
