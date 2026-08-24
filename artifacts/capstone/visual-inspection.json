@@ -1,0 +1,16 @@
+{
+  "schema_version": 1,
+  "status": "PASS",
+  "limitation": "No visual limitation was observed in the certified desktop journey.",
+  "checks": {
+    "readable_hierarchy": true,
+    "no_clipping": true,
+    "provider_data_labels": true,
+    "plan_replan_tool_states": true,
+    "evidence_citation_readability": true,
+    "trace_readability": true,
+    "status_distinctions": true,
+    "release_judge_separation": true,
+    "exact_footer": true
+  }
+}

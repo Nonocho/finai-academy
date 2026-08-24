@@ -114,6 +114,46 @@ def test_route_changes_clear_retained_results_and_show_immutable_run_route() -> 
     assert "Release passed" not in _rendered_text(app)
 
 
+def test_readiness_and_run_status_values_use_wrapping_text_instead_of_metrics() -> None:
+    app = AppTest.from_function(
+        _app,
+        args=(
+            _successful_factory,
+            {"tavily": "Unavailable", "openai": "Unavailable", "ollama": "Unavailable"},
+        ),
+    ).run()
+    app = _run_reference(app)
+    text = _rendered_text(app)
+
+    assert not app.metric
+    for value in (
+        "Recorded demo",
+        "recorded-capstone-v1",
+        "Certified snapshots",
+        "Completed",
+        "Evidence gate passed",
+    ):
+        assert value in text
+
+
+def test_citations_and_trace_render_as_wrapping_rows_instead_of_wide_dataframes() -> None:
+    app = AppTest.from_function(
+        _app,
+        args=(
+            _successful_factory,
+            {"tavily": "Unavailable", "openai": "Unavailable", "ollama": "Unavailable"},
+        ),
+    ).run()
+    app = _run_reference(app)
+    text = _rendered_text(app)
+    dataframe_columns = [set(frame.value.columns) for frame in app.dataframe]
+
+    assert not any("Claim" in columns for columns in dataframe_columns)
+    assert not any("Summary" in columns for columns in dataframe_columns)
+    assert "Citation: First Finance controlled classroom fixture" in text
+    assert "Initial research plan passed host validation." in text
+
+
 def test_recorded_reference_click_renders_complete_release_evidence_and_trace() -> None:
     app = AppTest.from_function(
         _app,
@@ -141,10 +181,9 @@ def test_recorded_reference_click_renders_complete_release_evidence_and_trace() 
     assert "Release passed" in text
     score_table = next(frame.value for frame in app.dataframe if "Score" in frame.value.columns)
     assert len(score_table) == 5
-    evidence_table = next(
-        frame.value for frame in app.dataframe if "Claim" in frame.value.columns
-    )
-    assert set(evidence_table["Provenance"]) == {"Document", "Metric"}
+    assert "NVIDIA · Document" in text
+    assert "Schneider Electric · Metric" in text
+    assert "Citation: First Finance controlled classroom fixture" in text
     assert not app.exception
 
 

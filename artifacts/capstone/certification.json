@@ -1,0 +1,105 @@
+{
+  "schema_version": 1,
+  "offline_release_passed": true,
+  "reference_mission": {
+    "status": "completed",
+    "provider": "recorded",
+    "data_mode": "certified",
+    "bounded_replan": true,
+    "replan_count": 1,
+    "observation_count": 5,
+    "companies_evidenced": [
+      "NVIDIA",
+      "Schneider Electric"
+    ],
+    "citation_pairs_valid": true,
+    "citation_integrity": 1.0,
+    "metric_names": [
+      "tool_call_correctness",
+      "tool_call_efficiency",
+      "answer_relevance",
+      "answer_completeness",
+      "citation_integrity"
+    ],
+    "metric_values": [
+      1.0,
+      1.0,
+      1.0,
+      1.0,
+      1.0
+    ],
+    "release_passed": true
+  },
+  "streamlit": {
+    "app_test_passed": true,
+    "reference_journey_passed": true,
+    "provider_data_labels_visible": true,
+    "plan_replan_tool_states_visible": true,
+    "evidence_citations_visible": true,
+    "trace_visible": true,
+    "release_judge_separated": true,
+    "footer_exact": true,
+    "visual_evidence": {
+      "status": "PASS",
+      "screenshot_present": true,
+      "width": 1440,
+      "height": 1000,
+      "checks": {
+        "readable_hierarchy": true,
+        "no_clipping": true,
+        "provider_data_labels": true,
+        "plan_replan_tool_states": true,
+        "evidence_citation_readability": true,
+        "trace_readability": true,
+        "status_distinctions": true,
+        "release_judge_separation": true,
+        "exact_footer": true
+      },
+      "limitation": "No visual limitation was observed in the certified desktop journey."
+    }
+  },
+  "student": {
+    "starter_launches": true,
+    "incomplete_groups": [
+      "wire_retriever",
+      "register_analyst_capabilities",
+      "evaluate_student_evidence_gate",
+      "assemble_public_briefing_view"
+    ],
+    "incomplete_group_count": 4,
+    "starter_marker_count": 0,
+    "solved_exit_zero": true,
+    "solved_marker_count": 1
+  },
+  "mlflow": {
+    "persisted": true,
+    "run_present": true,
+    "trace_present": true,
+    "run_trace_linked": true,
+    "metric_names": [
+      "tool_call_correctness",
+      "tool_call_efficiency",
+      "answer_relevance",
+      "answer_completeness",
+      "citation_integrity"
+    ],
+    "release_persisted": true,
+    "artifact_names": [
+      "evidence/briefing.json",
+      "evidence/dataset_identities.json",
+      "evidence/trajectory.json"
+    ],
+    "public_artifacts_validated": true
+  },
+  "repository": {
+    "public_artifact_scan_passed": true,
+    "credential_scan_passed": true,
+    "personal_path_scan_passed": true
+  },
+  "optional_providers": {
+    "openai": "NOT RUN",
+    "ollama": "NOT RUN",
+    "tavily": "NOT RUN",
+    "timed_classroom_rehearsal": "NOT RUN"
+  }
+}

@@ -154,10 +154,17 @@ def _render_readiness_strip(
 ) -> None:
     with st.container(border=True):
         columns = st.columns(4)
-        columns[0].metric("Provider", provider)
-        columns[1].metric("Model", model)
-        columns[2].metric("Data", data_mode)
-        columns[3].metric("Tavily", integrations.get("tavily", "Not checked"))
+        _render_status_value(columns[0], "Provider", provider)
+        _render_status_value(columns[1], "Model", model)
+        _render_status_value(columns[2], "Data", data_mode)
+        _render_status_value(columns[3], "Tavily", integrations.get("tavily", "Not checked"))
+
+
+def _render_status_value(column: Any, label: str, value: str) -> None:
+    """Render compact status copy that wraps at the certified desktop viewport."""
+
+    column.caption(label)
+    column.markdown(f"**{value}**")
 
 
 def _render_reference_tab(
@@ -273,10 +280,10 @@ def _render_run(view: CapstoneRunView) -> None:
         f"{view.readiness.data_mode}"
     )
     status_columns = st.columns(4)
-    status_columns[0].metric("Run status", view.readiness.run_status)
-    status_columns[1].metric("Evidence", view.release.evidence_gate)
-    status_columns[2].metric("Replans", str(view.replan_count))
-    status_columns[3].metric("Duration", view.total_duration)
+    _render_status_value(status_columns[0], "Run status", view.readiness.run_status)
+    _render_status_value(status_columns[1], "Evidence", view.release.evidence_gate)
+    _render_status_value(status_columns[2], "Replans", str(view.replan_count))
+    _render_status_value(status_columns[3], "Duration", view.total_duration)
 
     st.subheader("Research plan")
     st.dataframe(
@@ -310,24 +317,33 @@ def _render_run(view: CapstoneRunView) -> None:
 
     st.subheader("Evidence and citations")
     if view.cited_facts:
-        st.dataframe(
-            [_fact_record(row.model_dump()) for row in view.cited_facts],
-            hide_index=True,
-        )
+        for row in view.cited_facts:
+            with st.container(border=True):
+                st.caption(f"{row.company} · {row.provenance}")
+                st.write(row.claim)
+                st.caption(f"Citation: {row.source}")
+                st.caption(f"Evidence ID: {row.evidence_id}")
     else:
         st.caption("No cited facts were released.")
     if view.evidence:
         with st.expander("Collected document evidence"):
-            st.dataframe(
-                [_evidence_record(row.model_dump()) for row in view.evidence],
-                hide_index=True,
-            )
+            for row in view.evidence:
+                with st.container(border=True):
+                    st.caption(f"{row.company} · {row.period} · {row.section}")
+                    st.write(row.evidence)
+                    st.caption(f"Evidence ID: {row.evidence_id}")
+                    st.caption(f"Source: {row.source}")
 
     with st.expander("Execution trace"):
-        st.dataframe(
-            [_trace_record(row.model_dump()) for row in view.trace],
-            hide_index=True,
-        )
+        for row in view.trace:
+            with st.container(border=True):
+                st.caption(f"Event {row.index} · {row.phase} · {row.status}")
+                st.write(row.summary)
+                st.caption(
+                    f"Capability: {row.capability} · Attempt: {row.attempt} · "
+                    f"Revision: {row.revision} · Error: {row.error} · "
+                    f"Duration: {row.duration} · Owner: {row.failure_owner}"
+                )
 
     st.subheader("Deterministic release evaluation")
     st.dataframe(
@@ -394,42 +410,6 @@ def _tool_record(row: Mapping[str, str]) -> dict[str, str]:
         "Outcome": row["outcome"],
         "Provenance": row["provenance"],
         "Duration": row["duration"],
-    }
-
-
-def _fact_record(row: Mapping[str, str]) -> dict[str, str]:
-    return {
-        "Company": row["company"],
-        "Provenance": row["provenance"],
-        "Claim": row["claim"],
-        "Source": row["source"],
-        "Evidence ID": row["evidence_id"],
-    }
-
-
-def _evidence_record(row: Mapping[str, str]) -> dict[str, str]:
-    return {
-        "Company": row["company"],
-        "Period": row["period"],
-        "Section": row["section"],
-        "Evidence": row["evidence"],
-        "Evidence ID": row["evidence_id"],
-        "Source": row["source"],
-    }
-
-
-def _trace_record(row: Mapping[str, str]) -> dict[str, str]:
-    return {
-        "#": row["index"],
-        "Phase": row["phase"],
-        "Capability": row["capability"],
-        "Attempt": row["attempt"],
-        "Revision": row["revision"],
-        "Status": row["status"],
-        "Error": row["error"],
-        "Duration": row["duration"],
-        "Failure owner": row["failure_owner"],
-        "Summary": row["summary"],
     }
 
 
