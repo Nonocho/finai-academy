@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import importlib
 import json
+import sqlite3
 from pathlib import Path
 
 import mlflow
@@ -9,7 +10,11 @@ import pytest
 from mlflow.tracking import MlflowClient
 
 from finai_academy.capstone.models import ResearchRequest
-from finai_academy.capstone.persistence import CapstoneRunStore
+from finai_academy.capstone.persistence import (
+    CapstoneRunStore,
+    audit_capstone_mlflow,
+    iter_mlflow_text_values,
+)
 from finai_academy.capstone.service import build_reference_copilot
 
 
@@ -42,8 +47,12 @@ def test_sqlite_run_contains_metrics_release_trajectory_briefing_and_datasets(
 
     run = client.get_run(references.run_id)
     artifacts = {
-        item.path
-        for item in client.list_artifacts(references.run_id, path="evidence")
+        path.relative_to(
+            tracking_directory / "artifacts" / references.run_id / "artifacts"
+        ).as_posix()
+        for path in (
+            tracking_directory / "artifacts" / references.run_id / "artifacts" / "evidence"
+        ).glob("*.json")
     }
     traces = mlflow.search_traces(
         run_id=references.run_id,
@@ -89,7 +98,7 @@ def test_persistence_public_output_and_artifacts_contain_no_paths_or_credentials
         flush=True,
     )
     downloaded = [
-        client.download_artifacts(references.run_id, artifact)
+        tracking_directory / "artifacts" / references.run_id / "artifacts" / artifact
         for artifact in (
             "evidence/trajectory.json",
             "evidence/briefing.json",
@@ -101,7 +110,6 @@ def test_persistence_public_output_and_artifacts_contain_no_paths_or_credentials
         sort_keys=True,
     )
     trace_info = traces[0].to_dict()["info"]
-    trace_info["tags"].pop("mlflow.artifactLocation", None)
     mlflow_public_metadata = json.dumps(
         {"run_tags": run.data.tags, "trace_info": trace_info},
         sort_keys=True,
@@ -114,6 +122,57 @@ def test_persistence_public_output_and_artifacts_contain_no_paths_or_credentials
     assert "sk-" not in public_payload
     assert "OPENAI_API_KEY" not in artifact_payload
     assert "sk-" not in artifact_payload
+    audit = audit_capstone_mlflow(
+        tracking_directory / "mlflow.db", tracking_directory / "artifacts"
+    )
+    assert audit["sqlite_text_values_scanned"] > 0
+    persisted_text = "\n".join(
+        value for _, _, value in iter_mlflow_text_values(tracking_directory / "mlflow.db")
+    )
+    assert "arnauddemes" not in persisted_text.casefold()
+    assert "/Users/" not in persisted_text
+
+
+@pytest.mark.parametrize(
+    ("table", "column"),
+    [
+        ("experiments", "artifact_location"),
+        ("runs", "artifact_uri"),
+        ("tags", "value"),
+        ("trace_info", "request_preview"),
+        ("trace_request_metadata", "value"),
+        ("trace_tags", "value"),
+        ("spans", "content"),
+    ],
+)
+def test_privacy_audit_rejects_sensitive_text_in_every_mlflow_domain(
+    tmp_path: Path, table: str, column: str
+) -> None:
+    database = tmp_path / "mlflow.db"
+    with sqlite3.connect(database) as connection:
+        connection.execute(f'CREATE TABLE "{table}" ("{column}" TEXT)')
+        connection.execute(
+            f'INSERT INTO "{table}" ("{column}") VALUES (?)',
+            ("file:///Users/arnauddemes/private",),
+        )
+
+    with pytest.raises(ValueError, match="private MLflow metadata"):
+        audit_capstone_mlflow(database, tmp_path / "artifacts")
+
+
+def test_privacy_audit_rejects_sensitive_artifact_metadata_and_content(tmp_path: Path) -> None:
+    database = tmp_path / "mlflow.db"
+    with sqlite3.connect(database) as connection:
+        connection.execute("CREATE TABLE safe (value TEXT)")
+        connection.execute("INSERT INTO safe VALUES ('recorded')")
+    artifacts = tmp_path / "artifacts"
+    artifacts.mkdir()
+    (artifacts / "metadata.json").write_text(
+        '{"credential":"Authorization: Bearer test-secret"}', encoding="utf-8"
+    )
+
+    with pytest.raises(ValueError, match="private MLflow artifact"):
+        audit_capstone_mlflow(database, artifacts)
 
 
 def test_missing_mlflow_is_typed_unavailable_and_does_not_change_analysis(

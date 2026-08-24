@@ -1,16 +1,6 @@
 {
-  "schema_version": 1,
-  "status": "PASS",
-  "limitation": "No visual limitation was observed in the certified desktop journey.",
-  "checks": {
-    "readable_hierarchy": true,
-    "no_clipping": true,
-    "provider_data_labels": true,
-    "plan_replan_tool_states": true,
-    "evidence_citation_readability": true,
-    "trace_readability": true,
-    "status_distinctions": true,
-    "release_judge_separation": true,
-    "exact_footer": true
-  }
+  "schema_version": 2,
+  "status": "NOT RUN",
+  "captures": [],
+  "limitation": "The local application ran, but no controllable browser was available for the required four-state recapture. The earlier single viewport is not accepted as full visual certification."
 }

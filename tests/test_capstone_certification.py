@@ -1,8 +1,10 @@
 from __future__ import annotations
 
+import hashlib
+import importlib.util
 import json
 import os
-import struct
+import shutil
 import subprocess
 import sys
 from pathlib import Path
@@ -32,6 +34,14 @@ def _run_certification(
     *,
     optional_environment: bool,
 ) -> subprocess.CompletedProcess[str]:
+    committed = _PROJECT_ROOT / "artifacts" / "capstone"
+    artifact_directory.mkdir(parents=True, exist_ok=True)
+    shutil.copyfile(
+        committed / "visual-inspection.json", artifact_directory / "visual-inspection.json"
+    )
+    manifest = json.loads((committed / "visual-inspection.json").read_text())
+    for capture in manifest.get("captures", []):
+        shutil.copyfile(committed / capture["file"], artifact_directory / capture["file"])
     environment = os.environ.copy()
     for name in ("OPENAI_API_KEY", "TAVILY_API_KEY", "FINAI_MODEL_PROVIDER"):
         environment.pop(name, None)
@@ -162,38 +172,122 @@ def test_public_certification_outputs_contain_no_secrets_or_personal_paths(
         assert forbidden not in public_text
 
 
-def test_screenshot_is_real_desktop_png_when_visual_evidence_is_present(
+def test_visual_evidence_truthfully_records_missing_four_state_capture(
     certification_runs,
 ) -> None:
     artifact_directory, _, _, _ = certification_runs
     payload = json.loads((artifact_directory / "certification.json").read_text())
-    screenshot = artifact_directory / "reference-mission.png"
+    visual = payload["streamlit"]["visual_evidence"]
+    assert visual["status"] == "NOT RUN"
+    assert visual["captures"] == []
+    assert visual["limitation"]
 
-    if not screenshot.exists():
-        assert payload["streamlit"]["visual_evidence"]["status"] == "NOT RUN"
-        assert payload["streamlit"]["visual_evidence"]["limitation"]
-        return
 
-    raw = screenshot.read_bytes()
-    assert raw.startswith(b"\x89PNG\r\n\x1a\n")
-    width, height = struct.unpack(">II", raw[16:24])
-    assert width >= 1200
-    assert height >= 800
+@pytest.fixture(scope="module")
+def certification_module():
+    spec = importlib.util.spec_from_file_location("capstone_certification", _SCRIPT)
+    assert spec and spec.loader
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+def _copy_visual_evidence(destination: Path) -> dict[str, object]:
+    source = _PROJECT_ROOT / "artifacts" / "capstone" / "reference-mission.png"
+    destination.mkdir()
+    checks = [
+        "readable_hierarchy",
+        "no_clipping",
+        "provider_data_labels",
+        "plan_replan_tool_states",
+        "briefing_readability",
+        "evidence_citation_readability",
+        "trace_readability",
+        "status_distinctions",
+        "release_judge_separation",
+        "exact_footer",
+    ]
+    captures = []
+    for index in range(4):
+        filename = f"copied-browser-fixture-{index}.png"
+        shutil.copyfile(source, destination / filename)
+        captures.append(
+            {
+                "file": filename,
+                "sha256": hashlib.sha256((destination / filename).read_bytes()).hexdigest(),
+                "width": 1440,
+                "height": 1000,
+                "browser": "Codex in-app Browser",
+                "route": "recorded/reference/test-fixture",
+                "state": f"validator-fixture-{index}",
+                "captured_at": "2026-08-24T10:00:00+02:00",
+                "visible_elements": checks if index == 0 else [],
+            }
+        )
+    manifest = {
+        "schema_version": 2,
+        "status": "PASS",
+        "captures": captures,
+        "limitation": "Validator fixture only.",
+    }
+    (destination / "visual-inspection.json").write_text(json.dumps(manifest))
+    return manifest
+
+
+def test_visual_pass_path_fully_decodes_copied_bound_images(
+    certification_module, tmp_path: Path
+) -> None:
+    directory = tmp_path / "pass"
+    _copy_visual_evidence(directory)
+    result = certification_module.validate_visual_evidence(directory)
+    assert result["status"] == "PASS"
+    assert len(result["captures"]) == 4
+
+
+def test_visual_evidence_rejects_tampered_hash(certification_module, tmp_path: Path) -> None:
+    manifest = _copy_visual_evidence(tmp_path / "hash")
+    manifest["captures"][0]["sha256"] = "0" * 64
+    (tmp_path / "hash" / "visual-inspection.json").write_text(json.dumps(manifest))
+
+    with pytest.raises(certification_module.CertificationFailure):
+        certification_module.validate_visual_evidence(tmp_path / "hash")
+
+
+def test_visual_evidence_rejects_truncated_png(certification_module, tmp_path: Path) -> None:
+    manifest = _copy_visual_evidence(tmp_path / "truncated")
+    image = tmp_path / "truncated" / manifest["captures"][0]["file"]
+    image.write_bytes(image.read_bytes()[:100])
+    manifest["captures"][0]["sha256"] = hashlib.sha256(image.read_bytes()).hexdigest()
+    (tmp_path / "truncated" / "visual-inspection.json").write_text(json.dumps(manifest))
+
+    with pytest.raises((OSError, certification_module.CertificationFailure)):
+        certification_module.validate_visual_evidence(tmp_path / "truncated")
+
+
+def test_visual_evidence_rejects_missing_acceptance_coverage(
+    certification_module, tmp_path: Path
+) -> None:
+    manifest = _copy_visual_evidence(tmp_path / "coverage")
+    for capture in manifest["captures"]:
+        capture["visible_elements"] = [
+            item for item in capture["visible_elements"] if item != "exact_footer"
+        ]
+    (tmp_path / "coverage" / "visual-inspection.json").write_text(json.dumps(manifest))
+
+    with pytest.raises(certification_module.CertificationFailure):
+        certification_module.validate_visual_evidence(tmp_path / "coverage")
 
 
 def test_committed_certification_artifacts_match_the_contract() -> None:
     artifact_directory = _PROJECT_ROOT / "artifacts" / "capstone"
     payload = json.loads((artifact_directory / "certification.json").read_text())
-    screenshot = artifact_directory / "reference-mission.png"
-    raw = screenshot.read_bytes()
-    width, height = struct.unpack(">II", raw[16:24])
+    manifest = json.loads((artifact_directory / "visual-inspection.json").read_text())
 
     assert payload["schema_version"] == 1
     assert payload["offline_release_passed"] is True
     assert payload["reference_mission"]["citation_integrity"] == 1.0
     assert payload["streamlit"]["app_test_passed"] is True
-    assert payload["streamlit"]["visual_evidence"]["status"] == "PASS"
+    assert payload["streamlit"]["visual_evidence"]["status"] == "NOT RUN"
     assert payload["student"]["solved_marker_count"] == 1
     assert payload["mlflow"]["persisted"] is True
-    assert raw.startswith(b"\x89PNG\r\n\x1a\n")
-    assert (width, height) == (1440, 1000)
+    assert manifest["captures"] == []

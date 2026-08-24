@@ -13,11 +13,9 @@ Offline certification: **PASS**
 
 ## Visual evidence
 
-Status: **PASS**
+Status: **NOT RUN**
 
-Limitation: No visual limitation was observed in the certified desktop journey.
-
-The real 1440×1000 browser capture was inspected for readable hierarchy, no clipping, provider/data labels, plan/replan/tool states, evidence and citation readability, trace readability, status distinctions, release/judge separation, and the exact footer.
+Limitation: The local application ran, but no controllable browser was available for the required four-state recapture. The earlier single viewport is not accepted as full visual certification.
 
 ## Optional coverage
 

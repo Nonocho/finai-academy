@@ -187,6 +187,107 @@ def test_recorded_reference_click_renders_complete_release_evidence_and_trace() 
     assert not app.exception
 
 
+def test_result_view_preserves_every_exact_citation_pair_and_card_count() -> None:
+    app = AppTest.from_function(
+        _app,
+        args=(
+            _successful_factory,
+            {"tavily": "Unavailable", "openai": "Unavailable", "ollama": "Unavailable"},
+        ),
+    ).run()
+    app = _run_reference(app)
+    expected = [
+        (
+            "NVIDIA · Metric",
+            "NVIDIA P/E was 52.4 x as of 2026-08-20.",
+            "Citation: First Finance controlled classroom fixture",
+            "Evidence ID: Not applicable",
+        ),
+        (
+            "Schneider Electric · Metric",
+            "Schneider Electric P/E was 31.8 x as of 2026-08-20.",
+            "Citation: First Finance controlled classroom fixture",
+            "Evidence ID: Not applicable",
+        ),
+        (
+            "NVIDIA · Document",
+            "NVIDIA (FY2026): NVIDIA Gaming revenue grew 41% in fiscal 2026.",
+            "Citation: assets/course-data/fixtures/nvidia_fy2026_excerpt.html",
+            "Evidence ID: NVDA-FY2026-GAMING-001",
+        ),
+        (
+            "NVIDIA · Document",
+            "NVIDIA (FY2026): NVIDIA reported fiscal 2026 total revenue of $215.9 billion, including $193.7 billion from Data Center.",
+            "Citation: assets/course-data/fixtures/nvidia_fy2026_excerpt.html",
+            "Evidence ID: NVDA-FY2026-DATA-CENTER-001",
+        ),
+        (
+            "Schneider Electric · Document",
+            "Schneider Electric (FY2025): The Schneider Electric FY2025 extract reports Energy Management organic revenue growth of 10%.",
+            "Citation: assets/course-data/fixtures/schneider_fy2025_excerpt.pdf",
+            "Evidence ID: SU-FY2025-ENERGY-MANAGEMENT-002",
+        ),
+        (
+            "Schneider Electric · Document",
+            "Schneider Electric (FY2025): Schneider Electric reported FY2025 revenue of EUR 40.2 billion and an adjusted EBITA margin of 18.7%.",
+            "Citation: assets/course-data/fixtures/schneider_fy2025_excerpt.pdf",
+            "Evidence ID: SU-FY2025-ENERGY-MANAGEMENT-001",
+        ),
+    ]
+    citation_headers = [
+        item.value for item in app.caption if item.value in {row[0] for row in expected}
+    ]
+    citation_sources = [item.value for item in app.caption if item.value.startswith("Citation:")]
+    citation_ids = [item.value for item in app.caption if item.value.startswith("Evidence ID:")][:6]
+    claims = [item.value for item in app.markdown if item.value in {row[1] for row in expected}]
+
+    assert len(citation_headers) == 6
+    assert (
+        list(zip(citation_headers, claims, citation_sources, citation_ids, strict=True)) == expected
+    )
+
+
+def test_result_view_preserves_exact_trace_order_and_typed_fields() -> None:
+    app = AppTest.from_function(
+        _app,
+        args=(
+            _successful_factory,
+            {"tavily": "Unavailable", "openai": "Unavailable", "ollama": "Unavailable"},
+        ),
+    ).run()
+    app = _run_reference(app)
+    headers = [item.value for item in app.caption if item.value.startswith("Event ")]
+    metadata = [item.value for item in app.caption if item.value.startswith("Capability:")]
+    assert headers == [
+        "Event 1 · Planning · Ok",
+        "Event 2 · Policy · Ok",
+        "Event 3 · Execution · Ok",
+        "Event 4 · Execution · Ok",
+        "Event 5 · Execution · Error",
+        "Event 6 · Replanning · Ok",
+        "Event 7 · Execution · Ok",
+        "Event 8 · Execution · Ok",
+        "Event 9 · Evidence gate · Ok",
+        "Event 10 · Report · Ok",
+    ]
+    expected_fields = [
+        ("Not applicable", "0", "None"),
+        ("Not applicable", "0", "None"),
+        ("Get company metric", "0", "None"),
+        ("Get company metric", "0", "None"),
+        ("Get company metric", "0", "unsupported_metric"),
+        ("Get company metric", "1", "None"),
+        ("Search financial documents", "1", "None"),
+        ("Search financial documents", "1", "None"),
+        ("Not applicable", "1", "None"),
+        ("Not applicable", "1", "None"),
+    ]
+    assert len(metadata) == 10
+    for value, (capability, revision, error) in zip(metadata, expected_fields, strict=True):
+        assert value.startswith(f"Capability: {capability} ·")
+        assert f" · Revision: {revision} · Error: {error} ·" in value
+
+
 def test_insufficient_evidence_renders_gate_failure_without_briefing() -> None:
     app = AppTest.from_function(
         _app,
@@ -261,9 +362,7 @@ class _MissingSchneiderRetriever:
 
 
 def test_reference_entrypoint_loads_the_offline_application() -> None:
-    entrypoint = (
-        Path(__file__).parents[1] / "final-project" / "reference" / "streamlit_app.py"
-    )
+    entrypoint = Path(__file__).parents[1] / "final-project" / "reference" / "streamlit_app.py"
 
     app = AppTest.from_file(entrypoint).run()
 

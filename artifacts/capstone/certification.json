@@ -40,22 +40,10 @@
     "release_judge_separated": true,
     "footer_exact": true,
     "visual_evidence": {
-      "status": "PASS",
-      "screenshot_present": true,
-      "width": 1440,
-      "height": 1000,
-      "checks": {
-        "readable_hierarchy": true,
-        "no_clipping": true,
-        "provider_data_labels": true,
-        "plan_replan_tool_states": true,
-        "evidence_citation_readability": true,
-        "trace_readability": true,
-        "status_distinctions": true,
-        "release_judge_separation": true,
-        "exact_footer": true
-      },
-      "limitation": "No visual limitation was observed in the certified desktop journey."
+      "status": "NOT RUN",
+      "captures": [],
+      "covered_elements": [],
+      "limitation": "The local application ran, but no controllable browser was available for the required four-state recapture. The earlier single viewport is not accepted as full visual certification."
     }
   },
   "student": {
@@ -89,7 +77,11 @@
       "evidence/dataset_identities.json",
       "evidence/trajectory.json"
     ],
-    "public_artifacts_validated": true
+    "public_artifacts_validated": true,
+    "privacy_audit": {
+      "sqlite_text_values_scanned": 1001,
+      "artifact_files_scanned": 23
+    }
   },
   "repository": {
     "public_artifact_scan_passed": true,

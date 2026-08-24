@@ -4,12 +4,12 @@ from __future__ import annotations
 
 import argparse
 import contextlib
+import hashlib
 import importlib
 import io
 import json
 import os
 import shutil
-import struct
 import subprocess
 import sys
 import tempfile
@@ -18,11 +18,12 @@ from collections.abc import Mapping, Sequence
 from pathlib import Path
 from typing import Any
 
+from PIL import Image
 from streamlit.testing.v1 import AppTest
 
 from finai_academy.capstone import ResearchRequest, build_reference_copilot
 from finai_academy.capstone.models import ResearchRunResult
-from finai_academy.capstone.persistence import CapstoneRunStore
+from finai_academy.capstone.persistence import CapstoneRunStore, audit_capstone_mlflow
 
 _PROJECT_ROOT = Path(__file__).resolve().parents[1]
 _DEFAULT_ARTIFACT_DIRECTORY = _PROJECT_ROOT / "artifacts" / "capstone"
@@ -53,6 +54,7 @@ _VISUAL_CHECKS = (
     "no_clipping",
     "provider_data_labels",
     "plan_replan_tool_states",
+    "briefing_readability",
     "evidence_citation_readability",
     "trace_readability",
     "status_distinctions",
@@ -324,13 +326,18 @@ def _certify_mlflow(
         _require(references.analysis_run_id == result.run_id)
         run = client.get_run(references.run_id)
         artifact_names = tuple(
-            sorted(item.path for item in client.list_artifacts(references.run_id, "evidence"))
+            artifact
+            for artifact in _MLFLOW_ARTIFACTS
+            if (
+                tracking_directory / "artifacts" / references.run_id / "artifacts" / artifact
+            ).is_file()
         )
-        downloaded = [
-            client.download_artifacts(references.run_id, artifact) for artifact in _MLFLOW_ARTIFACTS
+        artifact_paths = [
+            tracking_directory / "artifacts" / references.run_id / "artifacts" / artifact
+            for artifact in _MLFLOW_ARTIFACTS
         ]
         artifact_payloads = [
-            json.loads(Path(path).read_text(encoding="utf-8")) for path in downloaded
+            json.loads(path.read_text(encoding="utf-8")) for path in artifact_paths
         ]
         traces = mlflow.search_traces(
             run_id=references.run_id,
@@ -358,7 +365,13 @@ def _certify_mlflow(
         },
         sort_keys=True,
     )
-    _require(_safe_public_text(public_payload))
+    public_artifacts_validated = _safe_public_text(public_payload)
+    _require(public_artifacts_validated)
+    privacy_audit = audit_capstone_mlflow(
+        tracking_directory / "mlflow.db", tracking_directory / "artifacts"
+    )
+    _require(privacy_audit["sqlite_text_values_scanned"] > 0)
+    _require(privacy_audit["artifact_files_scanned"] >= len(_MLFLOW_ARTIFACTS))
 
     return {
         "persisted": True,
@@ -368,64 +381,90 @@ def _certify_mlflow(
         "metric_names": list(_METRIC_NAMES),
         "release_persisted": True,
         "artifact_names": list(_MLFLOW_ARTIFACTS),
-        "public_artifacts_validated": True,
+        "public_artifacts_validated": public_artifacts_validated,
+        "privacy_audit": privacy_audit,
     }
 
 
-def _png_dimensions(path: Path) -> tuple[int, int]:
-    raw = path.read_bytes()
-    _require(len(raw) >= 24)
-    _require(raw.startswith(b"\x89PNG\r\n\x1a\n"))
-    _require(raw[12:16] == b"IHDR")
-    return struct.unpack(">II", raw[16:24])
+def validate_visual_evidence(artifact_directory: Path) -> dict[str, object]:
+    """Validate hash-bound, fully decoded browser captures and coverage."""
 
-
-def _visual_evidence(artifact_directory: Path) -> dict[str, object]:
-    screenshot = artifact_directory / "reference-mission.png"
     inspection_path = artifact_directory / "visual-inspection.json"
     if not inspection_path.exists():
-        _require(not screenshot.exists())
         return {
             "status": "NOT RUN",
-            "screenshot_present": False,
-            "width": None,
-            "height": None,
-            "checks": {},
+            "captures": [],
+            "covered_elements": [],
             "limitation": "No real browser capture and inspection result was recorded.",
         }
 
     inspection = json.loads(inspection_path.read_text(encoding="utf-8"))
     _require(isinstance(inspection, dict))
-    _require(inspection.get("schema_version") == 1)
+    _require(inspection.get("schema_version") == 2)
     status = inspection.get("status")
-    _require(status in {"NOT RUN", "AVAILABLE", "PASS", "ERROR"})
+    _require(status in {"NOT RUN", "PASS"})
     limitation = inspection.get("limitation")
     _require(isinstance(limitation, str) and bool(limitation.strip()))
     _require(_safe_public_text(limitation))
-    checks = inspection.get("checks", {})
-    _require(isinstance(checks, dict))
-
-    width: int | None = None
-    height: int | None = None
-    if screenshot.exists():
-        width, height = _png_dimensions(screenshot)
-        _require(width >= 1200 and height >= 800)
+    captures = inspection.get("captures")
+    _require(isinstance(captures, list))
+    covered: set[str] = set()
+    validated: list[dict[str, object]] = []
+    for capture in captures:
+        _require(isinstance(capture, dict))
+        _require(
+            set(capture)
+            == {
+                "file",
+                "sha256",
+                "width",
+                "height",
+                "browser",
+                "route",
+                "state",
+                "captured_at",
+                "visible_elements",
+            }
+        )
+        filename = capture["file"]
+        _require(isinstance(filename, str) and Path(filename).name == filename)
+        _require(_safe_public_text(json.dumps(capture, sort_keys=True)))
+        _require(capture["browser"] == "Codex in-app Browser")
+        _require(isinstance(capture["route"], str) and bool(capture["route"]))
+        _require(isinstance(capture["state"], str) and bool(capture["state"]))
+        captured_at = capture["captured_at"]
+        _require(
+            isinstance(captured_at, str) and ("+" in captured_at[10:] or captured_at.endswith("Z"))
+        )
+        visible = capture["visible_elements"]
+        _require(isinstance(visible, list) and all(item in _VISUAL_CHECKS for item in visible))
+        path = artifact_directory / filename
+        raw = path.read_bytes()
+        _require(hashlib.sha256(raw).hexdigest() == capture["sha256"])
+        with Image.open(path) as image:
+            _require(image.format == "PNG")
+            image.verify()
+        with Image.open(path) as image:
+            image.load()
+            _require(image.size == (capture["width"], capture["height"]) == (1440, 1000))
+            _require(_safe_public_text(json.dumps(image.info, default=str, sort_keys=True)))
+        covered.update(visible)
+        validated.append(capture)
     if status == "PASS":
-        _require(screenshot.exists())
-        _require((width, height) == (1440, 1000))
-        _require(set(checks) == set(_VISUAL_CHECKS))
-        _require(all(checks[name] is True for name in _VISUAL_CHECKS))
+        _require(len(validated) >= 4)
+        _require(covered == set(_VISUAL_CHECKS))
     if status == "NOT RUN":
-        _require(not screenshot.exists())
+        _require(not validated)
 
     return {
         "status": status,
-        "screenshot_present": screenshot.exists(),
-        "width": width,
-        "height": height,
-        "checks": {name: checks[name] for name in _VISUAL_CHECKS if name in checks},
+        "captures": validated,
+        "covered_elements": sorted(covered),
         "limitation": limitation,
     }
+
+
+_visual_evidence = validate_visual_evidence
 
 
 def _readiness_markdown(payload: Mapping[str, Any]) -> str:
@@ -483,9 +522,14 @@ def _artifact_payload(artifact_directory: Path) -> dict[str, object]:
     )
     reference_mission = _validate_reference_mission(result)
     streamlit = _certify_reference_app()
-    streamlit["visual_evidence"] = _visual_evidence(artifact_directory)
+    streamlit["visual_evidence"] = validate_visual_evidence(artifact_directory)
     student = _certify_student()
     mlflow = _certify_mlflow(result, artifact_directory / "mlflow")
+    public_scan_passed = all(
+        _safe_public_text(json.dumps(section, sort_keys=True))
+        for section in (reference_mission, streamlit, student, mlflow)
+    )
+    _require(public_scan_passed)
     return {
         "schema_version": 1,
         "offline_release_passed": True,
@@ -494,9 +538,9 @@ def _artifact_payload(artifact_directory: Path) -> dict[str, object]:
         "student": student,
         "mlflow": mlflow,
         "repository": {
-            "public_artifact_scan_passed": True,
-            "credential_scan_passed": True,
-            "personal_path_scan_passed": True,
+            "public_artifact_scan_passed": public_scan_passed,
+            "credential_scan_passed": public_scan_passed,
+            "personal_path_scan_passed": public_scan_passed,
         },
         "optional_providers": {
             "openai": "NOT RUN",
