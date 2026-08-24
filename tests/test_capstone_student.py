@@ -6,7 +6,7 @@ import os
 import shutil
 import subprocess
 import sys
-from collections.abc import Callable
+from collections.abc import Callable, Mapping, Sequence
 from pathlib import Path
 from types import ModuleType
 
@@ -14,8 +14,13 @@ import pytest
 from streamlit.testing.v1 import AppTest
 
 from finai_academy.capstone import ResearchRequest, build_reference_copilot
-from finai_academy.capstone.models import CapstoneEvidenceHit
-from finai_academy.capstone.tools import build_certified_retriever
+from finai_academy.capstone.models import (
+    CapstoneEvidenceHit,
+    EvidenceGateDecision,
+    ResearchRunResult,
+)
+from finai_academy.capstone.tools import AnalystToolRegistry, build_certified_retriever
+from finai_academy.capstone.views import CapstoneRunView, to_run_view
 
 _PROJECT_ROOT = Path(__file__).resolve().parents[1]
 _STUDENT_DIR = _PROJECT_ROOT / "final-project" / "student"
@@ -26,51 +31,68 @@ _SEAM_NAMES = (
     "evaluate_student_evidence_gate",
     "assemble_public_briefing_view",
 )
-_COMPLETED_BODIES = {
-    "    raise StudentIntegrationIncomplete(\n"
-    '        seam="wire_retriever",\n'
-    '        hint="Use the certified retriever and preserve the company boundary.",\n'
-    "    )\n": (
-        "    from finai_academy.capstone.tools import build_certified_retriever\n\n"
-        "    return build_certified_retriever().search(company, query)\n"
-    ),
-    "    raise StudentIntegrationIncomplete(\n"
-    '        seam="register_analyst_capabilities",\n'
-    '        hint="Intersect discovered tools with the certified analyst allowlist.",\n'
-    "    )\n": (
-        "    from finai_academy.capstone.tools import AnalystToolRegistry\n\n"
-        "    return AnalystToolRegistry(discovered=discovered).discover()\n"
-    ),
-    "    raise StudentIntegrationIncomplete(\n"
-    '        seam="evaluate_student_evidence_gate",\n'
-    '        hint="Require document evidence for both companies before release.",\n'
-    "    )\n": (
-        '    companies = ("NVIDIA", "Schneider Electric")\n'
-        "    covered_companies = {hit.company for hit in hits}\n"
-        "    coverage = {\n"
-        '        company: (("document",) if company in covered_companies else ())\n'
-        "        for company in companies\n"
-        "    }\n"
-        "    missing = tuple(\n"
-        '        f"{company} document evidence"\n'
-        "        for company in companies\n"
-        "        if company not in covered_companies\n"
-        "    )\n"
-        "    return EvidenceGateDecision(\n"
-        "        passed=not missing,\n"
-        "        coverage=coverage,\n"
-        "        missing_requirements=missing,\n"
-        "        evidence_hits=tuple(hits),\n"
-        "    )\n"
-    ),
-    "    raise StudentIntegrationIncomplete(\n"
-    '        seam="assemble_public_briefing_view",\n'
-    '        hint="Convert the run through the public presentation boundary.",\n'
-    "    )\n": (
-        "    from finai_academy.capstone.views import to_run_view\n\n"
-        "    return to_run_view(result)\n"
-    ),
-}
+
+
+def _reference_wire_retriever(
+    company: str, query: str
+) -> tuple[CapstoneEvidenceHit, ...]:
+    return build_certified_retriever().search(company, query)
+
+
+def _reference_register_analyst_capabilities(
+    discovered: Sequence[str],
+) -> tuple[str, ...]:
+    return AnalystToolRegistry(discovered=discovered).discover()
+
+
+def _reference_evaluate_student_evidence_gate(
+    hits: Sequence[CapstoneEvidenceHit],
+) -> EvidenceGateDecision:
+    companies = ("NVIDIA", "Schneider Electric")
+    covered = {hit.company for hit in hits}
+    missing = tuple(f"{company} document evidence" for company in companies if company not in covered)
+    return EvidenceGateDecision(
+        passed=not missing,
+        coverage={company: (("document",) if company in covered else ()) for company in companies},
+        missing_requirements=missing,
+        evidence_hits=tuple(hits),
+    )
+
+
+def _reference_assemble_public_briefing_view(
+    result: ResearchRunResult,
+) -> CapstoneRunView:
+    return to_run_view(result)
+
+
+_REFERENCE_ADAPTERS = (
+    _reference_wire_retriever,
+    _reference_register_analyst_capabilities,
+    _reference_evaluate_student_evidence_gate,
+    _reference_assemble_public_briefing_view,
+)
+_ADAPTER_HEADER = '''"""Generated contract adapter; not a student answer source."""
+from __future__ import annotations
+
+import dataclasses
+import sys
+from collections.abc import Sequence
+
+from finai_academy.capstone import ResearchRequest, build_reference_copilot
+from finai_academy.capstone.models import (
+    CapstoneEvidenceHit,
+    EvidenceGateDecision,
+    ResearchRunResult,
+)
+from finai_academy.capstone.tools import AnalystToolRegistry, build_certified_retriever
+from finai_academy.capstone.views import CapstoneRunView, to_run_view
+
+
+@dataclasses.dataclass(frozen=True, slots=True)
+class StudentIntegrationIncomplete(Exception):
+    seam: str
+    hint: str
+'''
 
 
 def _load_module(path: Path, name: str) -> ModuleType:
@@ -83,24 +105,34 @@ def _load_module(path: Path, name: str) -> ModuleType:
     return module
 
 
-def _apply_completed_bodies(student_dir: Path) -> None:
-    path = student_dir / "integration.py"
-    source = path.read_text(encoding="utf-8")
-    for incomplete, completed in _COMPLETED_BODIES.items():
-        if incomplete in source:
-            assert source.count(incomplete) == 1
-            source = source.replace(incomplete, completed)
-        else:
-            assert source.count(completed) == 1
-    path.write_text(source, encoding="utf-8")
+def _generated_adapter_source(overrides: Mapping[str, str] | None = None) -> str:
+    replacements = dict(overrides or {})
+    blocks: list[str] = []
+    for reference in _REFERENCE_ADAPTERS:
+        seam = reference.__name__.removeprefix("_reference_")
+        source = inspect.getsource(reference).replace(
+            f"def _reference_{seam}", f"def {seam}", 1
+        )
+        blocks.append(replacements.get(seam, source))
+    return _ADAPTER_HEADER + "\n\n" + "\n\n".join(blocks)
+
+
+def _copy_with_generated_adapter(
+    destination: Path,
+    *,
+    overrides: Mapping[str, str] | None = None,
+) -> Path:
+    shutil.copytree(_STUDENT_DIR, destination)
+    (destination / "integration.py").write_text(
+        _generated_adapter_source(overrides), encoding="utf-8"
+    )
+    return destination
 
 
 @pytest.fixture(scope="module")
 def completed_student_dir(tmp_path_factory: pytest.TempPathFactory) -> Path:
     destination = tmp_path_factory.mktemp("completed-capstone") / "student"
-    shutil.copytree(_STUDENT_DIR, destination)
-    _apply_completed_bodies(destination)
-    return destination
+    return _copy_with_generated_adapter(destination)
 
 
 @pytest.fixture(scope="module")
@@ -112,8 +144,27 @@ def completed_module(completed_student_dir: Path) -> ModuleType:
 
 
 @pytest.fixture(scope="module")
-def recorded_result():
+def recorded_result() -> ResearchRunResult:
     return build_reference_copilot(run_id_factory=lambda: "student-contract-run").run(
+        ResearchRequest.reference()
+    )
+
+
+class _MissingSchneiderRetriever:
+    def __init__(self) -> None:
+        self._wrapped = build_certified_retriever()
+
+    def search(
+        self, company: str, query: str, top_k: int = 2
+    ) -> tuple[CapstoneEvidenceHit, ...]:
+        if company == "Schneider Electric":
+            return ()
+        return self._wrapped.search(company, query, top_k)
+
+
+@pytest.fixture(scope="module")
+def stopped_result() -> ResearchRunResult:
+    return build_reference_copilot(retriever=_MissingSchneiderRetriever()).run(
         ResearchRequest.reference()
     )
 
@@ -127,60 +178,140 @@ def _document_hits() -> tuple[CapstoneEvidenceHit, ...]:
 
 
 class TestRetrieverContract:
+    @pytest.mark.parametrize(
+        ("company", "query", "expected_ids"),
+        [
+            (
+                "NVIDIA",
+                "gaming revenue growth",
+                ("NVDA-FY2026-GAMING-001", "NVDA-FY2026-DATA-CENTER-001"),
+            ),
+            (
+                "NVIDIA",
+                "data center growth",
+                ("NVDA-FY2026-DATA-CENTER-001", "NVDA-FY2026-GAMING-001"),
+            ),
+            (
+                "Schneider Electric",
+                "energy management growth",
+                (
+                    "SU-FY2025-ENERGY-MANAGEMENT-002",
+                    "SU-FY2025-ENERGY-MANAGEMENT-001",
+                ),
+            ),
+            (
+                "Schneider Electric",
+                "adjusted EBITA margin",
+                (
+                    "SU-FY2025-ENERGY-MANAGEMENT-001",
+                    "SU-FY2025-ENERGY-MANAGEMENT-002",
+                ),
+            ),
+        ],
+    )
     def test_returns_source_addressable_hits_inside_the_company_boundary(
-        self, completed_module: ModuleType
+        self,
+        completed_module: ModuleType,
+        company: str,
+        query: str,
+        expected_ids: tuple[str, ...],
     ) -> None:
-        hits = completed_module.wire_retriever("NVIDIA", "operating growth")
+        hits = completed_module.wire_retriever(company, query)
 
         assert isinstance(hits, tuple)
-        assert hits
-        assert {hit.company for hit in hits} == {"NVIDIA"}
-        assert all(hit.evidence_id and hit.source_reference for hit in hits)
+        assert all(isinstance(hit, CapstoneEvidenceHit) for hit in hits)
+        assert {hit.company for hit in hits} == {company}
+        assert tuple(hit.evidence_id for hit in hits) == expected_ids
+        assert all(hit.source_reference and hit.document_id for hit in hits)
 
 
 class TestCapabilitiesContract:
+    @pytest.mark.parametrize(
+        ("discovered", "expected"),
+        [
+            (
+                ("place_order", "search_financial_documents", "get_company_metric"),
+                ("get_company_metric", "search_financial_documents"),
+            ),
+            (("search_financial_documents", "place_order"), ("search_financial_documents",)),
+            (("get_company_metric", "delete_portfolio"), ("get_company_metric",)),
+            (("place_order", "place_order"), ()),
+        ],
+    )
     def test_keeps_only_discovered_certified_read_capabilities(
-        self, completed_module: ModuleType
+        self,
+        completed_module: ModuleType,
+        discovered: tuple[str, ...],
+        expected: tuple[str, ...],
     ) -> None:
-        capabilities = completed_module.register_analyst_capabilities(
-            ("place_order", "search_financial_documents", "get_company_metric")
-        )
+        capabilities = completed_module.register_analyst_capabilities(discovered)
 
-        assert capabilities == ("get_company_metric", "search_financial_documents")
+        assert isinstance(capabilities, tuple)
+        assert capabilities == expected
 
 
 class TestEvidenceGateContract:
-    def test_passes_only_with_document_evidence_for_both_companies(
+    def test_passes_with_reordered_document_evidence_for_both_companies(
         self, completed_module: ModuleType
     ) -> None:
-        hits = _document_hits()
+        hits = tuple(reversed(_document_hits()))
 
         complete = completed_module.evaluate_student_evidence_gate(hits)
-        incomplete = completed_module.evaluate_student_evidence_gate(
-            tuple(hit for hit in hits if hit.company == "NVIDIA")
-        )
 
+        assert isinstance(complete, EvidenceGateDecision)
         assert complete.passed
         assert complete.coverage == {
             "NVIDIA": ("document",),
             "Schneider Electric": ("document",),
         }
         assert complete.evidence_hits == hits
-        assert not incomplete.passed
-        assert incomplete.missing_requirements == (
-            "Schneider Electric document evidence",
-        )
+
+    @pytest.mark.parametrize(
+        ("companies", "missing"),
+        [
+            (("NVIDIA",), ("Schneider Electric document evidence",)),
+            (("Schneider Electric",), ("NVIDIA document evidence",)),
+            (
+                (),
+                ("NVIDIA document evidence", "Schneider Electric document evidence"),
+            ),
+        ],
+    )
+    def test_blocks_each_missing_company_case(
+        self,
+        completed_module: ModuleType,
+        companies: tuple[str, ...],
+        missing: tuple[str, ...],
+    ) -> None:
+        selected = tuple(hit for hit in _document_hits() if hit.company in companies)
+
+        decision = completed_module.evaluate_student_evidence_gate(selected)
+
+        assert isinstance(decision, EvidenceGateDecision)
+        assert not decision.passed
+        assert decision.missing_requirements == missing
+        assert decision.evidence_hits == selected
 
 
 class TestPublicViewContract:
-    def test_uses_the_safe_public_view_boundary(
-        self, completed_module: ModuleType, recorded_result
+    @pytest.mark.parametrize("result_fixture", ["recorded_result", "stopped_result"])
+    def test_uses_the_safe_public_view_boundary_for_completed_and_stopped_runs(
+        self,
+        completed_module: ModuleType,
+        result_fixture: str,
+        request: pytest.FixtureRequest,
     ) -> None:
-        view = completed_module.assemble_public_briefing_view(recorded_result)
+        result = request.getfixturevalue(result_fixture)
+        view = completed_module.assemble_public_briefing_view(result)
         encoded = view.model_dump_json()
 
-        assert view.release.decision == "Release passed"
-        assert view.briefing is not None
+        assert isinstance(view, CapstoneRunView)
+        if result.status == "completed":
+            assert view.release.decision == "Release passed"
+            assert view.briefing is not None
+        else:
+            assert view.release.decision == "Release blocked"
+            assert view.briefing is None
         assert '"arguments"' not in encoded
         assert "/Users/" not in encoded
 
@@ -256,6 +387,35 @@ def test_starter_streamlit_app_launches_and_renders_all_four_statuses() -> None:
     assert text.count("Incomplete:") == 4
 
 
+def test_student_app_sanitizes_generic_errors_and_rejects_wrong_types(tmp_path: Path) -> None:
+    overrides = {
+        "wire_retriever": '''def wire_retriever(company: str, query: str):
+    raise RuntimeError("OPENAI_API_KEY=sk-secret at /Users/private")
+''',
+        "register_analyst_capabilities": '''def register_analyst_capabilities(discovered):
+    return None
+''',
+        "evaluate_student_evidence_gate": '''def evaluate_student_evidence_gate(hits):
+    return ()
+''',
+        "assemble_public_briefing_view": '''def assemble_public_briefing_view(result):
+    return None
+''',
+    }
+    student_dir = _copy_with_generated_adapter(tmp_path / "student", overrides=overrides)
+    sys.modules.pop("integration", None)
+
+    app = AppTest.from_file(student_dir / "streamlit_app.py").run(timeout=20)
+    text = _rendered_text(app)
+
+    assert not app.exception
+    assert text.count("Error:") == 4
+    assert "Ready" not in text
+    assert "OPENAI_API_KEY" not in text
+    assert "sk-secret" not in text
+    assert "/Users/" not in text
+
+
 def _subprocess_environment() -> dict[str, str]:
     environment = os.environ.copy()
     python_path = [str(_PROJECT_ROOT / "src")]
@@ -284,12 +444,15 @@ def _run_verifier(student_dir: Path) -> subprocess.CompletedProcess[str]:
     )
 
 
+def _failure_lines(completed: subprocess.CompletedProcess[str]) -> list[str]:
+    return [line for line in completed.stdout.splitlines() if line.startswith("FAIL ")]
+
+
 def test_starter_verifier_reports_only_the_four_incomplete_groups() -> None:
     completed = _run_verifier(_STUDENT_DIR)
 
-    failure_lines = [line for line in completed.stdout.splitlines() if line.startswith("FAIL ")]
     assert completed.returncode != 0
-    assert len(failure_lines) == 4
+    assert len(_failure_lines(completed)) == 4
     assert all(seam in completed.stdout for seam in _SEAM_NAMES)
     assert "CAPSTONE_PASS" not in completed.stdout
     assert completed.stderr == ""
@@ -305,3 +468,132 @@ def test_completed_copy_passes_full_verifier_with_exactly_one_marker(
     assert completed.stderr == ""
     assert "/Users/" not in completed.stdout
     assert "OPENAI_API_KEY" not in completed.stdout
+
+
+@pytest.mark.parametrize(
+    "payload",
+    [
+        "CAPSTONE_PASS",
+        "OPENAI_API_KEY=sk-malicious",
+        "/Users/private/credentials.txt",
+    ],
+)
+def test_verifier_captures_and_sanitizes_malicious_student_output(
+    tmp_path: Path,
+    payload: str,
+) -> None:
+    printing_retriever = f'''def wire_retriever(company: str, query: str):
+    print({payload!r})
+    print({payload!r}, file=sys.stderr)
+    return build_certified_retriever().search(company, query)
+'''
+    student_dir = _copy_with_generated_adapter(
+        tmp_path / "student",
+        overrides={"wire_retriever": printing_retriever},
+    )
+
+    completed = _run_verifier(student_dir)
+
+    assert completed.returncode != 0
+    assert _failure_lines(completed) == [
+        "FAIL wire_retriever: student output is not allowed."
+    ]
+    assert completed.stdout.splitlines().count("CAPSTONE_PASS") == 0
+    assert "OPENAI_API_KEY" not in completed.stdout
+    assert "sk-malicious" not in completed.stdout
+    assert "/Users/" not in completed.stdout
+    assert completed.stderr == ""
+
+
+@pytest.mark.parametrize(
+    ("seam", "canned_source"),
+    [
+        (
+            "wire_retriever",
+            '''def wire_retriever(company: str, query: str):
+    return build_certified_retriever().search("NVIDIA", "operating growth")
+''',
+        ),
+        (
+            "register_analyst_capabilities",
+            '''def register_analyst_capabilities(discovered):
+    return ("get_company_metric", "search_financial_documents")
+''',
+        ),
+        (
+            "evaluate_student_evidence_gate",
+            '''def evaluate_student_evidence_gate(hits):
+    nvidia_only = bool(hits) and all(hit.company == "NVIDIA" for hit in hits)
+    missing = ("Schneider Electric document evidence",) if nvidia_only else ()
+    return EvidenceGateDecision(
+        passed=not missing,
+        coverage={
+            "NVIDIA": ("document",),
+            "Schneider Electric": (() if nvidia_only else ("document",)),
+        },
+        missing_requirements=missing,
+        evidence_hits=tuple(hits),
+    )
+''',
+        ),
+    ],
+)
+def test_verifier_rejects_single_case_canned_answers(
+    tmp_path: Path,
+    seam: str,
+    canned_source: str,
+) -> None:
+    student_dir = _copy_with_generated_adapter(
+        tmp_path / "student",
+        overrides={seam: canned_source},
+    )
+
+    completed = _run_verifier(student_dir)
+
+    assert completed.returncode != 0
+    assert _failure_lines(completed) == [f"FAIL {seam}: contract did not complete."]
+    assert completed.stdout.splitlines().count("CAPSTONE_PASS") == 0
+    assert completed.stderr == ""
+
+
+def test_near_solved_copy_names_only_the_stopped_view_failure(tmp_path: Path) -> None:
+    canned_view = '''def assemble_public_briefing_view(result):
+    completed = build_reference_copilot().run(ResearchRequest.reference())
+    return to_run_view(completed)
+'''
+    student_dir = _copy_with_generated_adapter(
+        tmp_path / "student",
+        overrides={"assemble_public_briefing_view": canned_view},
+    )
+
+    completed = _run_verifier(student_dir)
+
+    assert completed.returncode != 0
+    assert _failure_lines(completed) == [
+        "FAIL assemble_public_briefing_view: contract did not complete."
+    ]
+    assert completed.stdout.splitlines().count("CAPSTONE_PASS") == 0
+    assert completed.stderr == ""
+
+
+def test_integrated_path_uses_student_retrieval_instead_of_reference_release_only(
+    tmp_path: Path,
+) -> None:
+    integration_sensitive_retriever = '''def wire_retriever(company: str, query: str):
+    if query == "reference mission operating growth":
+        return ()
+    return build_certified_retriever().search(company, query)
+'''
+    student_dir = _copy_with_generated_adapter(
+        tmp_path / "student",
+        overrides={"wire_retriever": integration_sensitive_retriever},
+    )
+
+    completed = _run_verifier(student_dir)
+
+    assert completed.returncode != 0
+    assert _failure_lines(completed) == [
+        "FAIL wire_retriever: integrated contract did not complete."
+    ]
+    assert completed.stdout.splitlines().count("CAPSTONE_PASS") == 0
+    assert completed.stderr == ""

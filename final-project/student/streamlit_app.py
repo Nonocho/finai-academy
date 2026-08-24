@@ -14,7 +14,9 @@ from integration import (
 )
 
 from finai_academy.capstone import ResearchRequest, build_reference_copilot
+from finai_academy.capstone.models import CapstoneEvidenceHit, EvidenceGateDecision
 from finai_academy.capstone.tools import build_certified_retriever
+from finai_academy.capstone.views import CapstoneRunView
 
 _SEAM_ORDER = (
     "wire_retriever",
@@ -22,9 +24,16 @@ _SEAM_ORDER = (
     "evaluate_student_evidence_gate",
     "assemble_public_briefing_view",
 )
+_INCOMPLETE_HINTS = {
+    "wire_retriever": "Connect the certified company-scoped retrieval boundary.",
+    "register_analyst_capabilities": "Apply discovery through the approved read-tool policy.",
+    "evaluate_student_evidence_gate": "Require document evidence for both companies.",
+    "assemble_public_briefing_view": "Use the display-safe public view boundary.",
+}
+_ERROR_MESSAGE = "This integration did not complete safely."
 
 
-def _seam_checks() -> dict[str, Callable[[], object]]:
+def _seam_checks() -> dict[str, tuple[Callable[[], object], Callable[[object], bool]]]:
     retriever = build_certified_retriever()
     evidence_hits = (
         *retriever.search("NVIDIA", "operating growth", top_k=1),
@@ -34,26 +43,69 @@ def _seam_checks() -> dict[str, Callable[[], object]]:
         ResearchRequest.reference()
     )
     return {
-        "wire_retriever": lambda: wire_retriever("NVIDIA", "operating growth"),
-        "register_analyst_capabilities": lambda: register_analyst_capabilities(
-            ("place_order", "search_financial_documents", "get_company_metric")
+        "wire_retriever": (
+            lambda: wire_retriever("NVIDIA", "operating growth"),
+            lambda value: (
+                isinstance(value, tuple)
+                and bool(value)
+                and all(
+                    isinstance(hit, CapstoneEvidenceHit)
+                    and hit.company == "NVIDIA"
+                    and bool(hit.evidence_id)
+                    and bool(hit.source_reference)
+                    for hit in value
+                )
+            ),
         ),
-        "evaluate_student_evidence_gate": lambda: evaluate_student_evidence_gate(
-            evidence_hits
+        "register_analyst_capabilities": (
+            lambda: register_analyst_capabilities(
+                ("place_order", "search_financial_documents", "get_company_metric")
+            ),
+            lambda value: value == (
+                "get_company_metric",
+                "search_financial_documents",
+            ),
         ),
-        "assemble_public_briefing_view": lambda: assemble_public_briefing_view(result),
+        "evaluate_student_evidence_gate": (
+            lambda: evaluate_student_evidence_gate(evidence_hits),
+            lambda value: (
+                isinstance(value, EvidenceGateDecision)
+                and value.passed
+                and value.evidence_hits == evidence_hits
+                and value.coverage
+                == {
+                    "NVIDIA": ("document",),
+                    "Schneider Electric": ("document",),
+                }
+            ),
+        ),
+        "assemble_public_briefing_view": (
+            lambda: assemble_public_briefing_view(result),
+            lambda value: (
+                isinstance(value, CapstoneRunView)
+                and value.run_id == result.run_id
+                and value.release.decision == "Release passed"
+                and value.briefing is not None
+            ),
+        ),
     }
 
 
 def _render_statuses() -> None:
     checks = _seam_checks()
     for seam in _SEAM_ORDER:
+        check, is_valid = checks[seam]
         try:
-            checks[seam]()
-        except StudentIntegrationIncomplete as status:
-            st.warning(f"{status.seam} — Incomplete: {status.hint}")
+            value = check()
+        except StudentIntegrationIncomplete:
+            st.warning(f"{seam} — Incomplete: {_INCOMPLETE_HINTS[seam]}")
+        except Exception:  # noqa: BLE001 - learner errors must remain sanitized per seam
+            st.error(f"{seam} — Error: {_ERROR_MESSAGE}")
         else:
-            st.success(f"{seam} — Ready")
+            if is_valid(value):
+                st.success(f"{seam} — Ready")
+            else:
+                st.error(f"{seam} — Error: {_ERROR_MESSAGE}")
 
 
 st.set_page_config(
