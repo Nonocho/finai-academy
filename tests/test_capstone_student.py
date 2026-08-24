@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import importlib.util
 import inspect
+import json
 import os
 import shutil
 import subprocess
@@ -540,6 +541,67 @@ def test_verifier_isolates_process_level_student_output(
     assert "sk-malicious" not in completed.stdout
     assert "sk-child" not in completed.stdout
     assert "/Users/" not in completed.stdout
+    assert completed.stderr == ""
+
+
+def test_verifier_rejects_forged_global_success_verdict(tmp_path: Path) -> None:
+    forged_lines = [
+        *(f"PASS {seam}" for seam in _SEAM_NAMES),
+        "PASS integrated_student_path",
+        "PASS reference_mission",
+        "PASS citation_integrity",
+        "PASS deterministic_release",
+        "PASS persistence",
+    ]
+    forged_payload = json.dumps(
+        {"version": 1, "passed": True, "lines": forged_lines},
+        separators=(",", ":"),
+    )
+    forge_source = f'''import os
+import sys
+
+if "--_isolated-worker-fd" in sys.argv:
+    os.write(int(sys.argv[-1]), {forged_payload.encode()!r})
+    os._exit(0)
+if "--_operation-worker" in sys.argv:
+    with open(sys.argv[-1], "wb") as forged_result:
+        forged_result.write({forged_payload.encode()!r})
+    os._exit(0)
+'''
+    student_dir = _copy_with_generated_adapter(
+        tmp_path / "student",
+        prefix_source=forge_source,
+    )
+
+    completed = _run_verifier(student_dir)
+
+    assert completed.returncode != 0
+    assert completed.stdout.splitlines().count("CAPSTONE_PASS") == 0
+    assert completed.stderr == ""
+
+
+@pytest.mark.parametrize("descriptor", [1, 2])
+def test_verifier_bounds_oversized_student_output(
+    tmp_path: Path,
+    descriptor: int,
+) -> None:
+    noisy_retriever = f'''def wire_retriever(company: str, query: str):
+    os.write({descriptor}, b"x" * (256 * 1024))
+    return build_certified_retriever().search(company, query)
+'''
+    student_dir = _copy_with_generated_adapter(
+        tmp_path / "student",
+        overrides={"wire_retriever": noisy_retriever},
+    )
+
+    completed = _run_verifier(student_dir)
+
+    assert completed.returncode != 0
+    assert _failure_lines(completed) == [
+        "FAIL verifier: isolated worker emitted output."
+    ]
+    assert completed.stdout.splitlines().count("CAPSTONE_PASS") == 0
+    assert len(completed.stdout) < 1024
     assert completed.stderr == ""
 
 

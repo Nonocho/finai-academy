@@ -6,10 +6,10 @@ import contextlib
 import importlib
 import io
 import json
-import os
 import subprocess
 import sys
 import tempfile
+import threading
 import warnings
 from collections.abc import Callable, Sequence
 from pathlib import Path
@@ -25,14 +25,12 @@ from finai_academy.capstone.tools import build_certified_retriever
 from finai_academy.capstone.views import CapstoneRunView
 
 _SUCCESS_MARKER = "CAPSTONE_PASS"
-_WORKER_FLAG = "--_isolated-worker-fd"
-_RESULT_VERSION = 1
-_OS_WRITE = os.write
-StudentIntegrationIncomplete: type[BaseException]
-assemble_public_briefing_view: Callable[[ResearchRunResult], object]
-evaluate_student_evidence_gate: Callable[[Sequence[CapstoneEvidenceHit]], object]
-register_analyst_capabilities: Callable[[Sequence[str]], object]
-wire_retriever: Callable[[str, str], object]
+_OPERATION_FLAG = "--_operation-worker"
+_OUTPUT_LIMIT = 64 * 1024
+_CANDIDATE_LIMIT = 64 * 1024
+_WORKER_TIMEOUT_SECONDS = 15
+_WORKER_INCOMPLETE = 20
+_WORKER_ERROR = 21
 _METRIC_NAMES = (
     "tool_call_correctness",
     "tool_call_efficiency",
@@ -85,6 +83,18 @@ class _IntegratedContractFailure(Exception):
         super().__init__(seam)
 
 
+class _OperationIncomplete(Exception):
+    pass
+
+
+class _OperationOutput(Exception):
+    pass
+
+
+class _OperationFailure(Exception):
+    pass
+
+
 class _MissingSchneiderRetriever:
     def __init__(self) -> None:
         self._wrapped = build_certified_retriever()
@@ -105,9 +115,13 @@ def _certified_hits() -> tuple[CapstoneEvidenceHit, ...]:
     )
 
 
-def _check_retriever() -> None:
+def _check_retriever(run_operation: Callable[[str, dict[str, object]], object]) -> None:
     for company, query, expected_ids in _RETRIEVER_CASES:
-        _validate_retriever_hits(wire_retriever(company, query), company, expected_ids)
+        candidate = run_operation(
+            "wire_retriever",
+            {"company": company, "query": query},
+        )
+        _validate_retriever_hits(candidate, company, expected_ids)
 
 
 def _validate_retriever_hits(
@@ -132,9 +146,13 @@ def _validate_retriever_hits(
     return typed_hits
 
 
-def _check_capabilities() -> None:
+def _check_capabilities(run_operation: Callable[[str, dict[str, object]], object]) -> None:
     for discovered, expected in _CAPABILITY_CASES:
-        _validate_capabilities(register_analyst_capabilities(discovered), expected)
+        candidate = run_operation(
+            "register_analyst_capabilities",
+            {"discovered": list(discovered)},
+        )
+        _validate_capabilities(candidate, expected)
 
 
 def _validate_capabilities(capabilities: object, expected: tuple[str, ...]) -> tuple[str, ...]:
@@ -145,7 +163,9 @@ def _validate_capabilities(capabilities: object, expected: tuple[str, ...]) -> t
     return capabilities
 
 
-def _check_evidence_gate() -> None:
+def _check_evidence_gate(
+    run_operation: Callable[[str, dict[str, object]], object],
+) -> None:
     hits = _certified_hits()
     nvidia_only = tuple(hit for hit in hits if hit.company == "NVIDIA")
     schneider_only = tuple(hit for hit in hits if hit.company == "Schneider Electric")
@@ -176,8 +196,12 @@ def _check_evidence_gate() -> None:
         ),
     )
     for selected, passed, coverage, missing in cases:
+        candidate = run_operation(
+            "evaluate_student_evidence_gate",
+            {"hits": [hit.model_dump(mode="json") for hit in selected]},
+        )
         _validate_evidence_gate(
-            evaluate_student_evidence_gate(selected),
+            candidate,
             selected,
             passed=passed,
             coverage=coverage,
@@ -204,10 +228,24 @@ def _validate_evidence_gate(
     return decision
 
 
-def _check_public_view(result: ResearchRunResult, stopped_result: ResearchRunResult) -> None:
-    _validate_public_view(assemble_public_briefing_view(result), result, released=True)
+def _check_public_view(
+    run_operation: Callable[[str, dict[str, object]], object],
+    result: ResearchRunResult,
+    stopped_result: ResearchRunResult,
+) -> None:
+    complete = run_operation(
+        "assemble_public_briefing_view",
+        {"result": result.model_dump(mode="json")},
+    )
+    _validate_public_view(complete, result, released=True)
+    stopped = run_operation(
+        "assemble_public_briefing_view",
+        {"result": stopped_result.model_dump(mode="json")},
+    )
     _validate_public_view(
-        assemble_public_briefing_view(stopped_result), stopped_result, released=False
+        stopped,
+        stopped_result,
+        released=False,
     )
 
 
@@ -238,16 +276,24 @@ def _validate_public_view(
 def _integrated_stage(seam: str, operation: Callable[[], object]) -> object:
     try:
         return operation()
+    except _OperationOutput:
+        raise
     except BaseException as error:
         raise _IntegratedContractFailure(seam) from error
 
 
-def _check_integrated_student_path(result: ResearchRunResult) -> None:
+def _check_integrated_student_path(
+    run_operation: Callable[[str, dict[str, object]], object],
+    result: ResearchRunResult,
+) -> None:
     discovered = ("search_financial_documents", "place_order", "get_company_metric")
     _integrated_stage(
         "register_analyst_capabilities",
         lambda: _validate_capabilities(
-            register_analyst_capabilities(discovered),
+            run_operation(
+                "register_analyst_capabilities",
+                {"discovered": list(discovered)},
+            ),
             ("get_company_metric", "search_financial_documents"),
         ),
     )
@@ -255,7 +301,10 @@ def _check_integrated_student_path(result: ResearchRunResult) -> None:
     nvidia_hits = _integrated_stage(
         "wire_retriever",
         lambda: _validate_retriever_hits(
-            wire_retriever("NVIDIA", query),
+            run_operation(
+                "wire_retriever",
+                {"company": "NVIDIA", "query": query},
+            ),
             "NVIDIA",
             ("NVDA-FY2026-DATA-CENTER-001", "NVDA-FY2026-GAMING-001"),
         ),
@@ -263,7 +312,10 @@ def _check_integrated_student_path(result: ResearchRunResult) -> None:
     schneider_hits = _integrated_stage(
         "wire_retriever",
         lambda: _validate_retriever_hits(
-            wire_retriever("Schneider Electric", query),
+            run_operation(
+                "wire_retriever",
+                {"company": "Schneider Electric", "query": query},
+            ),
             "Schneider Electric",
             ("SU-FY2025-ENERGY-MANAGEMENT-002", "SU-FY2025-ENERGY-MANAGEMENT-001"),
         ),
@@ -272,7 +324,10 @@ def _check_integrated_student_path(result: ResearchRunResult) -> None:
     decision = _integrated_stage(
         "evaluate_student_evidence_gate",
         lambda: _validate_evidence_gate(
-            evaluate_student_evidence_gate(hits),
+            run_operation(
+                "evaluate_student_evidence_gate",
+                {"hits": [hit.model_dump(mode="json") for hit in hits]},
+            ),
             hits,
             passed=True,
             coverage={"NVIDIA": ("document",), "Schneider Electric": ("document",)},
@@ -285,7 +340,10 @@ def _check_integrated_student_path(result: ResearchRunResult) -> None:
     _integrated_stage(
         "assemble_public_briefing_view",
         lambda: _validate_public_view(
-            assemble_public_briefing_view(integrated_result),
+            run_operation(
+                "assemble_public_briefing_view",
+                {"result": integrated_result.model_dump(mode="json")},
+            ),
             integrated_result,
             released=True,
         ),
@@ -357,58 +415,199 @@ def _check_persistence(result: ResearchRunResult) -> None:
         raise ValueError("persistence contract failed")
 
 
+def _serialize_candidate(operation: str, value: object) -> dict[str, object] | None:
+    if operation == "wire_retriever":
+        if type(value) is not tuple or any(
+            not isinstance(item, CapstoneEvidenceHit) for item in value
+        ):
+            return None
+        return {"hits": [item.model_dump(mode="json") for item in value]}
+    if operation == "register_analyst_capabilities":
+        if type(value) is not tuple or any(type(item) is not str for item in value):
+            return None
+        return {"capabilities": list(value)}
+    if operation == "evaluate_student_evidence_gate":
+        if not isinstance(value, EvidenceGateDecision):
+            return None
+        return {"decision": value.model_dump(mode="json")}
+    if operation == "assemble_public_briefing_view":
+        if not isinstance(value, CapstoneRunView):
+            return None
+        return {"view": value.model_dump(mode="json")}
+    return None
+
+
+def _operation_worker(operation: str, input_path: Path, output_path: Path) -> int:
+    try:
+        raw_input = input_path.read_bytes()
+        if not raw_input or len(raw_input) > _CANDIDATE_LIMIT:
+            return _WORKER_ERROR
+        payload = json.loads(raw_input)
+        student = importlib.import_module("integration")
+        incomplete_type = getattr(student, "StudentIntegrationIncomplete", None)
+        if operation == "wire_retriever" and set(payload) == {"company", "query"}:
+            invoke = lambda: student.wire_retriever(payload["company"], payload["query"])
+        elif operation == "register_analyst_capabilities" and set(payload) == {
+            "discovered"
+        }:
+            invoke = lambda: student.register_analyst_capabilities(payload["discovered"])
+        elif operation == "evaluate_student_evidence_gate" and set(payload) == {"hits"}:
+            hits = tuple(CapstoneEvidenceHit.model_validate(item) for item in payload["hits"])
+            invoke = lambda: student.evaluate_student_evidence_gate(hits)
+        elif operation == "assemble_public_briefing_view" and set(payload) == {"result"}:
+            result = ResearchRunResult.model_validate(payload["result"])
+            invoke = lambda: student.assemble_public_briefing_view(result)
+        else:
+            return _WORKER_ERROR
+        try:
+            value = invoke()
+        except BaseException as error:  # noqa: BLE001 - learner failures stay private
+            if isinstance(incomplete_type, type) and isinstance(error, incomplete_type):
+                return _WORKER_INCOMPLETE
+            return _WORKER_ERROR
+        candidate = _serialize_candidate(operation, value)
+        if candidate is None:
+            return _WORKER_ERROR
+        encoded = json.dumps(candidate, separators=(",", ":")).encode("utf-8")
+        if len(encoded) > _CANDIDATE_LIMIT:
+            return _WORKER_ERROR
+        output_path.write_bytes(encoded)
+    except BaseException:  # noqa: BLE001 - worker never discloses learner details
+        return _WORKER_ERROR
+    return 0
+
+
+def _run_bounded_process(arguments: list[str]) -> tuple[int, bool, bool, bool]:
+    try:
+        process = subprocess.Popen(
+            arguments,
+            stdin=subprocess.DEVNULL,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+        )
+    except OSError:
+        return _WORKER_ERROR, False, False, False
+
+    streams = (process.stdout, process.stderr)
+    buffers = (bytearray(), bytearray())
+    overflow = threading.Event()
+
+    def drain(index: int) -> None:
+        stream = streams[index]
+        if stream is None:
+            return
+        try:
+            while chunk := stream.read(4096):
+                remaining = _OUTPUT_LIMIT - len(buffers[index])
+                if remaining > 0:
+                    buffers[index].extend(chunk[:remaining])
+                if len(chunk) > remaining:
+                    overflow.set()
+                    try:
+                        process.kill()
+                    except OSError:
+                        pass
+                    break
+        finally:
+            stream.close()
+
+    threads = tuple(
+        threading.Thread(target=drain, args=(index,), daemon=True) for index in range(2)
+    )
+    for thread in threads:
+        thread.start()
+    timed_out = False
+    try:
+        return_code = process.wait(timeout=_WORKER_TIMEOUT_SECONDS)
+    except subprocess.TimeoutExpired:
+        timed_out = True
+        process.kill()
+        return_code = process.wait()
+    for thread in threads:
+        thread.join(timeout=1)
+    return return_code, bool(buffers[0]), bool(buffers[1]), overflow.is_set() or timed_out
+
+
+def _decode_candidate(operation: str, raw: bytes) -> object:
+    if not raw or len(raw) > _CANDIDATE_LIMIT:
+        raise _OperationFailure
+    try:
+        payload = json.loads(raw)
+        if not isinstance(payload, dict):
+            raise _OperationFailure
+        if operation == "wire_retriever" and set(payload) == {"hits"}:
+            return tuple(CapstoneEvidenceHit.model_validate(item) for item in payload["hits"])
+        if operation == "register_analyst_capabilities" and set(payload) == {
+            "capabilities"
+        }:
+            capabilities = payload["capabilities"]
+            if not isinstance(capabilities, list) or any(
+                type(item) is not str for item in capabilities
+            ):
+                raise _OperationFailure
+            return tuple(capabilities)
+        if operation == "evaluate_student_evidence_gate" and set(payload) == {"decision"}:
+            return EvidenceGateDecision.model_validate(payload["decision"])
+        if operation == "assemble_public_briefing_view" and set(payload) == {"view"}:
+            return CapstoneRunView.model_validate(payload["view"])
+    except (TypeError, ValueError, json.JSONDecodeError) as error:
+        raise _OperationFailure from error
+    raise _OperationFailure
+
+
+def _operation_runner(directory: Path) -> Callable[[str, dict[str, object]], object]:
+    counter = 0
+
+    def run(operation: str, payload: dict[str, object]) -> object:
+        nonlocal counter
+        counter += 1
+        input_path = directory / f"input-{counter}.json"
+        output_path = directory / f"candidate-{counter}.json"
+        input_path.write_text(json.dumps(payload, separators=(",", ":")), encoding="utf-8")
+        return_code, stdout_seen, stderr_seen, bounded_failure = _run_bounded_process(
+            [
+                sys.executable,
+                __file__,
+                _OPERATION_FLAG,
+                operation,
+                str(input_path),
+                str(output_path),
+            ]
+        )
+        if stdout_seen or stderr_seen or bounded_failure:
+            raise _OperationOutput
+        if return_code == _WORKER_INCOMPLETE:
+            raise _OperationIncomplete
+        if return_code != 0:
+            raise _OperationFailure
+        try:
+            if output_path.stat().st_size > _CANDIDATE_LIMIT:
+                raise _OperationFailure
+            with output_path.open("rb") as candidate_file:
+                raw_candidate = candidate_file.read(_CANDIDATE_LIMIT + 1)
+        except OSError as error:
+            raise _OperationFailure from error
+        return _decode_candidate(operation, raw_candidate)
+
+    return run
+
+
 def _run_check(name: str, check: Callable[[], None]) -> tuple[bool, str]:
     try:
         check()
-    except BaseException as error:  # noqa: BLE001 - learner exits must be sanitized
-        failure: BaseException | None = error
-    else:
-        failure = None
-
-    if isinstance(failure, _IntegratedContractFailure):
-        return False, f"FAIL {failure.seam}: integrated contract did not complete."
-    if isinstance(failure, StudentIntegrationIncomplete):
+    except _OperationOutput:
+        raise
+    except _IntegratedContractFailure as error:
+        return False, f"FAIL {error.seam}: integrated contract did not complete."
+    except _OperationIncomplete:
         hint = _INCOMPLETE_HINTS.get(name, "Complete this integration seam.")
         return False, f"FAIL {name}: incomplete — {hint}"
-    if failure is not None:
+    except BaseException:  # noqa: BLE001 - diagnostics must remain sanitized
         return False, f"FAIL {name}: contract did not complete."
     return True, f"PASS {name}"
 
 
-def _load_student_integration() -> None:
-    student = importlib.import_module("integration")
-    required = (
-        "StudentIntegrationIncomplete",
-        "assemble_public_briefing_view",
-        "evaluate_student_evidence_gate",
-        "register_analyst_capabilities",
-        "wire_retriever",
-    )
-    if any(not hasattr(student, name) for name in required):
-        raise ImportError("student integration contract is incomplete")
-
-    global StudentIntegrationIncomplete
-    global assemble_public_briefing_view
-    global evaluate_student_evidence_gate
-    global register_analyst_capabilities
-    global wire_retriever
-    StudentIntegrationIncomplete = student.StudentIntegrationIncomplete
-    assemble_public_briefing_view = student.assemble_public_briefing_view
-    evaluate_student_evidence_gate = student.evaluate_student_evidence_gate
-    register_analyst_capabilities = student.register_analyst_capabilities
-    wire_retriever = student.wire_retriever
-
-
-def _worker_result() -> dict[str, object]:
-    try:
-        _load_student_integration()
-    except BaseException:  # noqa: BLE001 - imports must fail without disclosure
-        return {
-            "version": _RESULT_VERSION,
-            "passed": False,
-            "lines": ["FAIL verifier: worker could not load integration."],
-        }
-
+def _parent_main() -> int:
     try:
         result = build_reference_copilot(run_id_factory=lambda: "student-verification-run").run(
             ResearchRequest.reference()
@@ -421,152 +620,67 @@ def _worker_result() -> dict[str, object]:
         result = None
         stopped_result = None
 
-    def with_result(check: Callable[[ResearchRunResult], None]) -> Callable[[], None]:
-        def run() -> None:
-            if result is None:
-                raise ValueError("recorded route unavailable")
-            check(result)
+    def require_result() -> ResearchRunResult:
+        if result is None:
+            raise ValueError("recorded route unavailable")
+        return result
 
-        return run
+    def require_stopped_result() -> ResearchRunResult:
+        if stopped_result is None:
+            raise ValueError("stopped route unavailable")
+        return stopped_result
 
-    def with_results(
-        check: Callable[[ResearchRunResult, ResearchRunResult], None],
-    ) -> Callable[[], None]:
-        def run() -> None:
-            if result is None or stopped_result is None:
-                raise ValueError("recorded routes unavailable")
-            check(result, stopped_result)
+    lines: list[str] = []
+    passed = True
+    try:
+        with tempfile.TemporaryDirectory(prefix="finai-student-operations-") as directory:
+            run_operation = _operation_runner(Path(directory))
+            seam_checks: tuple[tuple[str, Callable[[], None]], ...] = (
+                ("wire_retriever", lambda: _check_retriever(run_operation)),
+                (
+                    "register_analyst_capabilities",
+                    lambda: _check_capabilities(run_operation),
+                ),
+                (
+                    "evaluate_student_evidence_gate",
+                    lambda: _check_evidence_gate(run_operation),
+                ),
+                (
+                    "assemble_public_briefing_view",
+                    lambda: _check_public_view(
+                        run_operation,
+                        require_result(),
+                        require_stopped_result(),
+                    ),
+                ),
+            )
+            seam_results = tuple(_run_check(name, check) for name, check in seam_checks)
+            lines.extend(line for _, line in seam_results)
+            passed = all(status for status, _ in seam_results)
+            if passed:
+                integrated_passed, integrated_line = _run_check(
+                    "integrated_student_path",
+                    lambda: _check_integrated_student_path(
+                        run_operation,
+                        require_result(),
+                    ),
+                )
+                lines.append(integrated_line)
+                passed = integrated_passed
+    except _OperationOutput:
+        print("FAIL verifier: isolated worker emitted output.")
+        return 1
 
-        return run
-
-    seam_checks: tuple[tuple[str, Callable[[], None]], ...] = (
-        ("wire_retriever", _check_retriever),
-        ("register_analyst_capabilities", _check_capabilities),
-        ("evaluate_student_evidence_gate", _check_evidence_gate),
-        ("assemble_public_briefing_view", with_results(_check_public_view)),
+    trusted_checks: tuple[tuple[str, Callable[[], None]], ...] = (
+        ("reference_mission", lambda: _check_reference_mission(require_result())),
+        ("citation_integrity", lambda: _check_citation_integrity(require_result())),
+        ("deterministic_release", lambda: _check_release(require_result())),
+        ("persistence", lambda: _check_persistence(require_result())),
     )
-    other_checks: tuple[tuple[str, Callable[[], None]], ...] = (
-        ("reference_mission", with_result(_check_reference_mission)),
-        ("citation_integrity", with_result(_check_citation_integrity)),
-        ("deterministic_release", with_result(_check_release)),
-        ("persistence", with_result(_check_persistence)),
-    )
-    seam_results = tuple(_run_check(name, check) for name, check in seam_checks)
-    lines = [line for _, line in seam_results]
-    passed = all(status for status, _ in seam_results)
-    if passed:
-        integrated_passed, integrated_line = _run_check(
-            "integrated_student_path",
-            with_result(_check_integrated_student_path),
-        )
-        lines.append(integrated_line)
-        passed = integrated_passed
-    for name, check in other_checks:
+    for name, check in trusted_checks:
         check_passed, line = _run_check(name, check)
         lines.append(line)
         passed = check_passed and passed
-    return {"version": _RESULT_VERSION, "passed": passed, "lines": lines}
-
-
-def _worker_main(result_fd: int) -> int:
-    payload = json.dumps(_worker_result(), separators=(",", ":")).encode("utf-8")
-    try:
-        _OS_WRITE(result_fd, payload)
-    except OSError:
-        return 2
-    finally:
-        os.close(result_fd)
-    return 0
-
-
-def _allowed_result_lines() -> set[str]:
-    check_names = (
-        *_INCOMPLETE_HINTS,
-        "reference_mission",
-        "citation_integrity",
-        "deterministic_release",
-        "persistence",
-        "integrated_student_path",
-    )
-    lines = {f"PASS {name}" for name in check_names}
-    lines.update(f"FAIL {name}: contract did not complete." for name in check_names)
-    lines.update(
-        f"FAIL {name}: incomplete — {hint}"
-        for name, hint in _INCOMPLETE_HINTS.items()
-    )
-    lines.update(
-        f"FAIL {name}: integrated contract did not complete."
-        for name in _INCOMPLETE_HINTS
-    )
-    lines.add("FAIL verifier: worker could not load integration.")
-    return lines
-
-
-def _validate_worker_result(raw: bytes) -> tuple[bool, list[str]] | None:
-    if not raw or len(raw) > 16_384:
-        return None
-    try:
-        payload = json.loads(raw)
-    except (UnicodeDecodeError, json.JSONDecodeError):
-        return None
-    if not isinstance(payload, dict) or set(payload) != {"version", "passed", "lines"}:
-        return None
-    if payload["version"] != _RESULT_VERSION or type(payload["passed"]) is not bool:
-        return None
-    lines = payload["lines"]
-    if not isinstance(lines, list) or not 1 <= len(lines) <= 9:
-        return None
-    allowed = _allowed_result_lines()
-    if any(type(line) is not str or line not in allowed for line in lines):
-        return None
-    passed = payload["passed"]
-    if passed != all(line.startswith("PASS ") for line in lines):
-        return None
-    expected_success = [
-        *(f"PASS {name}" for name in _INCOMPLETE_HINTS),
-        "PASS integrated_student_path",
-        "PASS reference_mission",
-        "PASS citation_integrity",
-        "PASS deterministic_release",
-        "PASS persistence",
-    ]
-    if passed and lines != expected_success:
-        return None
-    return passed, lines
-
-
-def _parent_main() -> int:
-    read_fd, write_fd = os.pipe()
-    try:
-        try:
-            completed = subprocess.run(
-                [sys.executable, __file__, _WORKER_FLAG, str(write_fd)],
-                stdin=subprocess.DEVNULL,
-                capture_output=True,
-                check=False,
-                timeout=60,
-                pass_fds=(write_fd,),
-            )
-        except (OSError, subprocess.SubprocessError):
-            print("FAIL verifier: isolated worker failed safely.")
-            return 1
-        finally:
-            os.close(write_fd)
-        raw_result = os.read(read_fd, 16_385)
-    finally:
-        os.close(read_fd)
-
-    if completed.stdout or completed.stderr:
-        print("FAIL verifier: isolated worker emitted output.")
-        return 1
-    if completed.returncode != 0:
-        print("FAIL verifier: isolated worker failed safely.")
-        return 1
-    validated = _validate_worker_result(raw_result)
-    if validated is None:
-        print("FAIL verifier: isolated worker returned an invalid result.")
-        return 1
-    passed, lines = validated
     for line in lines:
         print(line)
     if not passed:
@@ -576,12 +690,12 @@ def _parent_main() -> int:
 
 
 def main() -> int:
-    if len(sys.argv) == 3 and sys.argv[1] == _WORKER_FLAG:
-        try:
-            result_fd = int(sys.argv[2])
-        except ValueError:
-            return 2
-        return _worker_main(result_fd)
+    if len(sys.argv) == 5 and sys.argv[1] == _OPERATION_FLAG:
+        return _operation_worker(
+            sys.argv[2],
+            Path(sys.argv[3]),
+            Path(sys.argv[4]),
+        )
     if len(sys.argv) != 1:
         print("FAIL verifier: unsupported invocation.")
         return 1
