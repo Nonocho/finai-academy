@@ -45,3 +45,12 @@ def test_builder_certifies_complete_document_target_tables() -> None:
 
     assert result.returncode == 0, result.stderr
     assert result.stdout == "documents=2 pages=194 nvidia_target_tables=1 schneider_target_tables=3\n"
+
+
+def test_builder_regenerates_byte_identical_artifacts() -> None:
+    paths = (MANIFEST, *(ROOT / json.loads(MANIFEST.read_text())["capstone_derived_artifacts"][0][field]["path"] for field in ("elements", "chunks", "nvidia_crop", "schneider_crop")))
+    before = {path: path.read_bytes() for path in paths}
+    result = subprocess.run([sys.executable, "scripts/build_capstone_document_assets.py"], cwd=ROOT, check=False, capture_output=True, text=True)
+
+    assert result.returncode == 0, result.stderr
+    assert {path: path.read_bytes() for path in paths} == before

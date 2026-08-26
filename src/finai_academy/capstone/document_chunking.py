@@ -118,6 +118,7 @@ def build_table_chunk(
         context=context,
         financial=financial,
         table=element.table,
+        financially_contextualized=financial.scale is not None,
     )
 
 
@@ -351,6 +352,7 @@ def _paragraph_chunk(
         context=context,
         financial=financial,
         table=None,
+        financially_contextualized=True,
     )
 
 
@@ -362,6 +364,7 @@ def _chunk(
     context: ContextualMetadata,
     financial: FinancialMetadata,
     table: object,
+    financially_contextualized: bool,
 ) -> FinancialChunk:
     material = json.dumps(
         {
@@ -384,4 +387,5 @@ def _chunk(
         context=context,
         financial=financial,
         table=table,  # type: ignore[arg-type]
+        financially_contextualized=financially_contextualized,
     )

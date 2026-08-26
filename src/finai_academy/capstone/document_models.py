@@ -13,8 +13,8 @@ from pydantic import AnyUrl, BaseModel, ConfigDict, Field, HttpUrl, model_valida
 
 _SECRET_PATTERN = re.compile(
     r"""(?ix)(
-        api[_-]?key\s*(?:=|:)\s*\S+
-        | authorization\s*(?:=|:)\s*\S+
+        \b(?:[a-z0-9]+[_-])?api[_-]?key\b\s*(?:=|:|\s+)\s*[a-z0-9._-]{8,}
+        | \bauthorization\b\s*(?:(?:=|:)\s*\S+|(?:basic|bearer)\s+\S+)
         | bearer\s+[a-z0-9._-]+
         | sk-[a-z0-9]{12,}
         | \b(?:password|secret|token|client[_-]?secret|access[_-]?token|private[_-]?key)\b
@@ -319,11 +319,24 @@ class FinancialChunk(FrozenDocumentModel):
     context: ContextualMetadata
     financial: FinancialMetadata
     table: TableMatrix | None = None
+    financially_contextualized: bool = True
 
     @model_validator(mode="after")
     def require_matching_source_element_ids(self) -> Self:
         if self.source_element_ids != self.financial.source_element_ids:
             raise ValueError("source_element_ids must match FinancialMetadata")
+        if (
+            self.table is not None
+            and any(
+                character.isdigit()
+                for row in self.table.rows
+                for cell in row
+                for character in cell
+            )
+            and self.financial.scale is None
+            and self.financially_contextualized
+        ):
+            raise ValueError("unitless tables cannot be financially contextualized")
         return self
 
 

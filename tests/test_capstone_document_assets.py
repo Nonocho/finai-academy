@@ -202,6 +202,20 @@ def test_public_contract_rejects_blank_credential_and_non_json_values() -> None:
         sample_source(document_id=Path("report.pdf"))
 
 
+@pytest.mark.parametrize(
+    "credential",
+    ("api_key prod-secret-value", "OPENAI_API_KEY prod-secret-value", "Authorization Basic dXNlcjpwYXNz"),
+)
+def test_public_contract_rejects_delimited_credential_labels(credential: str) -> None:
+    with pytest.raises(ValueError, match="credential-shaped"):
+        sample_source(company_name=credential)
+
+
+@pytest.mark.parametrize("filing_text", ("authorization of shares", "D:1", "API key performance"))
+def test_public_contract_keeps_non_secret_filing_text(filing_text: str) -> None:
+    assert sample_source(company_name=filing_text).company_name == filing_text
+
+
 def test_public_contract_is_frozen_and_forbids_extra_fields() -> None:
     source = sample_source()
 

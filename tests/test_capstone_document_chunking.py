@@ -147,6 +147,26 @@ def test_table_value_without_the_explicit_unit_fails_closed(
         )
 
 
+def test_unitless_bulk_table_chunk_is_not_financially_contextualized(
+    schneider_page_16: ParsedDocument,
+) -> None:
+    element = next(item for item in schneider_page_16.elements if "40,152" in item.original_text)
+    broken = element.model_copy(
+        update={
+            "original_text": element.original_text.replace("€ million", ""),
+            "original_markdown": element.original_markdown.replace("€ million", ""),
+        }
+    )
+    document = schneider_page_16.model_copy(update={"elements": (broken,)})
+
+    chunk = build_financial_chunks(document)[0]
+
+    assert chunk.financial.scale is None
+    assert chunk.financially_contextualized is False
+    with pytest.raises(ValueError, match="unitless tables"):
+        FinancialChunk.model_validate({**chunk.model_dump(mode="python"), "financially_contextualized": True})
+
+
 @pytest.fixture
 def valid_table_chunk(nvidia_page_165: ParsedDocument) -> FinancialChunk:
     element = next(item for item in nvidia_page_165.elements if item.table is not None)

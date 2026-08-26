@@ -129,7 +129,7 @@
       },
       "chunks": {
         "path": "assets/course-data/capstone/financial_chunks_v2.json",
-        "sha256": "5fcc878833b13c0c781d627f6a497b0e8b30d6d6c35ae5025a9dbbbd2f0ec119"
+        "sha256": "08f0d1408952624a64e1fd92a8d36e9df9e43fcdaea5901c4450a0137cc54fd2"
       },
       "nvidia_crop": {
         "path": "assets/course-data/capstone/crops/nvidia_segment_table_page_165.png",
