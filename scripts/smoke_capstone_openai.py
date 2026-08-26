@@ -2,6 +2,9 @@
 
 from __future__ import annotations
 
+import os
+import re
+
 from finai_academy.capstone import ResearchRequest, build_copilot_for_request
 from finai_academy.settings import Settings
 
@@ -13,6 +16,37 @@ def _failure(*, stage: str, code: str) -> int:
     return 1
 
 
+def _api_key_configuration_code(api_key: str) -> str | None:
+    """Return a fixed local-format failure code without exposing a key value."""
+
+    if (
+        not re.fullmatch(r"sk-[A-Za-z0-9_-]{20,}", api_key)
+        or api_key != api_key.strip()
+        or "\\" in api_key
+    ):
+        return "configuration_invalid"
+    return None
+
+
+def _provider_result_code(result: object) -> str:
+    """Read only an allowlisted public trace code, never provider text."""
+
+    allowed_codes = {
+        "authentication_failed",
+        "model_access_failed",
+        "model_not_found",
+        "rate_limited",
+        "transport_failed",
+        "structured_output_failed",
+    }
+    trajectory = getattr(result, "trajectory", ())
+    for event in reversed(trajectory):
+        code = getattr(event, "error_code", None)
+        if code in allowed_codes:
+            return code
+    return "provider_result_failed"
+
+
 def main() -> int:
     """Run the fixed mission and print a summary only after every gate passes."""
 
@@ -22,6 +56,9 @@ def main() -> int:
         return _failure(stage="configuration", code="settings_unavailable")
     if settings.provider != "openai":
         return _failure(stage="configuration", code="openai_route_required")
+    api_key_code = _api_key_configuration_code(os.environ.get("OPENAI_API_KEY", ""))
+    if api_key_code is not None:
+        return _failure(stage="configuration", code=api_key_code)
 
     try:
         request = ResearchRequest.reference(provider="openai", model=settings.chat_model)
@@ -29,7 +66,7 @@ def main() -> int:
     except Exception:  # noqa: BLE001 - live provider details must remain private
         return _failure(stage="provider", code="live_run_failed")
     if result.status == "provider_error":
-        return _failure(stage="provider", code="provider_result_failed")
+        return _failure(stage="provider", code=_provider_result_code(result))
     if result.status != "completed":
         return _failure(stage="result", code="run_not_completed")
     if not result.evidence_gate.passed:

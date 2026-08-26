@@ -6,13 +6,16 @@ from pathlib import Path
 from types import SimpleNamespace
 from typing import TypeVar
 
+import httpx
 import pytest
+from openai import APIConnectionError, APIStatusError, APITimeoutError
 from pydantic import BaseModel
 
 from finai_academy.capstone import model_gateway
 from finai_academy.capstone.model_gateway import (
     ModelOutputError,
     OpenAIResponsesStructuredModel,
+    ProviderRequestError,
     provider_readiness,
 )
 from finai_academy.capstone.models import ResearchRequest
@@ -41,6 +44,20 @@ class FakeOpenAIClient:
         self.responses = FakeResponses(output_parsed)
 
 
+class RaisingResponses:
+    def __init__(self, error: Exception) -> None:
+        self._error = error
+
+    def parse(self, **kwargs: object) -> SimpleNamespace:
+        del kwargs
+        raise self._error
+
+
+class RaisingOpenAIClient:
+    def __init__(self, error: Exception) -> None:
+        self.responses = RaisingResponses(error)
+
+
 class CompletedSmokeResult:
     status = "completed"
     evidence_gate = SimpleNamespace(passed=True)
@@ -53,6 +70,12 @@ class CompletedSmokeResult:
 class ProviderFailedSmokeResult(CompletedSmokeResult):
     status = "provider_error"
     briefing = None
+    trajectory = (SimpleNamespace(error_code="authentication_failed"),)
+
+
+@pytest.fixture
+def valid_openai_key(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("OPENAI_API_KEY", "sk-abcdefghijklmnopqrstuvwxyz012345")
 
 
 def _load_smoke_module():
@@ -65,7 +88,10 @@ def _load_smoke_module():
     return module
 
 
-def test_openai_smoke_prints_only_safe_completed_summary(monkeypatch, capsys) -> None:
+def test_openai_smoke_prints_only_safe_completed_summary(
+    monkeypatch, capsys, valid_openai_key
+) -> None:
+    del valid_openai_key
     smoke_capstone_openai = _load_smoke_module()
     settings = Settings(provider="openai", chat_model="gpt-5.6-luna")
     monkeypatch.setattr(smoke_capstone_openai.Settings, "from_environment", lambda: settings)
@@ -95,7 +121,29 @@ def test_openai_smoke_reports_a_safe_code_for_a_non_openai_route(monkeypatch, ca
     assert capsys.readouterr().out == "status=failed stage=configuration code=openai_route_required\n"
 
 
-def test_openai_smoke_rejects_an_unexpected_citation_count(monkeypatch, capsys) -> None:
+@pytest.mark.parametrize(
+    ("api_key", "expected_code"),
+    [
+        ("", "configuration_invalid"),
+        ("sk-short", "configuration_invalid"),
+        (r"\\sk-abcdefghijklmnopqrstuvwxyz012345", "configuration_invalid"),
+        (" sk-abcdefghijklmnopqrstuvwxyz012345", "configuration_invalid"),
+        ("sk-abcdefghijklmnopqrstuvwxyz012345", None),
+    ],
+)
+def test_openai_smoke_classifies_api_key_format_without_exposing_it(
+    api_key: str,
+    expected_code: str | None,
+) -> None:
+    smoke_capstone_openai = _load_smoke_module()
+
+    assert smoke_capstone_openai._api_key_configuration_code(api_key) == expected_code
+
+
+def test_openai_smoke_rejects_an_unexpected_citation_count(
+    monkeypatch, capsys, valid_openai_key
+) -> None:
+    del valid_openai_key
     smoke_capstone_openai = _load_smoke_module()
     settings = Settings(provider="openai", chat_model="gpt-5.6-luna")
     incomplete_result = CompletedSmokeResult()
@@ -113,7 +161,10 @@ def test_openai_smoke_rejects_an_unexpected_citation_count(monkeypatch, capsys) 
     assert capsys.readouterr().out == "status=failed stage=validation code=citation_count_invalid\n"
 
 
-def test_openai_smoke_hides_provider_exception_details(monkeypatch, capsys) -> None:
+def test_openai_smoke_hides_provider_exception_details(
+    monkeypatch, capsys, valid_openai_key
+) -> None:
+    del valid_openai_key
     smoke_capstone_openai = _load_smoke_module()
     secret = "sk-secret-provider-value"
     monkeypatch.setattr(
@@ -136,7 +187,10 @@ def test_openai_smoke_hides_provider_exception_details(monkeypatch, capsys) -> N
     assert "/Users/" not in output
 
 
-def test_openai_smoke_reports_a_safe_provider_result_code(monkeypatch, capsys) -> None:
+def test_openai_smoke_reports_a_safe_provider_result_code(
+    monkeypatch, capsys, valid_openai_key
+) -> None:
+    del valid_openai_key
     smoke_capstone_openai = _load_smoke_module()
     settings = Settings(provider="openai", chat_model="gpt-5.6-luna")
     monkeypatch.setattr(smoke_capstone_openai.Settings, "from_environment", lambda: settings)
@@ -149,7 +203,7 @@ def test_openai_smoke_reports_a_safe_provider_result_code(monkeypatch, capsys) -
     )
 
     assert smoke_capstone_openai.main() == 1
-    assert capsys.readouterr().out == "status=failed stage=provider code=provider_result_failed\n"
+    assert capsys.readouterr().out == "status=failed stage=provider code=authentication_failed\n"
 
 
 def test_openai_adapter_uses_luna_medium_structured_responses() -> None:
@@ -183,12 +237,92 @@ def test_openai_adapter_rejects_missing_structured_output() -> None:
         model="gpt-5.6-luna",
     )
 
-    with pytest.raises(ModelOutputError, match="no structured output"):
+    with pytest.raises(ModelOutputError, match="no structured output") as caught:
         model.generate(
             system_prompt="Use only cited evidence.",
             user_prompt="Evidence payload",
             response_model=ExpectedBrief,
         )
+    assert caught.value.code == "structured_output_failed"
+
+
+@pytest.mark.parametrize(
+    ("error", "expected_code"),
+    [
+        (
+            APIStatusError(
+                "ignored",
+                response=httpx.Response(
+                    401,
+                    request=httpx.Request("POST", "https://api.openai.com/v1/responses"),
+                ),
+                body=None,
+            ),
+            "authentication_failed",
+        ),
+        (
+            APIStatusError(
+                "ignored",
+                response=httpx.Response(
+                    403,
+                    request=httpx.Request("POST", "https://api.openai.com/v1/responses"),
+                ),
+                body=None,
+            ),
+            "model_access_failed",
+        ),
+        (
+            APIStatusError(
+                "ignored",
+                response=httpx.Response(
+                    404,
+                    request=httpx.Request("POST", "https://api.openai.com/v1/responses"),
+                ),
+                body=None,
+            ),
+            "model_not_found",
+        ),
+        (
+            APIStatusError(
+                "ignored",
+                response=httpx.Response(
+                    429,
+                    request=httpx.Request("POST", "https://api.openai.com/v1/responses"),
+                ),
+                body=None,
+            ),
+            "rate_limited",
+        ),
+        (
+            APIConnectionError(
+                request=httpx.Request("POST", "https://api.openai.com/v1/responses")
+            ),
+            "transport_failed",
+        ),
+        (
+            APITimeoutError(request=httpx.Request("POST", "https://api.openai.com/v1/responses")),
+            "transport_failed",
+        ),
+    ],
+)
+def test_openai_adapter_classifies_sdk_failures_without_provider_text(
+    error: Exception,
+    expected_code: str,
+) -> None:
+    model = OpenAIResponsesStructuredModel(
+        client=RaisingOpenAIClient(error),
+        model="gpt-5.6-luna",
+    )
+
+    with pytest.raises(ProviderRequestError) as caught:
+        model.generate(
+            system_prompt="Use only cited evidence.",
+            user_prompt="Evidence payload",
+            response_model=ExpectedBrief,
+        )
+
+    assert caught.value.code == expected_code
+    assert "ignored" not in str(caught.value)
 
 
 class FailingStructuredModel:

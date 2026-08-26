@@ -8,7 +8,7 @@ from collections.abc import Callable
 from typing import Any, Literal, Protocol, TypeVar
 from urllib.request import urlopen
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, ValidationError
 
 from finai_academy.settings import Settings
 
@@ -41,8 +41,40 @@ class StructuredModel(Protocol):
         """Return a response validated against ``response_model``."""
 
 
-class ModelOutputError(RuntimeError):
+class ProviderRequestError(RuntimeError):
+    """A fixed public category for a failed provider request."""
+
+    def __init__(self, code: str) -> None:
+        self.code = code
+        super().__init__(code)
+
+
+class ModelOutputError(ProviderRequestError):
     """Raised when a provider does not return the requested structured output."""
+
+    def __init__(self, message: str) -> None:
+        super().__init__("structured_output_failed")
+        self.args = (message,)
+
+
+def _classify_openai_error(error: Exception) -> str:
+    """Map SDK types/statuses to fixed public codes without reading error text/body."""
+
+    try:
+        from openai import APIConnectionError, APIStatusError, APITimeoutError
+    except ImportError:  # pragma: no cover - optional dependency boundary
+        return "provider_result_failed"
+
+    if isinstance(error, (APIConnectionError, APITimeoutError)):
+        return "transport_failed"
+    if isinstance(error, APIStatusError):
+        return {
+            401: "authentication_failed",
+            403: "model_access_failed",
+            404: "model_not_found",
+            429: "rate_limited",
+        }.get(error.status_code, "provider_result_failed")
+    return "provider_result_failed"
 
 
 class OpenAIResponsesStructuredModel:
@@ -60,17 +92,23 @@ class OpenAIResponsesStructuredModel:
         user_prompt: str,
         response_model: type[ResponseT],
     ) -> ResponseT:
-        response = self._client.responses.parse(
-            model=self._model,
-            reasoning={"effort": self._reasoning_effort},
-            instructions=system_prompt,
-            input=user_prompt,
-            text_format=response_model,
-            store=False,
-        )
+        try:
+            response = self._client.responses.parse(
+                model=self._model,
+                reasoning={"effort": self._reasoning_effort},
+                instructions=system_prompt,
+                input=user_prompt,
+                text_format=response_model,
+                store=False,
+            )
+        except Exception as error:  # noqa: BLE001 - SDK detail remains private
+            raise ProviderRequestError(_classify_openai_error(error)) from None
         if response.output_parsed is None:
             raise ModelOutputError("provider returned no structured output")
-        return response_model.model_validate(response.output_parsed)
+        try:
+            return response_model.model_validate(response.output_parsed)
+        except ValidationError:
+            raise ModelOutputError("provider returned invalid structured output") from None
 
 
 class LangChainStructuredModel:

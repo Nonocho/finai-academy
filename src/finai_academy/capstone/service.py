@@ -14,6 +14,7 @@ from pydantic import BaseModel, ConfigDict, Field
 
 from finai_academy.agent_evaluation import METRIC_NAMES, canonical_call_signature
 from finai_academy.capstone.document_models import FinancialChunk
+from finai_academy.capstone.model_gateway import ProviderRequestError
 from finai_academy.capstone.models import (
     CapstoneBriefing,
     CapstoneEvidenceHit,
@@ -407,6 +408,18 @@ class FinancialAnalystCopilot:
         if request.provider != "recorded":
             try:
                 briefing = self._apply_live_wording(request, briefing)
+            except ProviderRequestError as error:
+                return self._result(
+                    request=request,
+                    status=RunStatus.PROVIDER_ERROR,
+                    initial_plan=initial_plan,
+                    final_plan=final_plan,
+                    observations=tuple(observations),
+                    trajectory=self._provider_error_event(trajectory, error_code=error.code),
+                    replan_count=replan_count,
+                    run_started=run_started,
+                    evidence_gate=evidence_gate,
+                )
             except Exception:  # noqa: BLE001 - provider details must never become public
                 return self._result(
                     request=request,
@@ -975,6 +988,8 @@ class FinancialAnalystCopilot:
     def _provider_error_event(
         self,
         trajectory: list[PublicTraceEvent],
+        *,
+        error_code: str = "provider_result_failed",
     ) -> tuple[PublicTraceEvent, ...]:
         self._event(
             trajectory,
@@ -982,6 +997,7 @@ class FinancialAnalystCopilot:
             status="error",
             summary="The selected provider could not complete structured generation.",
             failure_owner="provider",
+            error_code=error_code,
         )
         return tuple(trajectory)
 
