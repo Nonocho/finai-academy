@@ -131,6 +131,8 @@ def test_public_contract_rejects_windows_personal_paths_in_all_public_strings(
         r"note=\reports\report.pdf",
         r"note:\reports\report.pdf",
         r"note(\reports\report.pdf)",
+        r"note.\reports\report.pdf",
+        r"note_\reports\report.pdf",
     ),
 )
 def test_public_contract_rejects_embedded_rooted_windows_paths(public_text: str) -> None:

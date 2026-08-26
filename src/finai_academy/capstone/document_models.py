@@ -28,7 +28,7 @@ _WINDOWS_PERSONAL_PATH_PATTERN = re.compile(
 )
 _WINDOWS_DRIVE_PATH_PATTERN = re.compile(r"(?i)(?:^|[^A-Za-z0-9])[A-Za-z]:(?=[^:])")
 _WINDOWS_ROOTED_PATH_PATTERN = re.compile(
-    r"(?:^|[^A-Za-z0-9_./\\])\\+(?=(?:[A-Za-z0-9][A-Za-z0-9._ -]*\\+)+"
+    r"\\+(?=(?:[A-Za-z0-9][A-Za-z0-9._ -]*\\+)+"
     r"[A-Za-z0-9][A-Za-z0-9._ -]*)"
 )
 
