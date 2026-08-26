@@ -70,7 +70,12 @@ def build_financial_metadata(
         currency = "USD"
     if "€ million" in evidence:
         currency = "EUR"
-    periods = tuple(label for pattern, label in _PERIOD_RULES if pattern.search(evidence))
+    period_evidence = "\n".join(
+        (*element.heading_path, element.original_text, element.original_markdown or "")
+    )
+    periods = tuple(
+        label for pattern, label in _PERIOD_RULES if pattern.search(period_evidence)
+    )
     return FinancialMetadata(
         metric_names=_metric_labels(element),
         periods=periods or (document.source.reporting_period,),

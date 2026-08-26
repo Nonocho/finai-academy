@@ -81,6 +81,24 @@ def test_schneider_fy_table_is_atomic_and_keeps_financial_scope(
     assert chunk.table is not None and chunk.table.row_count == 4
 
 
+@pytest.mark.parametrize(
+    ("value", "periods"),
+    [
+        ("11,095", ("Q4 2025",)),
+        ("20,816", ("H2 2025",)),
+        ("40,152", ("FY2025",)),
+    ],
+)
+def test_schneider_table_periods_are_limited_to_the_table_context(
+    schneider_page_16: ParsedDocument, value: str, periods: tuple[str, ...]
+) -> None:
+    chunks = build_financial_chunks(schneider_page_16)
+
+    chunk = next(item for item in chunks if value in item.text)
+
+    assert chunk.financial.periods == periods
+
+
 def test_identical_extraction_produces_identical_chunk_ids(
     nvidia_page_165: ParsedDocument,
 ) -> None:
