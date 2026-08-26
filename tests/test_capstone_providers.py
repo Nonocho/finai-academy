@@ -1,18 +1,150 @@
 from __future__ import annotations
 
+import importlib.util
 import json
+from pathlib import Path
+from types import SimpleNamespace
 from typing import TypeVar
 
 import pytest
 from pydantic import BaseModel
 
 from finai_academy.capstone import model_gateway
-from finai_academy.capstone.model_gateway import provider_readiness
+from finai_academy.capstone.model_gateway import (
+    ModelOutputError,
+    OpenAIResponsesStructuredModel,
+    provider_readiness,
+)
 from finai_academy.capstone.models import ResearchRequest
 from finai_academy.capstone.service import build_copilot_for_request
 from finai_academy.settings import Settings
 
 ResponseT = TypeVar("ResponseT", bound=BaseModel)
+
+
+class ExpectedBrief(BaseModel):
+    answer: str
+
+
+class FakeResponses:
+    def __init__(self, output_parsed: ExpectedBrief | None) -> None:
+        self.output_parsed = output_parsed
+        self.last_call: dict[str, object] | None = None
+
+    def parse(self, **kwargs: object) -> SimpleNamespace:
+        self.last_call = kwargs
+        return SimpleNamespace(output_parsed=self.output_parsed)
+
+
+class FakeOpenAIClient:
+    def __init__(self, output_parsed: ExpectedBrief | None) -> None:
+        self.responses = FakeResponses(output_parsed)
+
+
+class CompletedSmokeResult:
+    status = "completed"
+    evidence_gate = SimpleNamespace(passed=True)
+    briefing = SimpleNamespace(cited_facts=(object(), object()))
+    deterministic_evaluation = SimpleNamespace(
+        metrics=(SimpleNamespace(name="citation_integrity", value=1.0),)
+    )
+
+
+def _load_smoke_module():
+    script_path = Path(__file__).resolve().parents[1] / "scripts/smoke_capstone_openai.py"
+    spec = importlib.util.spec_from_file_location("smoke_capstone_openai", script_path)
+    assert spec is not None
+    assert spec.loader is not None
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+def test_openai_smoke_prints_only_safe_completed_summary(monkeypatch, capsys) -> None:
+    smoke_capstone_openai = _load_smoke_module()
+    settings = Settings(provider="openai", chat_model="gpt-5.6-luna")
+    monkeypatch.setattr(smoke_capstone_openai.Settings, "from_environment", lambda: settings)
+    monkeypatch.setattr(
+        smoke_capstone_openai,
+        "build_copilot_for_request",
+        lambda request, configured_settings: SimpleNamespace(
+            run=lambda received_request: CompletedSmokeResult()
+        ),
+    )
+
+    assert smoke_capstone_openai.main() == 0
+    assert capsys.readouterr().out == (
+        "provider=openai model=gpt-5.6-luna status=completed citations=2\n"
+    )
+
+
+def test_openai_smoke_fails_silently_for_a_non_openai_route(monkeypatch, capsys) -> None:
+    smoke_capstone_openai = _load_smoke_module()
+    monkeypatch.setattr(
+        smoke_capstone_openai.Settings,
+        "from_environment",
+        lambda: Settings(provider="ollama"),
+    )
+
+    assert smoke_capstone_openai.main() == 1
+    assert capsys.readouterr().out == ""
+
+
+def test_openai_smoke_rejects_an_unexpected_citation_count(monkeypatch, capsys) -> None:
+    smoke_capstone_openai = _load_smoke_module()
+    settings = Settings(provider="openai", chat_model="gpt-5.6-luna")
+    incomplete_result = CompletedSmokeResult()
+    incomplete_result.briefing = SimpleNamespace(cited_facts=(object(),))
+    monkeypatch.setattr(smoke_capstone_openai.Settings, "from_environment", lambda: settings)
+    monkeypatch.setattr(
+        smoke_capstone_openai,
+        "build_copilot_for_request",
+        lambda request, configured_settings: SimpleNamespace(
+            run=lambda received_request: incomplete_result
+        ),
+    )
+
+    assert smoke_capstone_openai.main() == 1
+    assert capsys.readouterr().out == ""
+
+
+def test_openai_adapter_uses_luna_medium_structured_responses() -> None:
+    client = FakeOpenAIClient(output_parsed=ExpectedBrief(answer="Evidence is cited."))
+    model = OpenAIResponsesStructuredModel(
+        client=client,
+        model="gpt-5.6-luna",
+        reasoning_effort="medium",
+    )
+
+    result = model.generate(
+        system_prompt="Use only cited evidence.",
+        user_prompt="Evidence payload",
+        response_model=ExpectedBrief,
+    )
+
+    assert isinstance(result, ExpectedBrief)
+    assert client.responses.last_call == {
+        "model": "gpt-5.6-luna",
+        "reasoning": {"effort": "medium"},
+        "instructions": "Use only cited evidence.",
+        "input": "Evidence payload",
+        "text_format": ExpectedBrief,
+        "store": False,
+    }
+
+
+def test_openai_adapter_rejects_missing_structured_output() -> None:
+    model = OpenAIResponsesStructuredModel(
+        client=FakeOpenAIClient(output_parsed=None),
+        model="gpt-5.6-luna",
+    )
+
+    with pytest.raises(ModelOutputError, match="no structured output"):
+        model.generate(
+            system_prompt="Use only cited evidence.",
+            user_prompt="Evidence payload",
+            response_model=ExpectedBrief,
+        )
 
 
 class FailingStructuredModel:

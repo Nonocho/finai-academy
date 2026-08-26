@@ -12,16 +12,20 @@ def test_local_defaults() -> None:
     assert settings.embedding_model == "qwen3-embedding:0.6b"
 
 
-def test_openai_environment_uses_openai_specific_defaults(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_openai_environment_uses_openai_specific_defaults(
+    tmp_path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    env_file = tmp_path / ".env"
+    env_file.write_text("", encoding="utf-8")
     monkeypatch.setenv("FINAI_MODEL_PROVIDER", "openai")
     monkeypatch.delenv("FINAI_CHAT_MODEL", raising=False)
     monkeypatch.delenv("FINAI_EMBEDDING_PROVIDER", raising=False)
     monkeypatch.delenv("FINAI_EMBEDDING_MODEL", raising=False)
 
-    settings = Settings.from_environment()
+    settings = Settings.from_environment(env_file=env_file)
 
     assert settings.provider == "openai"
-    assert settings.chat_model == "gpt-5-mini"
+    assert settings.chat_model == "gpt-5.6-luna"
     assert settings.embedding_provider == "openai"
     assert settings.embedding_model == "text-embedding-3-small"
 
@@ -44,6 +48,11 @@ def test_unsupported_provider_is_rejected(monkeypatch: pytest.MonkeyPatch) -> No
 
     with pytest.raises(ValueError, match="FINAI_MODEL_PROVIDER"):
         Settings.from_environment()
+
+
+def test_settings_reject_unknown_reasoning_effort() -> None:
+    with pytest.raises(ValueError, match="FINAI_REASONING_EFFORT"):
+        Settings(provider="openai", reasoning_effort="extreme")
 
 
 def test_settings_loads_an_explicit_env_file(

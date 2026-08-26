@@ -1445,6 +1445,7 @@ def build_copilot_for_request(
         embedding_provider=settings.embedding_provider,
         embedding_model=settings.embedding_model,
         ollama_base_url=settings.ollama_base_url,
+        reasoning_effort=settings.reasoning_effort,
     )
     try:
         structured_model = model_gateway.create_structured_model(routed_settings)

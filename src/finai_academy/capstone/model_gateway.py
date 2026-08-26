@@ -41,6 +41,38 @@ class StructuredModel(Protocol):
         """Return a response validated against ``response_model``."""
 
 
+class ModelOutputError(RuntimeError):
+    """Raised when a provider does not return the requested structured output."""
+
+
+class OpenAIResponsesStructuredModel:
+    """Adapt OpenAI Responses structured parsing to the capstone boundary."""
+
+    def __init__(self, *, client: Any, model: str, reasoning_effort: str = "medium") -> None:
+        self._client = client
+        self._model = model
+        self._reasoning_effort = reasoning_effort
+
+    def generate(
+        self,
+        *,
+        system_prompt: str,
+        user_prompt: str,
+        response_model: type[ResponseT],
+    ) -> ResponseT:
+        response = self._client.responses.parse(
+            model=self._model,
+            reasoning={"effort": self._reasoning_effort},
+            instructions=system_prompt,
+            input=user_prompt,
+            text_format=response_model,
+            store=False,
+        )
+        if response.output_parsed is None:
+            raise ModelOutputError("provider returned no structured output")
+        return response_model.model_validate(response.output_parsed)
+
+
 class LangChainStructuredModel:
     """Adapt a LangChain chat model to the capstone's narrow interface."""
 
@@ -89,14 +121,17 @@ def create_structured_model(settings: Settings) -> StructuredModel:
 
     if provider == "openai":
         try:
-            from langchain_openai import ChatOpenAI
+            from openai import OpenAI
         except ImportError as error:  # pragma: no cover - depends on optional extras
             raise RuntimeError(
                 "OpenAI support is not installed. Run `uv sync --extra ai`."
             ) from error
 
-        model = ChatOpenAI(model=settings.chat_model, temperature=0)
-        return LangChainStructuredModel(model)
+        return OpenAIResponsesStructuredModel(
+            client=OpenAI(),
+            model=settings.chat_model,
+            reasoning_effort=settings.reasoning_effort,
+        )
 
     raise ValueError(
         f"Unsupported FINAI_MODEL_PROVIDER={settings.provider!r}. "
