@@ -1,37 +1,36 @@
-"""Certified retrieval and fail-closed financial tool access for the capstone."""
+"""Certified document retrieval and fail-closed capstone tool access."""
 
 from __future__ import annotations
 
-import json
 from collections.abc import Mapping, Sequence
 from pathlib import Path
 from typing import Any, Literal
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, ValidationError
 
-from finai_academy.capstone.models import CapstoneEvidenceHit, _clean_public_value
-from finai_academy.financial_mcp_capabilities import (
-    CapabilityValidationError,
-    DocumentSearchResult,
-    FinancialCapabilityRegistry,
-    MetricResult,
-    build_financial_capability_registry,
+from finai_academy.capstone.document_tools import (
+    DocumentCapabilityRegistry,
+    DocumentEvidenceOutcome,
+    DocumentSearchOutcome,
+    ReportedValue,
+    ReportedValueComparison,
+    build_document_capability_registry,
+    compare_reported_values,
 )
-from finai_academy.financial_mcp_client import ALLOWED_TOOLS
-from finai_academy.hybrid_retrieval import (
-    DenseIndex,
-    DeterministicTeachingEmbeddings,
-    IndexedPassage,
-    KeywordIndex,
-    RetrievalFilters,
-    reciprocal_rank_fusion,
-)
+from finai_academy.capstone.models import CapstoneEvidenceHit
 
-MANDATORY_ANALYST_TOOLS = frozenset({"get_company_metric", "search_financial_documents"})
-_EVIDENCE_CATALOG = (
-    Path(__file__).resolve().parents[3] / "assets/course-data/mcp/lesson10_evidence_catalog_v1.json"
+MANDATORY_ANALYST_TOOLS = frozenset(
+    {
+        "search_financial_documents",
+        "inspect_document_evidence",
+        "compare_reported_values",
+    }
 )
 _INVALID_ARGUMENTS_MESSAGE = "Tool arguments must match the approved schema."
+_REPORTING_PERIOD_BY_COMPANY = {
+    "nvidia": "FY2026",
+    "schneider electric": "FY2025",
+}
 
 
 class ToolOutcome(BaseModel):
@@ -40,174 +39,127 @@ class ToolOutcome(BaseModel):
     model_config = ConfigDict(extra="forbid", frozen=True)
 
     status: Literal["ok", "error"]
-    payload: MetricResult | DocumentSearchResult | None = None
+    payload: DocumentSearchOutcome | DocumentEvidenceOutcome | ReportedValueComparison | None = None
     error_code: str | None = None
     message: str | None = None
     retryable: bool = False
 
 
 class CertifiedRetriever:
-    """Search the versioned classroom catalog without crossing company boundaries."""
+    """Compatibility retriever backed by the certified document capability registry."""
 
-    def __init__(
-        self,
-        passages: Sequence[IndexedPassage],
-        evidence_by_id: Mapping[str, CapstoneEvidenceHit],
-        capability_registry: FinancialCapabilityRegistry,
-    ) -> None:
-        self._passages = tuple(passages)
-        self._evidence_by_id = dict(evidence_by_id)
+    def __init__(self, capability_registry: DocumentCapabilityRegistry) -> None:
         self._capability_registry = capability_registry
-        self._keyword_index = KeywordIndex(self._passages)
-        embeddings = DeterministicTeachingEmbeddings()
-        self._dense_index = DenseIndex(
-            self._passages,
-            embeddings,
-            provider="certified-fixture",
-            model=embeddings.model_name,
-            chunking_strategy="evidence-catalog-v1",
-        )
 
     def search(self, company: str, query: str, top_k: int = 2) -> tuple[CapstoneEvidenceHit, ...]:
-        """Return no more than ``top_k`` hits after fixture-backed validation."""
+        """Return document-backed evidence without rebuilding ranking outside the index."""
 
-        validated = self._capability_registry.search_financial_documents(company, query, top_k)
-        company_filter = RetrievalFilters(company=validated.company)
-        rankings = {
-            "keyword": self._keyword_index.search(query, top_k=top_k, filters=company_filter),
-            "dense": self._dense_index.search(query, top_k=top_k, filters=company_filter),
-        }
-        fused_hits = reciprocal_rank_fusion(rankings)
-        return tuple(
-            self._evidence_by_id[hit.passage.passage_id] for hit in fused_hits[:top_k]
+        reporting_period = _REPORTING_PERIOD_BY_COMPANY.get(company.casefold().strip())
+        if reporting_period is None:
+            return ()
+        outcome = self._capability_registry.search_financial_documents(
+            company=company,
+            reporting_period=reporting_period,
+            query=query,
+            top_k=top_k,
         )
+        return tuple(_to_capstone_evidence_hit(hit) for hit in outcome.hits)
 
 
-def build_certified_retriever() -> CertifiedRetriever:
-    """Load the tracked Lesson 10 evidence catalog into a deterministic hybrid retriever."""
+def build_certified_retriever(root: Path | None = None) -> CertifiedRetriever:
+    """Build the legacy retriever facade from the verified full-document index."""
 
-    payload = json.loads(_EVIDENCE_CATALOG.read_text(encoding="utf-8"))
-    documents = payload.get("documents")
-    if not isinstance(documents, list) or not documents:
-        raise ValueError("certified evidence catalog requires documents")
-
-    passages: list[IndexedPassage] = []
-    evidence_by_id: dict[str, CapstoneEvidenceHit] = {}
-    for document in documents:
-        if not isinstance(document, Mapping):
-            raise TypeError("certified evidence catalog documents must be objects")
-        evidence = CapstoneEvidenceHit(
-            company=_required_catalog_string(document, "company"),
-            text=_required_catalog_string(document, "text"),
-            evidence_id=_required_catalog_string(document, "evidence_id"),
-            document_id=_required_catalog_string(document, "document_id"),
-            section=_required_catalog_string(document, "section"),
-            period=_required_catalog_string(document, "period"),
-            source_reference=_required_catalog_string(document, "source"),
-        )
-        if evidence.evidence_id in evidence_by_id:
-            raise ValueError("certified evidence IDs must be unique")
-        evidence_by_id[evidence.evidence_id] = evidence
-        passages.append(
-            IndexedPassage(
-                passage_id=evidence.evidence_id,
-                company=evidence.company,
-                period=evidence.period,
-                section=evidence.section,
-                text=evidence.text,
-                source_url=evidence.source_reference,
-            )
-        )
-
-    return CertifiedRetriever(passages, evidence_by_id, build_financial_capability_registry())
+    return CertifiedRetriever(build_document_capability_registry(root))
 
 
 class AnalystToolRegistry:
-    """Expose only the two approved, deterministic financial read tools."""
+    """Expose exactly the three deterministic document-research capabilities."""
 
     def __init__(
         self,
         discovered: Sequence[str],
-        capability_registry: FinancialCapabilityRegistry | None = None,
+        capability_registry: DocumentCapabilityRegistry | None = None,
     ) -> None:
         self._runtime_discovered = frozenset(discovered)
-        self._capability_registry = capability_registry or build_financial_capability_registry()
+        self._capability_registry = capability_registry or build_document_capability_registry()
 
     def discover(self) -> tuple[str, ...]:
-        """Return the static-policy intersection of runtime capability discovery."""
+        """Return the fixed policy intersection of runtime-discovered capabilities."""
 
-        return tuple(sorted(self._runtime_discovered & MANDATORY_ANALYST_TOOLS & ALLOWED_TOOLS))
+        return tuple(sorted(self._runtime_discovered & MANDATORY_ANALYST_TOOLS))
 
     def invoke(self, name: str, arguments: Mapping[str, Any]) -> ToolOutcome:
-        """Run an approved, discovered tool or turn validation failures into public outcomes."""
+        """Run one approved tool after exact schema validation without echoing rejected input."""
 
-        if name not in MANDATORY_ANALYST_TOOLS or name not in ALLOWED_TOOLS:
+        if name not in MANDATORY_ANALYST_TOOLS:
             raise ValueError("Tool is not allowlisted.")
         if name not in self.discover():
             raise ValueError("Tool was not discovered.")
-
         validated_arguments = _validated_arguments(name, arguments)
         if validated_arguments is None:
             return _invalid_arguments_outcome()
-
         try:
-            if name == "get_company_metric":
-                result = self._capability_registry.get_company_metric(**validated_arguments)
-            else:
+            if name == "search_financial_documents":
                 result = self._capability_registry.search_financial_documents(**validated_arguments)
-        except CapabilityValidationError as error:
-            return ToolOutcome(
-                status="error",
-                error_code=error.error.error_code,
-                message=error.error.message,
-                retryable=error.error.retryable,
-            )
-        except (AttributeError, TypeError):
+            elif name == "inspect_document_evidence":
+                result = self._capability_registry.inspect_document_evidence(**validated_arguments)
+            else:
+                result = compare_reported_values(**validated_arguments)
+        except (TypeError, ValidationError, ValueError):
             return _invalid_arguments_outcome()
         return ToolOutcome(status="ok", payload=result)
 
 
-def _required_catalog_string(document: Mapping[str, Any], field: str) -> str:
-    value = document.get(field)
-    if not isinstance(value, str) or not value.strip():
-        raise ValueError(f"certified evidence catalog requires non-empty {field}")
-    return value
+def _to_capstone_evidence_hit(hit) -> CapstoneEvidenceHit:
+    chunk = hit.retrieval.chunk
+    return CapstoneEvidenceHit(
+        company=chunk.context.company_name,
+        text=chunk.text,
+        evidence_id=chunk.chunk_id,
+        document_id=chunk.context.document_id,
+        section=" > ".join(chunk.context.heading_path) or chunk.element_type,
+        period=chunk.context.reporting_period,
+        source_reference=chunk.context.official_source_url,
+    )
 
 
 def _validated_arguments(name: str, arguments: Mapping[str, Any]) -> dict[str, Any] | None:
-    """Accept only safe, complete schemas before forwarding calls to capability code."""
+    """Accept only complete approved schemas before forwarding document capability calls."""
 
     if not isinstance(arguments, Mapping):
         return None
-    if name == "get_company_metric":
-        expected_fields = ("ticker", "metric")
-        if set(arguments) != set(expected_fields):
+    if name == "search_financial_documents":
+        allowed_fields = {"company", "reporting_period", "query", "element_type", "top_k"}
+        required_fields = {"company", "reporting_period", "query"}
+        if not required_fields <= set(arguments) or not set(arguments) <= allowed_fields:
             return None
-    else:
-        expected_fields = ("company", "query", "top_k")
-        if set(arguments) not in ({"company", "query"}, set(expected_fields)):
+        values = {
+            "company": arguments.get("company"),
+            "reporting_period": arguments.get("reporting_period"),
+            "query": arguments.get("query"),
+            "element_type": arguments.get("element_type"),
+            "top_k": arguments.get("top_k", 3),
+        }
+        if not all(isinstance(values[field], str) for field in required_fields):
             return None
-
-    validated: dict[str, Any] = {}
-    for field in expected_fields:
-        if field == "top_k" and field not in arguments:
-            validated[field] = 2
-            continue
-        value = arguments.get(field)
-        if field == "top_k":
-            if not isinstance(value, int) or isinstance(value, bool):
-                return None
-            validated[field] = value
-            continue
-        if not isinstance(value, str):
+        if values["element_type"] is not None and not isinstance(values["element_type"], str):
             return None
-        try:
-            validated[field] = _clean_public_value(value)
-        except ValueError:
-            if value.strip():
-                return None
-            validated[field] = value
-    return validated
+        if not isinstance(values["top_k"], int) or isinstance(values["top_k"], bool):
+            return None
+        return values
+    if name == "inspect_document_evidence":
+        if set(arguments) != {"chunk_id"} or not isinstance(arguments.get("chunk_id"), str):
+            return None
+        return {"chunk_id": arguments["chunk_id"]}
+    if set(arguments) != {"left", "right"}:
+        return None
+    try:
+        return {
+            "left": ReportedValue.model_validate(arguments["left"]),
+            "right": ReportedValue.model_validate(arguments["right"]),
+        }
+    except (TypeError, ValidationError, ValueError):
+        return None
 
 
 def _invalid_arguments_outcome() -> ToolOutcome:

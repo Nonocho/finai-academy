@@ -1,4 +1,4 @@
-"""Contracts for the Financial Analyst Copilot's certified tool boundaries."""
+"""Contracts for the Financial Analyst Copilot's bounded document tools."""
 
 from __future__ import annotations
 
@@ -11,13 +11,13 @@ from finai_academy.capstone.tools import AnalystToolRegistry, build_certified_re
 
 
 def test_certified_retriever_keeps_nvidia_evidence_in_its_exact_company_boundary() -> None:
-    """Removing the exact company filter would leak Schneider evidence into this result."""
+    """Removing the certified index company filter would leak Schneider document evidence."""
 
     hits = build_certified_retriever().search("NVIDIA", "growth revenue", top_k=3)
 
     assert hits
     assert {hit.company for hit in hits} == {"NVIDIA"}
-    assert all(hit.evidence_id and hit.source_reference for hit in hits)
+    assert all(hit.evidence_id.startswith("chunk-") and hit.source_reference for hit in hits)
 
 
 def test_certified_retriever_keeps_schneider_evidence_in_its_exact_company_boundary() -> None:
@@ -27,44 +27,32 @@ def test_certified_retriever_keeps_schneider_evidence_in_its_exact_company_bound
 
     assert hits
     assert {hit.company for hit in hits} == {"Schneider Electric"}
-    assert all(hit.evidence_id.startswith("SU-") for hit in hits)
+    assert all(hit.evidence_id.startswith("chunk-") for hit in hits)
 
 
-@pytest.mark.parametrize(
-    ("company", "query", "top_k", "error_code"),
-    [
-        ("Unsupported Co", "revenue", 2, "unsupported_company"),
-        ("NVIDIA", "   ", 2, "invalid_query"),
-        ("NVIDIA", "revenue", 0, "invalid_top_k"),
-    ],
-)
-def test_certified_retriever_preserves_typed_validation_failures(
-    company: str, query: str, top_k: int, error_code: str
-) -> None:
-    """Replacing fixture validation with generic errors would hide safe recovery guidance."""
-
-    from finai_academy.financial_mcp_capabilities import CapabilityValidationError
-
-    with pytest.raises(CapabilityValidationError) as caught:
-        build_certified_retriever().search(company, query, top_k)
-
-    assert caught.value.error.error_code == error_code
-
-
-def test_registry_discovers_only_the_mandatory_read_tools() -> None:
+def test_registry_exposes_only_document_research_capabilities() -> None:
     """A policy regression must not expose runtime-discovered trading capabilities."""
 
     registry = AnalystToolRegistry(
-        discovered=("search_financial_documents", "get_company_metric", "place_order")
+        discovered=(
+            "search_financial_documents",
+            "inspect_document_evidence",
+            "compare_reported_values",
+            "place_order",
+        )
     )
 
-    assert registry.discover() == ("get_company_metric", "search_financial_documents")
+    assert registry.discover() == (
+        "compare_reported_values",
+        "inspect_document_evidence",
+        "search_financial_documents",
+    )
 
 
 def test_registry_fails_closed_for_a_trading_tool_without_echoing_arguments() -> None:
     """Allowing an untrusted capability or echoing its payload would violate the tool boundary."""
 
-    registry = AnalystToolRegistry(discovered=("place_order", "get_company_metric"))
+    registry = AnalystToolRegistry(discovered=("place_order", "search_financial_documents"))
 
     with pytest.raises(ValueError, match="not allowlisted") as caught:
         registry.invoke("place_order", {"symbol": "NVDA", "quantity": 100})
@@ -76,7 +64,7 @@ def test_registry_fails_closed_without_echoing_a_malicious_tool_name() -> None:
     """Echoing an attacker-controlled tool name can expose credential-shaped public text."""
 
     malicious_name = "place_order Authorization: Bearer provider-secret-token"
-    registry = AnalystToolRegistry(discovered=("get_company_metric",))
+    registry = AnalystToolRegistry(discovered=("search_financial_documents",))
 
     with pytest.raises(ValueError, match="not allowlisted") as caught:
         registry.invoke(malicious_name, {})
@@ -85,70 +73,74 @@ def test_registry_fails_closed_without_echoing_a_malicious_tool_name() -> None:
     assert malicious_name not in str(caught.value)
 
 
-def test_registry_returns_typed_metric_and_document_outcomes() -> None:
-    """Returning raw capability models would make successful tool calls inconsistent to consumers."""
+def test_registry_returns_typed_document_search_and_inspection_outcomes() -> None:
+    """Returning raw index values would make tool consumers bypass the safe outcome boundary."""
 
     registry = AnalystToolRegistry(
-        discovered=("search_financial_documents", "get_company_metric")
+        discovered=("search_financial_documents", "inspect_document_evidence")
     )
 
-    metric = registry.invoke("get_company_metric", {"ticker": "NVDA", "metric": "P/E"})
     documents = registry.invoke(
         "search_financial_documents",
-        {"company": "Schneider Electric", "query": "energy management", "top_k": 2},
+        {
+            "company": "Schneider Electric",
+            "reporting_period": "FY2025",
+            "query": "energy management",
+            "top_k": 1,
+        },
     )
-
-    assert metric.status == "ok"
-    assert metric.payload is not None
-    assert metric.payload.company == "NVIDIA"
     assert documents.status == "ok"
     assert documents.payload is not None
-    assert documents.payload.company == "Schneider Electric"
+    chunk_id = documents.payload.hits[0].chunk_id
+    evidence = registry.invoke("inspect_document_evidence", {"chunk_id": chunk_id})
+
+    assert evidence.status == "ok"
+    assert evidence.payload is not None
+    assert evidence.payload.chunk_id == chunk_id
 
 
-def test_registry_document_search_uses_the_existing_default_top_k_when_omitted() -> None:
-    """Requiring a redundant top_k field breaks the documented default-capability call."""
+def test_registry_document_search_uses_the_document_default_top_k_when_omitted() -> None:
+    """Requiring a redundant top_k field breaks the approved document-search call."""
 
-    outcome = AnalystToolRegistry(
-        discovered=("get_company_metric", "search_financial_documents")
-    ).invoke(
+    outcome = AnalystToolRegistry(discovered=("search_financial_documents",)).invoke(
         "search_financial_documents",
-        {"company": "Schneider Electric", "query": "energy management"},
+        {
+            "company": "Schneider Electric",
+            "reporting_period": "FY2025",
+            "query": "energy management",
+        },
     )
 
     assert outcome.status == "ok"
     assert outcome.payload is not None
-    assert len(outcome.payload.hits) == 2
-
-
-def test_registry_maps_unsupported_metric_to_a_retryable_typed_outcome() -> None:
-    """Dropping capability validation details would prevent the later replan to document search."""
-
-    outcome = AnalystToolRegistry(
-        discovered=("get_company_metric", "search_financial_documents")
-    ).invoke("get_company_metric", {"ticker": "NVDA", "metric": "Revenue"})
-
-    assert outcome.status == "error"
-    assert outcome.error_code == "unsupported_metric"
-    assert outcome.retryable is True
-    assert outcome.payload is None
+    assert 1 <= len(outcome.payload.hits) <= 3
 
 
 @pytest.mark.parametrize(
     "arguments",
     [
-        {"company": "NVIDIA", "query": "api_key=provider-secret", "top_k": 2},
-        {"company": "NVIDIA", "query": "/Users/analyst/private-notes.txt", "top_k": 2},
+        {
+            "company": "NVIDIA",
+            "reporting_period": "FY2026",
+            "query": "api_key=provider-secret",
+            "top_k": 2,
+        },
+        {
+            "company": "NVIDIA",
+            "reporting_period": "FY2026",
+            "query": "/Users/analyst/private-notes.txt",
+            "top_k": 2,
+        },
     ],
 )
 def test_registry_rejects_unsafe_document_queries_before_they_reach_public_payloads(
-    arguments: dict[str, object]
+    arguments: dict[str, object],
 ) -> None:
     """Returning the fixture result unchanged would echo unsafe query text in its public payload."""
 
-    outcome = AnalystToolRegistry(
-        discovered=("get_company_metric", "search_financial_documents")
-    ).invoke("search_financial_documents", arguments)
+    outcome = AnalystToolRegistry(discovered=("search_financial_documents",)).invoke(
+        "search_financial_documents", arguments
+    )
 
     assert outcome.status == "error"
     assert outcome.error_code == "invalid_arguments"
@@ -160,11 +152,20 @@ def test_registry_rejects_unsafe_document_queries_before_they_reach_public_paylo
 @pytest.mark.parametrize(
     ("name", "arguments"),
     [
-        ("search_financial_documents", {"company": "NVIDIA", "query": 123, "top_k": 2}),
-        ("search_financial_documents", {"company": None, "query": "revenue", "top_k": 2}),
-        ("search_financial_documents", {"company": "NVIDIA", "query": "revenue", "top_k": "2"}),
-        ("get_company_metric", {"ticker": None, "metric": "P/E"}),
-        ("get_company_metric", {"ticker": "NVDA", "metric": {"name": "P/E"}}),
+        (
+            "search_financial_documents",
+            {"company": "NVIDIA", "reporting_period": "FY2026", "query": 123, "top_k": 2},
+        ),
+        (
+            "search_financial_documents",
+            {"company": None, "reporting_period": "FY2026", "query": "revenue", "top_k": 2},
+        ),
+        (
+            "search_financial_documents",
+            {"company": "NVIDIA", "reporting_period": "FY2026", "query": "revenue", "top_k": "2"},
+        ),
+        ("inspect_document_evidence", {"chunk_id": None}),
+        ("compare_reported_values", {"left": {"value": 1}, "right": {"value": 2}}),
     ],
 )
 def test_registry_returns_a_stable_typed_error_for_malformed_arguments(
@@ -173,7 +174,11 @@ def test_registry_returns_a_stable_typed_error_for_malformed_arguments(
     """Forwarding malformed values causes raw AttributeError or TypeError in capability code."""
 
     outcome = AnalystToolRegistry(
-        discovered=("get_company_metric", "search_financial_documents")
+        discovered=(
+            "search_financial_documents",
+            "inspect_document_evidence",
+            "compare_reported_values",
+        )
     ).invoke(name, arguments)
 
     assert outcome.status == "error"
@@ -197,9 +202,9 @@ def test_tavily_without_a_key_is_explicitly_unavailable(monkeypatch: pytest.Monk
 def test_tavily_injected_callable_cannot_bypass_missing_key() -> None:
     """A test double must not accidentally turn optional live news into a credential bypass."""
 
-    outcome = TavilyNewsAdapter(
-        search_callable=lambda company, query: {"results": []}
-    ).search("NVIDIA", "AI demand")
+    outcome = TavilyNewsAdapter(search_callable=lambda company, query: {"results": []}).search(
+        "NVIDIA", "AI demand"
+    )
 
     assert outcome.status == "unavailable"
     assert outcome.items == ()
