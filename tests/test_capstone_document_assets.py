@@ -4,7 +4,7 @@ from datetime import date
 from pathlib import Path
 
 import pytest
-from pydantic import ValidationError
+from pydantic import HttpUrl, ValidationError
 
 from finai_academy.capstone.document_assets import (
     SourceAssetError,
@@ -91,11 +91,63 @@ def test_capstone_manifest_certifies_both_complete_official_pdfs() -> None:
         verify_source_asset(source, ROOT)
 
 
-def test_public_source_contract_rejects_absolute_personal_paths() -> None:
+@pytest.mark.parametrize(
+    "official_source_url",
+    (
+        "https://alice@example.com/report.pdf",
+        "https://alice:correcthorsebatterystaple@example.com/report.pdf",
+    ),
+)
+def test_public_source_contract_rejects_url_userinfo(official_source_url: str) -> None:
+    with pytest.raises(ValueError, match="URL userinfo"):
+        sample_source(official_source_url=official_source_url)
+
+
+def test_public_source_contract_rejects_parsed_url_userinfo() -> None:
+    with pytest.raises(ValueError, match="URL userinfo"):
+        sample_source(
+            official_source_url=HttpUrl(
+                "https://alice:correcthorsebatterystaple@example.com/report.pdf"
+            )
+        )
+
+
+@pytest.mark.parametrize(
+    "company_name",
+    (r"C:\Users\example", r"\Users\example\report.pdf"),
+)
+def test_public_contract_rejects_windows_personal_paths_in_all_public_strings(
+    company_name: str,
+) -> None:
+    with pytest.raises(ValueError, match="personal filesystem paths"):
+        sample_source(company_name=company_name)
+    with pytest.raises(ValueError, match="personal filesystem paths"):
+        sample_context(parser_name=company_name)
+
+
+@pytest.mark.parametrize(
+    "local_asset_key",
+    (
+        "/Users/example/report.pdf",
+        r"C:\Users\example\report.pdf",
+        r"C:\reports\report.pdf",
+        r"C:reports\report.pdf",
+        r"\reports\report.pdf",
+    ),
+)
+def test_public_source_contract_rejects_rooted_or_drive_qualified_asset_keys(
+    local_asset_key: str,
+) -> None:
     with pytest.raises(ValueError, match="local_asset_key"):
-        sample_source(local_asset_key="/Users/example/report.pdf")
-    with pytest.raises(ValueError, match="local_asset_key"):
-        sample_source(local_asset_key=r"C:\\Users\\example\\report.pdf")
+        sample_source(local_asset_key=local_asset_key)
+
+
+@pytest.mark.parametrize(
+    "local_asset_key",
+    ("assets/course-data/downloads/report.pdf", "assets/reports/report.pdf"),
+)
+def test_public_source_contract_accepts_safe_relative_asset_keys(local_asset_key: str) -> None:
+    assert sample_source(local_asset_key=local_asset_key).local_asset_key == local_asset_key
 
 
 def test_public_contract_rejects_blank_credential_and_non_json_values() -> None:

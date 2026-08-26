@@ -7,6 +7,7 @@ import re
 from datetime import date
 from pathlib import PurePosixPath, PureWindowsPath
 from typing import Any, Literal, Self
+from urllib.parse import urlsplit
 
 from pydantic import AnyUrl, BaseModel, ConfigDict, Field, HttpUrl, model_validator
 
@@ -22,24 +23,53 @@ _SECRET_PATTERN = re.compile(
     )"""
 )
 _PERSONAL_PATH_PATTERN = re.compile(r"(?i)(?:^|[^A-Za-z0-9])/(?:Users|home)/")
+_WINDOWS_PERSONAL_PATH_PATTERN = re.compile(
+    r"(?i)(?:^|[^A-Za-z0-9])(?:[A-Za-z]:)?\\+(?:Users|home)(?:\\+|$)"
+)
+_WINDOWS_DRIVE_PATH_PATTERN = re.compile(r"(?i)(?:^|[^A-Za-z0-9])[A-Za-z]:(?=[^:])")
+_WINDOWS_ROOTED_PATH_PATTERN = re.compile(r"(?:^|\s)\\+")
+
+
+def _require_url_without_userinfo(value: str | AnyUrl) -> None:
+    if isinstance(value, AnyUrl):
+        username = value.username
+        password = value.password
+    else:
+        parsed = urlsplit(value)
+        username = parsed.username
+        password = parsed.password
+    if username is not None or password is not None:
+        raise ValueError("public fields must not contain URL userinfo")
+
+
+def _require_safe_public_string(value: str) -> str:
+    cleaned = value.strip()
+    if not cleaned:
+        raise ValueError("public text values must not be blank")
+    if _SECRET_PATTERN.search(cleaned):
+        raise ValueError("public fields must not contain credential-shaped text")
+    _require_url_without_userinfo(cleaned)
+    if _PERSONAL_PATH_PATTERN.search(cleaned) or _WINDOWS_PERSONAL_PATH_PATTERN.search(
+        cleaned
+    ):
+        raise ValueError("public fields must not contain personal filesystem paths")
+    if _WINDOWS_DRIVE_PATH_PATTERN.search(cleaned) or _WINDOWS_ROOTED_PATH_PATTERN.search(
+        cleaned
+    ):
+        raise ValueError("public fields must not contain drive-qualified or rooted filesystem paths")
+    return cleaned
 
 
 def _clean_public_value(value: Any) -> Any:
     """Reject unsafe values before public contracts retain them."""
 
     if isinstance(value, str):
-        cleaned = value.strip()
-        if not cleaned:
-            raise ValueError("public text values must not be blank")
-        if _SECRET_PATTERN.search(cleaned):
-            raise ValueError("public fields must not contain credential-shaped text")
-        if _PERSONAL_PATH_PATTERN.search(cleaned):
-            raise ValueError("public fields must not contain personal filesystem paths")
-        return cleaned
+        return _require_safe_public_string(value)
     if isinstance(value, BaseModel):
         _clean_public_value(value.model_dump(mode="python"))
         return value
     if isinstance(value, AnyUrl):
+        _require_url_without_userinfo(value)
         return value
     if isinstance(value, dict):
         if not all(isinstance(key, str) for key in value):
@@ -82,6 +112,7 @@ class FrozenDocumentModel(BaseModel):
             cleaned_key = local_asset_key.strip()
             if not cleaned_key or _SECRET_PATTERN.search(cleaned_key):
                 _clean_public_value(local_asset_key)
+            _require_url_without_userinfo(cleaned_key)
             cleaned_state = _clean_public_value(value)
             cleaned_state["local_asset_key"] = cleaned_key
             return cleaned_state
@@ -113,6 +144,8 @@ class FinancialDocumentSource(FrozenDocumentModel):
         if (
             posix_path.is_absolute()
             or windows_path.is_absolute()
+            or bool(windows_path.drive)
+            or bool(windows_path.root)
             or ".." in posix_path.parts
             or ".." in windows_path.parts
         ):
