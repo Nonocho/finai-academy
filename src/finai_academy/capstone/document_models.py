@@ -13,8 +13,8 @@ from pydantic import AnyUrl, BaseModel, ConfigDict, Field, HttpUrl, model_valida
 
 _SECRET_PATTERN = re.compile(
     r"""(?ix)(
-        api[_-]?key
-        | authorization
+        api[_-]?key\s*(?:=|:)\s*\S+
+        | authorization\s*(?:=|:)\s*\S+
         | bearer\s+[a-z0-9._-]+
         | sk-[a-z0-9]{12,}
         | \b(?:password|secret|token|client[_-]?secret|access[_-]?token|private[_-]?key)\b
@@ -26,7 +26,7 @@ _PERSONAL_PATH_PATTERN = re.compile(r"(?i)(?:^|[^A-Za-z0-9])/(?:Users|home)/")
 _WINDOWS_PERSONAL_PATH_PATTERN = re.compile(
     r"(?i)(?:^|[^A-Za-z0-9])(?:[A-Za-z]:)?\\+(?:Users|home)(?:\\+|$)"
 )
-_WINDOWS_DRIVE_PATH_PATTERN = re.compile(r"(?i)(?:^|[^A-Za-z0-9])[A-Za-z]:(?=[^:])")
+_WINDOWS_DRIVE_PATH_PATTERN = re.compile(r"(?i)(?:^|[^A-Za-z0-9])[A-Za-z]:(?=[\\/])")
 _WINDOWS_ROOTED_PATH_PATTERN = re.compile(
     r"\\+(?=(?:[A-Za-z0-9][A-Za-z0-9._ -]*\\+)+"
     r"[A-Za-z0-9][A-Za-z0-9._ -]*)"

@@ -25,13 +25,17 @@
       "source_id": "NVDA-2026-10K-EXCERPT",
       "company": "NVIDIA",
       "period": "FY2026",
-      "document_type": "10-K teaching extract",
+      "document_type": "Form 10-K",
       "language": "en",
       "source_url": "https://www.sec.gov/Archives/edgar/data/1045810/000104581026000021/nvda-20260125.htm",
-      "retrieval_date": "2026-08-15",
+      "retrieval_date": "2026-08-25",
       "fixture_path": "assets/course-data/fixtures/nvidia_fy2026_excerpt.html",
       "fixture_sha256": "a11e563df3996db3b34e60407dbbf36333aae5a9379d5f96c940b1a9aca04ce7",
-      "provenance_mode": "fixture"
+      "official_path": "assets/course-data/downloads/nvidia_fy2026_form_10k.html",
+      "official_sha256": "e5c2ebf40ccf36251b7818eb95d2ce9c94e6bfc4995c833c71860ed7bea5ab87",
+      "official_bytes": 1983796,
+      "accession_number": "0001045810-26-000021",
+      "provenance_mode": "official-download-with-curated-fixture"
     },
     {
       "source_id": "SU-2025-FY-EXCERPT",
@@ -107,6 +111,34 @@
       "sha256": "5b17e6e8e5b8c47f697f5d352ed9639b98b261d9ecf886d3e8ce147493ebb00a",
       "byte_size": 781628,
       "page_count": 19
+    }
+  ],
+  "capstone_derived_artifacts": [
+    {
+      "schema_version": 2,
+      "parser": "pymupdf4llm",
+      "parser_version": "1.28.2",
+      "chunking_strategy": "financial-context-v2",
+      "source_sha256s": [
+        "0e725ba048221539dca3eb1a4e70febfcbb785e9afb96cd3ff0b035d7d734e5c",
+        "5b17e6e8e5b8c47f697f5d352ed9639b98b261d9ecf886d3e8ce147493ebb00a"
+      ],
+      "elements": {
+        "path": "assets/course-data/capstone/document_elements_v2.json",
+        "sha256": "f70afed5f935c4a11b637b689b1bdb49f0c44ad66eff92bddaef53d61cc21082"
+      },
+      "chunks": {
+        "path": "assets/course-data/capstone/financial_chunks_v2.json",
+        "sha256": "5fcc878833b13c0c781d627f6a497b0e8b30d6d6c35ae5025a9dbbbd2f0ec119"
+      },
+      "nvidia_crop": {
+        "path": "assets/course-data/capstone/crops/nvidia_segment_table_page_165.png",
+        "sha256": "8ef1de77ff829f97404644c64d2edc66f472767c2256ee07c233a59851f9b80f"
+      },
+      "schneider_crop": {
+        "path": "assets/course-data/capstone/crops/schneider_revenue_tables_page_16.png",
+        "sha256": "1e12ca050cab7797749741ae061e27ceecce780df8a4d71191de665349d0044c"
+      }
     }
   ]
 }

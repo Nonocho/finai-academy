@@ -94,7 +94,12 @@ def build_financial_metadata(
     )
 
 
-def build_table_chunk(document: ParsedDocument, element: DocumentElement) -> FinancialChunk:
+def build_table_chunk(
+    document: ParsedDocument,
+    element: DocumentElement,
+    *,
+    require_explicit_numeric_unit: bool = True,
+) -> FinancialChunk:
     """Build one atomic, fully contextualized chunk for a source table."""
 
     if element.element_type != "table" or element.table is None:
@@ -102,7 +107,7 @@ def build_table_chunk(document: ParsedDocument, element: DocumentElement) -> Fin
 
     context = build_contextual_metadata(document, element)
     financial = build_financial_metadata(document, element)
-    if _contains_numeric_values(element) and financial.scale is None:
+    if require_explicit_numeric_unit and _contains_numeric_values(element) and financial.scale is None:
         raise MissingFinancialContextError("table unit is missing")
 
     text = _table_text(document, element, context, financial)
@@ -135,7 +140,7 @@ def build_financial_chunks(
     for element in document.elements:
         if element.element_type == "table":
             flush_paragraphs()
-            chunks.append(build_table_chunk(document, element))
+            chunks.append(build_table_chunk(document, element, require_explicit_numeric_unit=False))
             continue
         if element.element_type not in {"paragraph", "list"}:
             flush_paragraphs()
