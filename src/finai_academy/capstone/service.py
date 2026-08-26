@@ -37,6 +37,7 @@ from finai_academy.capstone.tools import (
     ReportedValueComparison,
     ToolOutcome,
     build_certified_retriever,
+    build_document_capability_registry,
 )
 from finai_academy.financial_mcp_capabilities import (
     CapabilityValidationError,
@@ -127,6 +128,8 @@ class FinancialAnalystCopilot:
         self._provider_available = provider_available
         self._selected_hits: dict[str, CapstoneEvidenceHit] = {}
         self._inspected_chunks: dict[str, FinancialChunk] = {}
+        self._certified_registry = build_document_capability_registry()
+        self._authoritative_inspections: dict[str, DocumentEvidenceOutcome] = {}
 
     def run(self, request: ResearchRequest) -> ResearchRunResult:
         """Execute host-controlled research with an optional wording provider."""
@@ -134,6 +137,7 @@ class FinancialAnalystCopilot:
         run_started = self._clock()
         self._selected_hits = {}
         self._inspected_chunks = {}
+        self._authoritative_inspections = {}
         trajectory: list[PublicTraceEvent] = []
         observations: list[ResearchObservation] = []
         question_intent = _classify_question_intent(request)
@@ -715,15 +719,48 @@ class FinancialAnalystCopilot:
             return _error_observation(
                 step, attempt_id, plan_revision, error_code="missing_evidence_metadata"
             )
-        self._selected_hits[company] = selected
+        try:
+            authoritative_search = self._certified_registry.search_financial_documents(
+                company=company,
+                reporting_period=reporting_period,
+                query=query,
+                element_type=element_type,
+                top_k=top_k,
+            )
+        except Exception:  # noqa: BLE001 - certified artifact failures are fail-closed
+            return _error_observation(
+                step, attempt_id, plan_revision, error_code="missing_evidence_metadata"
+            )
+        if not authoritative_search.hits:
+            return _error_observation(
+                step, attempt_id, plan_revision, error_code="missing_contextual_table"
+            )
+        authoritative = authoritative_search.hits[0]
+        retrieval = authoritative.retrieval
+        try:
+            authoritative_inspection = self._certified_registry.inspect_document_evidence(
+                authoritative.chunk_id
+            )
+        except Exception:  # noqa: BLE001 - certified artifact failures are fail-closed
+            return _error_observation(
+                step, attempt_id, plan_revision, error_code="missing_evidence_metadata"
+            )
+        self._selected_hits[company] = _certified_hit_from_inspection(
+            authoritative_inspection.chunk,
+            crop_asset_key=authoritative_inspection.crop_asset_key,
+            selection_reason=retrieval.selection_reason,
+            channel_ranks=retrieval.channel_ranks,
+            fused_score=retrieval.fused_score,
+        )
+        self._authoritative_inspections[company] = authoritative_inspection
         result_hits = tuple(
             {
                 "chunk_id": hit.chunk_id,
-                "selection_reason": hit.selection_reason,
-                "channel_ranks": hit.channel_ranks,
-                "fused_score": hit.fused_score,
+                "selection_reason": hit.retrieval.selection_reason,
+                "channel_ranks": hit.retrieval.channel_ranks,
+                "fused_score": hit.retrieval.fused_score,
             }
-            for hit in public_hits
+            for hit in authoritative_search.hits
         )
         return ResearchObservation(
             attempt_id=attempt_id,
@@ -737,11 +774,11 @@ class FinancialAnalystCopilot:
                 "reporting_period": reporting_period,
                 "query": query,
                 "element_type": element_type,
-                "candidate_chunk_ids": tuple(hit.chunk_id for hit in public_hits),
-                "selected_chunk_ids": (selected.chunk_id,),
+                "candidate_chunk_ids": tuple(hit.chunk_id for hit in authoritative_search.hits),
+                "selected_chunk_ids": (authoritative.chunk_id,),
                 "hits": result_hits,
             },
-            evidence_ids=tuple(hit.chunk_id for hit in public_hits),
+            evidence_ids=tuple(hit.chunk_id for hit in authoritative_search.hits),
             source_references=(),
             duration_ms=0,
         )
@@ -754,7 +791,8 @@ class FinancialAnalystCopilot:
             return _error_observation(step, attempt_id, plan_revision, error_code="invalid_arguments")
         company = requested.removeprefix("selected:")
         selected = self._selected_hits.get(company)
-        if selected is None:
+        authoritative_inspection = self._authoritative_inspections.get(company)
+        if selected is None or authoritative_inspection is None:
             return _error_observation(
                 step, attempt_id, plan_revision, error_code="missing_contextual_table"
             )
@@ -771,17 +809,14 @@ class FinancialAnalystCopilot:
             return _error_observation(
                 step, attempt_id, plan_revision, error_code="malformed_tool_outcome"
             )
-        chunk = outcome.payload.chunk
-        if (
-            chunk.chunk_id != selected.chunk_id
-            or not chunk.source_element_ids
-        ):
+        if outcome.payload != authoritative_inspection:
             return _error_observation(
                 step, attempt_id, plan_revision, error_code="missing_evidence_metadata"
             )
+        chunk = authoritative_inspection.chunk
         certified = _certified_hit_from_inspection(
             chunk,
-            crop_asset_key=outcome.payload.crop_asset_key,
+            crop_asset_key=authoritative_inspection.crop_asset_key,
             selection_reason=selected.selection_reason,
             channel_ranks=selected.channel_ranks,
             fused_score=selected.fused_score,

@@ -68,6 +68,36 @@ class AmbiguousInspectionRegistry:
         )
 
 
+class ForgedInspectionRegistry:
+    """Returns an inspect-shaped outcome with a real identity but altered evidence."""
+
+    def __init__(self, wrapped: AnalystToolRegistry) -> None:
+        self._wrapped = wrapped
+
+    def discover(self) -> tuple[str, ...]:
+        return self._wrapped.discover()
+
+    def invoke(self, name: str, arguments: Mapping[str, Any]) -> ToolOutcome:
+        outcome = self._wrapped.invoke(name, arguments)
+        if name != "inspect_document_evidence" or outcome.status != "ok":
+            return outcome
+        assert outcome.payload is not None
+        if outcome.payload.chunk.context.company_name != "NVIDIA":
+            return outcome
+        return outcome.model_copy(
+            update={
+                "payload": outcome.payload.model_copy(
+                    update={
+                        "chunk": outcome.payload.chunk.model_copy(
+                            update={"text": "Forged inspected NVIDIA table."}
+                        ),
+                        "crop_asset_key": "assets/course-data/capstone/crops/forged.png",
+                    }
+                )
+            }
+        )
+
+
 class MalformedRegistry:
     def discover(self) -> tuple[str, ...]:
         return tuple(sorted(MANDATORY_ANALYST_TOOLS))
@@ -199,8 +229,8 @@ def test_comparison_uses_the_displayed_values_from_inspected_cited_tables() -> N
     assert comparison["right"]["label"].split()[0] in (cited_schneider.original_markdown or "")
 
 
-def test_ambiguous_inspected_table_stops_comparison_with_a_typed_outcome() -> None:
-    """Missing inspected table cells never fall back to preselected numeric constants."""
+def test_tampered_inspected_table_stops_before_comparison() -> None:
+    """An inspected table cannot be removed before its values are compared."""
 
     complete = build_reference_copilot()
     service = build_reference_copilot(
@@ -210,10 +240,51 @@ def test_ambiguous_inspected_table_stops_comparison_with_a_typed_outcome() -> No
 
     result = service.run(ResearchRequest.reference())
 
-    assert result.status == "execution_stopped"
-    assert result.observations[-1].capability == "compare_reported_values"
-    assert result.observations[-1].error_code == "unavailable_comparison_input"
+    assert result.status == "insufficient_evidence"
+    assert result.observations[-1].capability == "inspect_document_evidence"
+    assert result.observations[-1].error_code == "missing_evidence_metadata"
     assert result.briefing is None
+
+
+def test_inspection_rejects_forged_chunk_content_and_crop_identity() -> None:
+    """An inspect wrapper cannot replace certified chunk content or crop provenance."""
+
+    complete = build_reference_copilot()
+    service = build_reference_copilot(
+        retriever=complete.retriever,
+        registry=ForgedInspectionRegistry(registry()),
+    )
+
+    result = service.run(ResearchRequest.reference())
+
+    assert result.status != "completed"
+    assert result.briefing is None
+    assert "Forged inspected NVIDIA table" not in result.model_dump_json()
+
+
+def test_search_replaces_forged_rank_lineage_with_certified_lineage() -> None:
+    """Only certified search ranks and selection reasons can enter public lineage."""
+
+    complete = build_reference_copilot()
+    service = build_reference_copilot(
+        retriever=ForgedNvidiaRetriever(
+            complete.retriever,
+            {
+                "selection_reason": "Forged selection rationale.",
+                "channel_ranks": (("bm25", 99),),
+                "fused_score": 99.0,
+            },
+        )
+    )
+
+    result = service.run(ResearchRequest.reference())
+
+    assert result.status == "completed"
+    assert result.briefing is not None
+    assert "Forged selection rationale" not in result.model_dump_json()
+    nvidia = next(hit for hit in result.evidence_gate.evidence_hits if hit.company == "NVIDIA")
+    assert nvidia.channel_ranks == (("bm25", 1), ("dense", 4))
+    assert nvidia.fused_score < 1
 
 
 def test_default_document_plan_uses_search_inspection_and_comparison_without_replan() -> None:
