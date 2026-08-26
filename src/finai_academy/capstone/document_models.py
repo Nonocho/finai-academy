@@ -69,13 +69,20 @@ def _clean_public_value(value: Any) -> Any:
     if isinstance(value, str):
         return _require_safe_public_string(value)
     if isinstance(value, BaseModel):
-        return value
+        if isinstance(value, TableMatrix):
+            return _clean_table_matrix_state(value.model_dump(mode="python"))
+        return {
+            field_name: _clean_public_value(getattr(value, field_name))
+            for field_name in type(value).model_fields
+        }
     if isinstance(value, AnyUrl):
         _require_url_without_userinfo(value)
         return value
     if isinstance(value, dict):
         if not all(isinstance(key, str) for key in value):
             raise ValueError("public fields must contain JSON-compatible values")
+        if _is_table_matrix_state(value):
+            return _clean_table_matrix_state(value)
         return {key: _clean_public_value(item) for key, item in value.items()}
     if isinstance(value, tuple):
         return tuple(_clean_public_value(item) for item in value)
@@ -181,22 +188,7 @@ class TableMatrix(FrozenDocumentModel):
 
         if not isinstance(value, dict):
             return _clean_public_value(value)
-        cleaned = {
-            key: _clean_public_value(item)
-            for key, item in value.items()
-            if key != "rows"
-        }
-        rows = value.get("rows")
-        if not isinstance(rows, (tuple, list)):
-            cleaned["rows"] = _clean_public_value(rows)
-            return cleaned
-        cleaned["rows"] = tuple(
-            tuple(_clean_table_cell(cell) for cell in row)
-            if isinstance(row, (tuple, list))
-            else _clean_public_value(row)
-            for row in rows
-        )
-        return cleaned
+        return _clean_table_matrix_state(value)
 
     @model_validator(mode="after")
     def require_consistent_dimensions(self) -> Self:
@@ -214,6 +206,29 @@ def _clean_table_cell(value: Any) -> str:
     if value == "":
         return value
     return _require_safe_public_string(value)
+
+
+def _clean_table_matrix_state(value: dict[str, Any]) -> dict[str, Any]:
+    cleaned = {
+        key: _clean_public_value(item)
+        for key, item in value.items()
+        if key != "rows"
+    }
+    rows = value.get("rows")
+    if not isinstance(rows, (tuple, list)):
+        cleaned["rows"] = _clean_public_value(rows)
+        return cleaned
+    cleaned["rows"] = tuple(
+        tuple(_clean_table_cell(cell) for cell in row)
+        if isinstance(row, (tuple, list))
+        else _clean_public_value(row)
+        for row in rows
+    )
+    return cleaned
+
+
+def _is_table_matrix_state(value: dict[str, Any]) -> bool:
+    return {"rows", "row_count", "column_count", "markdown"}.issubset(value)
 
 
 class ExtractionDiagnostic(FrozenDocumentModel):

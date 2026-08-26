@@ -18,6 +18,7 @@ from finai_academy.capstone.document_models import (
     FinancialChunk,
     FinancialDocumentSource,
     FinancialMetadata,
+    ParsedDocument,
     TableMatrix,
 )
 
@@ -74,6 +75,19 @@ def sample_financial(**overrides: object) -> FinancialMetadata:
     }
     payload.update(overrides)
     return FinancialMetadata.model_validate(payload)
+
+
+def sample_table_element(table: TableMatrix) -> DocumentElement:
+    return DocumentElement(
+        element_id="element-1",
+        document_id="NVDA-FY2026-AR",
+        ordinal=0,
+        physical_page=1,
+        element_type="table",
+        bbox=BoundingBox(x0=0, y0=0, x1=1, y1=1),
+        original_text="Revenue table",
+        table=table,
+    )
 
 
 def test_capstone_manifest_certifies_both_complete_official_pdfs() -> None:
@@ -271,6 +285,143 @@ def test_table_matrix_rejects_unsafe_nonempty_cells(cell: str, message: str) -> 
             column_count=2,
             markdown="| Cell | Metric |",
         )
+
+
+def test_document_element_revalidates_model_constructed_table_cells() -> None:
+    unsafe_table = TableMatrix.model_construct(
+        rows=(("api_key=super-secret", "Metric"),),
+        row_count=1,
+        column_count=2,
+        markdown="| Cell | Metric |",
+    )
+
+    with pytest.raises(ValueError, match="credential-shaped"):
+        sample_table_element(unsafe_table)
+
+
+def test_parsed_document_revalidates_model_copied_table_cells() -> None:
+    safe_table = TableMatrix(
+        rows=(("Cell", "Metric"),),
+        row_count=1,
+        column_count=2,
+        markdown="| Cell | Metric |",
+    )
+    unsafe_table = safe_table.model_copy(
+        update={"rows": (("/Users/example", "Metric"),)}
+    )
+    forged_element = DocumentElement.model_construct(
+        element_id="element-1",
+        document_id="NVDA-FY2026-AR",
+        ordinal=0,
+        physical_page=1,
+        element_type="table",
+        bbox=BoundingBox(x0=0, y0=0, x1=1, y1=1),
+        original_text="Revenue table",
+        table=unsafe_table,
+    )
+
+    with pytest.raises(ValueError, match="personal filesystem paths"):
+        ParsedDocument(
+            source=sample_source(),
+            parser_name="test-parser",
+            parser_version="1.0",
+            elements=(forged_element,),
+        )
+
+
+def test_financial_chunk_revalidates_model_copied_table_cells() -> None:
+    safe_table = TableMatrix(
+        rows=(("Cell", "Metric"),),
+        row_count=1,
+        column_count=2,
+        markdown="| Cell | Metric |",
+    )
+    unsafe_table = safe_table.model_copy(
+        update={"rows": (("https://alice@example.com/report.pdf", "Metric"),)}
+    )
+
+    with pytest.raises(ValueError, match="URL userinfo"):
+        FinancialChunk(
+            chunk_id="chunk-1",
+            text="Revenue increased.",
+            content_hash=SHA256,
+            element_type="table",
+            source_element_ids=("element-1",),
+            context=sample_context(),
+            financial=sample_financial(),
+            table=unsafe_table,
+        )
+
+
+def test_parsed_document_revalidates_other_constructed_nested_models() -> None:
+    forged_element = DocumentElement.model_construct(
+        element_id="element-1",
+        document_id="NVDA-FY2026-AR",
+        ordinal=0,
+        physical_page=1,
+        element_type="paragraph",
+        bbox=BoundingBox(x0=0, y0=0, x1=1, y1=1),
+        original_text="/Users/example/private-note",
+        table=None,
+    )
+
+    with pytest.raises(ValueError, match="personal filesystem paths"):
+        ParsedDocument(
+            source=sample_source(),
+            parser_name="test-parser",
+            parser_version="1.0",
+            elements=(forged_element,),
+        )
+
+
+def test_financial_chunk_revalidates_other_model_copied_nested_models() -> None:
+    unsafe_financial = sample_financial().model_copy(
+        update={"periods": ("api_key=super-secret",)}
+    )
+
+    with pytest.raises(ValueError, match="credential-shaped"):
+        FinancialChunk(
+            chunk_id="chunk-1",
+            text="Revenue increased.",
+            content_hash=SHA256,
+            element_type="paragraph",
+            source_element_ids=("element-1",),
+            context=sample_context(),
+            financial=unsafe_financial,
+        )
+
+
+def test_parent_models_preserve_constructed_literal_empty_table_cells() -> None:
+    empty_table = TableMatrix.model_construct(
+        rows=(("", "Metric"),),
+        row_count=1,
+        column_count=2,
+        markdown="|  | Metric |",
+    )
+    element = sample_table_element(empty_table)
+    parsed = ParsedDocument(
+        source=sample_source(),
+        parser_name="test-parser",
+        parser_version="1.0",
+        elements=(element,),
+    )
+    chunk = FinancialChunk(
+        chunk_id="chunk-1",
+        text="Revenue increased.",
+        content_hash=SHA256,
+        element_type="table",
+        source_element_ids=("element-1",),
+        context=sample_context(),
+        financial=sample_financial(),
+        table=empty_table,
+    )
+
+    assert element.table is not None
+    assert element.table.rows[0][0] == ""
+    assert parsed.elements[0].table is not None
+    assert parsed.elements[0].table.rows[0][0] == ""
+    assert chunk.table is not None
+    assert chunk.table.rows[0][0] == ""
 
 
 def test_financial_chunk_requires_matching_source_element_ids_and_finite_score() -> None:
