@@ -8,6 +8,7 @@ from pathlib import Path
 
 import pytest
 from mcp import Client
+from mcp.types import TextContent
 
 from finai_academy.capstone.document_tools import (
     ReportedValue,
@@ -98,3 +99,80 @@ def test_mcp_exposes_only_search_and_inspection_document_tools() -> None:
         assert "compare_reported_values" not in [tool.name for tool in tools.tools]
 
     asyncio.run(discover())
+
+
+def test_mcp_direct_calls_reject_invalid_arguments_without_echoing_them() -> None:
+    """Permissive MCP validation can coerce, ignore, or disclose untrusted direct inputs."""
+
+    async def call_tools() -> None:
+        server = build_capstone_mcp_server(build_document_capability_registry(ROOT))
+        async with Client(server, raise_exceptions=True) as client:
+            valid = await client.call_tool(
+                "search_financial_documents",
+                {
+                    "company": "NVIDIA",
+                    "reporting_period": "FY2026",
+                    "query": "segment revenue",
+                    "top_k": 1,
+                },
+            )
+            valid_inspection = await client.call_tool(
+                "inspect_document_evidence",
+                {"chunk_id": valid.structured_content["hits"][0]["chunk_id"]},
+            )
+            invalid_results = []
+            for arguments in (
+                {
+                    "company": "NVIDIA",
+                    "reporting_period": "FY2026",
+                    "query": "/Users/a",
+                },
+                {
+                    "company": "NVIDIA",
+                    "reporting_period": "FY2026",
+                    "query": "api_key=x",
+                },
+                {
+                    "company": "NVIDIA",
+                    "reporting_period": "FY2026",
+                    "query": "segment revenue",
+                    "unexpected": "value",
+                },
+                {
+                    "company": "NVIDIA",
+                    "reporting_period": "FY2026",
+                    "query": "segment revenue",
+                    "top_k": "1",
+                },
+            ):
+                invalid_results.append(
+                    await client.call_tool("search_financial_documents", arguments)
+                )
+            invalid_results.append(
+                await client.call_tool(
+                    "inspect_document_evidence", {"chunk_id": "unknown-certified-chunk"}
+                )
+            )
+
+        assert valid.is_error is False
+        assert valid.structured_content is not None
+        assert valid.structured_content["status"] == "ok"
+        assert valid_inspection.is_error is False
+        assert valid_inspection.structured_content is not None
+        assert valid_inspection.structured_content["status"] == "ok"
+        for result in invalid_results:
+            assert result.is_error is True
+            assert result.structured_content == {
+                "status": "error",
+                "error_code": "invalid_arguments",
+                "message": "Tool arguments must match the approved schema.",
+                "retryable": True,
+            }
+            error_text = "\n".join(
+                block.text for block in result.content if isinstance(block, TextContent)
+            )
+            assert error_text == "Tool arguments must match the approved schema."
+            assert "/Users/a" not in error_text
+            assert "api_key=x" not in error_text
+
+    asyncio.run(call_tools())
