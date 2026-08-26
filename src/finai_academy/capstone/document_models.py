@@ -13,7 +13,7 @@ from pydantic import AnyUrl, BaseModel, ConfigDict, Field, HttpUrl, model_valida
 
 _SECRET_PATTERN = re.compile(
     r"""(?ix)(
-        \b(?:[a-z0-9]+[_-])?api[_-]?key\b\s*(?:=|:|\s+)\s*[a-z0-9._-]{8,}
+        \b(?:(?:[a-z0-9]+(?:[_-]|\s))+)?api(?:[_-]|\s)+key\b\s*(?:=|:|\s+)\s*[a-z0-9._-]{16,}
         | \bauthorization\b\s*(?:(?:=|:)\s*\S+|(?:basic|bearer)\s+\S+)
         | bearer\s+[a-z0-9._-]+
         | sk-[a-z0-9]{12,}

@@ -204,7 +204,14 @@ def test_public_contract_rejects_blank_credential_and_non_json_values() -> None:
 
 @pytest.mark.parametrize(
     "credential",
-    ("api_key prod-secret-value", "OPENAI_API_KEY prod-secret-value", "Authorization Basic dXNlcjpwYXNz"),
+    (
+        "api_key prod-secret-value",
+        "OPENAI_API_KEY prod-secret-value",
+        "API key prod-secret-value",
+        "OpenAI API key prod-secret-value",
+        "api key abcdefghijklmnop",
+        "Authorization Basic dXNlcjpwYXNz",
+    ),
 )
 def test_public_contract_rejects_delimited_credential_labels(credential: str) -> None:
     with pytest.raises(ValueError, match="credential-shaped"):
