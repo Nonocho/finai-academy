@@ -10,4 +10,6 @@ GREEN: `UV_CACHE_DIR=/tmp/finai-uv-cache uv run --extra capstone pytest tests/te
 
 Artifacts: elements `f70afed5f935c4a11b637b689b1bdb49f0c44ad66eff92bddaef53d61cc21082`; chunks `5fcc878833b13c0c781d627f6a497b0e8b30d6d6c35ae5025a9dbbbd2f0ec119`; NVIDIA crop `8ef1de77ff829f97404644c64d2edc66f472767c2256ee07c233a59851f9b80f`; Schneider crop `1e12ca050cab7797749741ae061e27ceecce780df8a4d71191de665349d0044c`.
 
+Corpus commit: `eaa42e1` (`feat: build offline capstone document corpus`).
+
 Concerns: full reports include valid source strings such as financial labels with colon syntax and ordinary authorization wording; privacy detection now rejects credential-shaped assignments and actual drive-root paths without rejecting those source values. Some non-target numeric tables have no explicit unit in locally extracted context; bulk artifacts preserve them with `scale=None`, while direct strict table construction still fails closed.
