@@ -80,5 +80,33 @@
       ],
       "provenance_mode": "controlled-classroom-fixture"
     }
+  ],
+  "capstone_documents": [
+    {
+      "document_id": "NVDA-FY2026-ANNUAL-REPORT",
+      "company_name": "NVIDIA",
+      "ticker": "NVDA",
+      "document_type": "Annual Report and Form 10-K",
+      "reporting_period": "FY2026",
+      "publication_date": "2026-02-25",
+      "official_source_url": "https://s201.q4cdn.com/141608511/files/doc_financials/2026/ar/2026-Annual-Report-Web.pdf",
+      "local_asset_key": "assets/course-data/downloads/nvidia_fy2026_annual_report.pdf",
+      "sha256": "0e725ba048221539dca3eb1a4e70febfcbb785e9afb96cd3ff0b035d7d734e5c",
+      "byte_size": 15850437,
+      "page_count": 175
+    },
+    {
+      "document_id": "SU-FY2025-FULL-YEAR-RESULTS",
+      "company_name": "Schneider Electric",
+      "ticker": "SU.PA",
+      "document_type": "Full Year Results",
+      "reporting_period": "FY2025",
+      "publication_date": "2026-02-26",
+      "official_source_url": "https://www.se.com/ww/en/assets/564/document/528237/release-fy-results-2025.pdf",
+      "local_asset_key": "assets/course-data/downloads/schneider_fy2025_full_year_results.pdf",
+      "sha256": "5b17e6e8e5b8c47f697f5d352ed9639b98b261d9ecf886d3e8ce147493ebb00a",
+      "byte_size": 781628,
+      "page_count": 19
+    }
   ]
 }
