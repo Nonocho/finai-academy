@@ -53,3 +53,60 @@ for the NVIDIA-table-only numeric query, so rank fusion intentionally weights
 the exact-term BM25 channel while retaining dense rank lineage on every hit.
 Unitless numeric tables remain inspectable in the certified artifact but are
 excluded from searchable contextual financial evidence.
+
+## Fix round 1 — segment and document identity filters
+
+### Summary
+
+`DocumentFilters` now accepts case-folded exact `segment` values against
+`FinancialMetadata.segments` and `document_id` values against the already
+certified `ContextualMetadata.document_id`. The existing eligibility tuple in
+`CertifiedDocumentIndex.search` remains the single input to both BM25 and dense
+rankers, so these fields constrain each channel before ranking.
+
+`element_type` accepts a public string filter rather than a case-sensitive
+literal, while still matching only exact case-folded element values. The model
+continues to inherit frozen, extra-forbidden public-contract validation from
+`FrozenDocumentModel`.
+
+### RED evidence
+
+```text
+$ UV_CACHE_DIR=/tmp/finai-uv-cache uv run --extra capstone pytest \
+  tests/test_capstone_document_index.py::test_document_filters_match_segment_and_document_identity_case_insensitively \
+  tests/test_capstone_document_index.py::test_segment_and_document_identity_filters_constrain_both_rankers_before_ranking -q
+2 failed
+
+ValidationError: element_type must be one of the case-sensitive literals;
+segment and document_id were extra-forbidden inputs.
+```
+
+### GREEN verification
+
+```text
+$ UV_CACHE_DIR=/tmp/finai-uv-cache uv run ruff check \
+  src/finai_academy/capstone/document_models.py \
+  src/finai_academy/capstone/document_index.py \
+  tests/test_capstone_document_index.py
+All checks passed!
+
+$ UV_CACHE_DIR=/tmp/finai-uv-cache uv run --extra capstone pytest \
+  tests/test_capstone_document_index.py tests/test_hybrid_retrieval.py -q
+49 passed in 4.80s
+
+$ UV_CACHE_DIR=/tmp/finai-uv-cache uv run --extra capstone pytest \
+  tests/test_capstone_document_ingestion.py \
+  tests/test_capstone_document_chunking.py \
+  tests/test_capstone_document_index.py \
+  tests/test_hybrid_retrieval.py -q
+75 passed in 6.11s
+```
+
+The broader Task 1 asset suite currently has four unrelated pre-existing
+credential-pattern failures: its `api_key=super-secret` fixtures are shorter
+than the established credential-value minimum. This filter-only change does
+not alter that validator.
+
+### Commit
+
+`fix: filter certified document evidence by segment`

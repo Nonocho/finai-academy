@@ -6,6 +6,7 @@ from pathlib import Path
 
 import pytest
 
+import finai_academy.capstone.document_index as document_index_module
 from finai_academy.capstone.document_index import (
     CertifiedDocumentIndexError,
     load_certified_document_index,
@@ -73,6 +74,89 @@ def test_search_never_returns_a_unitless_table_as_contextual_financial_evidence(
 
     assert hits
     assert all(hit.chunk.financially_contextualized for hit in hits)
+
+
+def test_document_filters_match_segment_and_document_identity_case_insensitively() -> None:
+    """Dropping either new filter must make a different certified chunk eligible."""
+
+    index = load_certified_document_index(ROOT)
+    filters = DocumentFilters(
+        company_name="schneider electric",
+        reporting_period="fy2025",
+        document_type="full year results",
+        element_type="TABLE",
+        segment="energy management",
+        document_id="su-fy2025-full-year-results",
+    )
+    chunk = next(
+        item
+        for item in index._chunks
+        if "40,152" in item.text and "Energy Management" in item.financial.segments
+    )
+
+    assert filters.matches(chunk)
+    assert not filters.matches(
+        chunk.model_copy(
+            update={"financial": chunk.financial.model_copy(update={"segments": ("Group",)})}
+        )
+    )
+    assert not filters.matches(
+        chunk.model_copy(
+            update={"context": chunk.context.model_copy(update={"document_id": "OTHER"})}
+        )
+    )
+    assert not filters.matches(
+        chunk.model_copy(
+            update={"context": chunk.context.model_copy(update={"document_type": "Other"})}
+        )
+    )
+
+
+def test_segment_and_document_identity_filters_constrain_both_rankers_before_ranking(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Building either ranker from an unfiltered corpus must expose another segment or document."""
+
+    index = load_certified_document_index(ROOT)
+    filters = DocumentFilters(
+        company_name="schneider electric",
+        reporting_period="fy2025",
+        document_type="full year results",
+        element_type="TABLE",
+        segment="energy management",
+        document_id="su-fy2025-full-year-results",
+    )
+    expected_ids = {
+        "chunk-edf8093da8c02553adef",
+        "chunk-fb75fa4de29ea21f0fd4",
+        "chunk-feb4eebb725a4fabdce1",
+    }
+    observed_passage_ids: dict[str, tuple[str, ...]] = {}
+    original_bm25 = document_index_module.BM25Index
+    original_dense = document_index_module.DenseIndex
+
+    class RecordingBM25Index(original_bm25):
+        def __init__(self, passages, **kwargs) -> None:
+            observed_passage_ids["bm25"] = tuple(passage.passage_id for passage in passages)
+            super().__init__(passages, **kwargs)
+
+    class RecordingDenseIndex(original_dense):
+        def __init__(self, passages, embeddings, **kwargs) -> None:
+            observed_passage_ids["dense"] = tuple(passage.passage_id for passage in passages)
+            super().__init__(passages, embeddings, **kwargs)
+
+    monkeypatch.setattr(document_index_module, "BM25Index", RecordingBM25Index)
+    monkeypatch.setattr(document_index_module, "DenseIndex", RecordingDenseIndex)
+
+    hits = index.search("reported revenue organic growth", filters=filters, top_k=3)
+
+    assert hits
+    assert expected_ids
+    assert set(observed_passage_ids["bm25"]) == expected_ids
+    assert set(observed_passage_ids["dense"]) == expected_ids
+    assert all(hit.chunk.context.document_id == "SU-FY2025-FULL-YEAR-RESULTS" for hit in hits)
+    assert all(hit.chunk.context.document_type == "Full Year Results" for hit in hits)
+    assert all("Energy Management" in hit.chunk.financial.segments for hit in hits)
 
 
 @pytest.mark.parametrize(

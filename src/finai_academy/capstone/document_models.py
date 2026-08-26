@@ -344,7 +344,9 @@ class DocumentFilters(FrozenDocumentModel):
     company_name: str | None = None
     reporting_period: str | None = None
     document_type: str | None = None
-    element_type: ElementType | None = None
+    element_type: str | None = None
+    segment: str | None = None
+    document_id: str | None = None
 
     def matches(self, chunk: FinancialChunk) -> bool:
         pairs = (
@@ -352,11 +354,16 @@ class DocumentFilters(FrozenDocumentModel):
             (self.reporting_period, chunk.context.reporting_period),
             (self.document_type, chunk.context.document_type),
             (self.element_type, chunk.element_type),
+            (self.document_id, chunk.context.document_id),
         )
-        return all(
-            expected is None or str(expected).casefold().strip() == actual.casefold().strip()
-            for expected, actual in pairs
+        return all(_matches_exactly(expected, actual) for expected, actual in pairs) and (
+            self.segment is None
+            or any(_matches_exactly(self.segment, segment) for segment in chunk.financial.segments)
         )
+
+
+def _matches_exactly(expected: str | None, actual: str) -> bool:
+    return expected is None or expected.casefold().strip() == actual.casefold().strip()
 
 
 class DocumentRetrievalHit(FrozenDocumentModel):
