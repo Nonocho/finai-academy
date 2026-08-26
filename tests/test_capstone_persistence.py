@@ -115,6 +115,32 @@ def test_sqlite_run_contains_metrics_release_trajectory_briefing_and_datasets(
     assert root.inputs["analysis_run_id"] == result.run_id
     assert getattr(traces[0].info, "trace_id", root.trace_id) == references.trace_id
 
+    datasets = json.loads(
+        (
+            tracking_directory
+            / "artifacts"
+            / references.run_id
+            / "artifacts/evidence/dataset_identities.json"
+        ).read_text(encoding="utf-8")
+    )
+    trajectory = json.loads(
+        (
+            tracking_directory
+            / "artifacts"
+            / references.run_id
+            / "artifacts/evidence/trajectory.json"
+        ).read_text(encoding="utf-8")
+    )
+    assert any(
+        item["kind"] == "document_index" and item["identity"] == "financial-context-v2"
+        for item in datasets["identities"]
+    )
+    assert all(
+        {"filters", "candidate_chunk_ids", "selected_chunk_ids", "channel_ranks"}
+        <= entry.keys()
+        for entry in trajectory["document_retrieval"]
+    )
+
 
 def test_persistence_public_output_and_artifacts_contain_no_paths_or_credentials(
     tmp_path: Path,

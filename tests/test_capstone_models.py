@@ -16,6 +16,8 @@ from finai_academy.capstone import (
     ResearchRequest,
     ResearchRunResult,
 )
+from finai_academy.capstone.document_models import BoundingBox
+from finai_academy.capstone.service import evaluate_evidence_gate
 
 
 def reference_fixture() -> dict[str, object]:
@@ -48,21 +50,43 @@ def reference_evidence() -> tuple[CapstoneEvidenceHit, CapstoneEvidenceHit]:
     return (
         CapstoneEvidenceHit(
             company="NVIDIA",
-            text="NVIDIA reported operating growth.",
-            evidence_id="nvidia-fy2026-growth",
-            document_id="nvidia-fy2026-results",
-            section="Operating results",
+            text="NVIDIA reported Compute & Networking revenue of $ 193,479 million.",
+            chunk_id="nvidia-fy2026-segment-revenue",
+            element_ids=("nvidia-table-165",),
+            document_id="NVDA-FY2026-ANNUAL-REPORT",
+            document_sha256="0e725ba048221539dca3eb1a4e70febfcbb785e9afb96cd3ff0b035d7d734e5c",
+            section="Note 13 > Revenue by reportable segment",
             period="FY2026",
-            source_reference="NVIDIA FY2026 results",
+            unit="USD millions",
+            physical_page=165,
+            element_type="table",
+            bbox=BoundingBox(x0=1, y0=1, x1=2, y1=2),
+            source_reference="https://investor.nvidia.com/fy2026-annual-report",
+            crop_asset_key="assets/course-data/capstone/crops/nvidia_segment_table_page_165.png",
+            original_markdown="| Compute & Networking | 193,479 |",
+            selection_reason="Matched reported segment revenue.",
+            channel_ranks=(("bm25", 1), ("dense", 1)),
+            fused_score=1.0,
         ),
         CapstoneEvidenceHit(
             company="Schneider Electric",
-            text="Schneider Electric reported operating growth.",
-            evidence_id="schneider-fy2025-growth",
-            document_id="schneider-fy2025-results",
-            section="Financial results",
+            text="Schneider Electric reported Group revenues of 40,152 million euros.",
+            chunk_id="schneider-fy2025-group-revenue",
+            element_ids=("schneider-table-16",),
+            document_id="SU-FY2025-FULL-YEAR-RESULTS",
+            document_sha256="5b17e6e8e5b8c47f697f5d352ed9639b98b261d9ecf886d3e8ce147493ebb00a",
+            section="FY2025 results > Group revenues",
             period="FY2025",
-            source_reference="Schneider Electric FY2025 results",
+            unit="EUR millions",
+            physical_page=16,
+            element_type="table",
+            bbox=BoundingBox(x0=1, y0=1, x1=2, y1=2),
+            source_reference="https://www.se.com/fy2025-results",
+            crop_asset_key="assets/course-data/capstone/crops/schneider_revenue_tables_page_16.png",
+            original_markdown="| Group | 40,152 |",
+            selection_reason="Matched reported revenue organic growth.",
+            channel_ranks=(("bm25", 1), ("dense", 1)),
+            fused_score=1.0,
         ),
     )
 
@@ -79,14 +103,18 @@ def sample_briefing(
             company="NVIDIA",
             provenance_kind="document",
             source_reference=nvidia_hit.source_reference,
-            evidence_id=nvidia_hit.evidence_id,
+            chunk_id=nvidia_hit.chunk_id,
+            element_ids=nvidia_hit.element_ids,
+            physical_page=nvidia_hit.physical_page,
         ),
         CitedFact(
             claim="Schneider Electric published an operating-growth statement.",
             company="Schneider Electric",
             provenance_kind="document",
             source_reference=schneider_hit.source_reference,
-            evidence_id=schneider_hit.evidence_id,
+            chunk_id=schneider_hit.chunk_id,
+            element_ids=schneider_hit.element_ids,
+            physical_page=schneider_hit.physical_page,
         ),
     )
     return CapstoneBriefing(
@@ -100,6 +128,20 @@ def sample_briefing(
         open_questions=("Which aligned operating metric is most decision-useful?",),
         aggregate_sources=tuple(dict.fromkeys(fact.source_reference for fact in facts)),
     )
+
+
+def test_evidence_gate_rejects_value_without_unit_or_source_hash() -> None:
+    """A table number with incomplete contextual provenance is not releasable evidence."""
+
+    valid_nvidia_hit, valid_schneider_hit = reference_evidence()
+    forged = valid_schneider_hit.model_copy(
+        update={"unit": None, "document_sha256": "0" * 64}
+    )
+
+    decision = evaluate_evidence_gate((valid_nvidia_hit, forged))
+
+    assert not decision.passed
+    assert "Schneider Electric contextual table evidence" in decision.missing_requirements
 
 
 def result_payload(
@@ -200,8 +242,8 @@ def test_request_rejects_news_without_live_enrichment() -> None:
         ResearchRequest.reference(include_news=True)
 
 
-def test_document_fact_requires_an_evidence_id() -> None:
-    with pytest.raises(ValidationError, match="evidence_id"):
+def test_cited_fact_requires_chunk_element_and_page_provenance() -> None:
+    with pytest.raises(ValidationError, match="chunk_id"):
         CitedFact(
             claim="A document reports operating growth.",
             company="NVIDIA",
@@ -210,14 +252,16 @@ def test_document_fact_requires_an_evidence_id() -> None:
         )
 
 
-def test_metric_fact_forbids_an_evidence_id() -> None:
-    with pytest.raises(ValidationError, match="evidence_id"):
+def test_cited_fact_rejects_the_removed_metric_provenance_kind() -> None:
+    with pytest.raises(ValidationError, match="provenance_kind"):
         CitedFact(
             claim="A selected metric is available.",
             company="NVIDIA",
             provenance_kind="metric",
             source_reference="NVIDIA selected metric",
-            evidence_id="not-a-document-hit",
+            chunk_id="nvidia-fy2026-segment-revenue",
+            element_ids=("nvidia-table-165",),
+            physical_page=165,
         )
 
 
@@ -279,14 +323,18 @@ def test_completed_reference_run_rejects_document_fact_without_matching_collecte
                 company="NVIDIA",
                 provenance_kind="document",
                 source_reference="Different NVIDIA source",
-                evidence_id=nvidia_hit.evidence_id,
+                chunk_id=nvidia_hit.chunk_id,
+                element_ids=nvidia_hit.element_ids,
+                physical_page=nvidia_hit.physical_page,
             ),
             CitedFact(
                 claim="Schneider Electric published an operating-growth statement.",
                 company="Schneider Electric",
                 provenance_kind="document",
                 source_reference=schneider_hit.source_reference,
-                evidence_id=schneider_hit.evidence_id,
+                chunk_id=schneider_hit.chunk_id,
+                element_ids=schneider_hit.element_ids,
+                physical_page=schneider_hit.physical_page,
             ),
         )
     )
@@ -303,7 +351,7 @@ def test_completed_reference_run_rejects_document_fact_without_matching_collecte
         ResearchRunResult.model_validate(payload)
 
 
-def test_completed_reference_run_rejects_unknown_document_evidence_id() -> None:
+def test_completed_reference_run_rejects_unknown_document_chunk_id() -> None:
     nvidia_hit, schneider_hit = reference_evidence()
     briefing = sample_briefing(
         cited_facts=(
@@ -312,19 +360,23 @@ def test_completed_reference_run_rejects_unknown_document_evidence_id() -> None:
                 company="NVIDIA",
                 provenance_kind="document",
                 source_reference=nvidia_hit.source_reference,
-                evidence_id="unknown-evidence-id",
+                chunk_id="unknown-chunk-id",
+                element_ids=nvidia_hit.element_ids,
+                physical_page=nvidia_hit.physical_page,
             ),
             CitedFact(
                 claim="Schneider Electric published an operating-growth statement.",
                 company="Schneider Electric",
                 provenance_kind="document",
                 source_reference=schneider_hit.source_reference,
-                evidence_id=schneider_hit.evidence_id,
+                chunk_id=schneider_hit.chunk_id,
+                element_ids=schneider_hit.element_ids,
+                physical_page=schneider_hit.physical_page,
             ),
         )
     )
 
-    with pytest.raises(ValidationError, match="evidence_id"):
+    with pytest.raises(ValidationError, match="chunk_id"):
         ResearchRunResult.model_validate(
             result_payload(
                 status="completed",
@@ -400,6 +452,9 @@ def test_public_contracts_reject_credential_text_and_personal_paths(unsafe_text:
         CitedFact(
             claim=unsafe_text,
             company="NVIDIA",
-            provenance_kind="metric",
+            provenance_kind="document",
             source_reference="NVIDIA selected metric",
+            chunk_id="nvidia-fy2026-segment-revenue",
+            element_ids=("nvidia-table-165",),
+            physical_page=165,
         )

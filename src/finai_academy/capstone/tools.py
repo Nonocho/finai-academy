@@ -115,12 +115,43 @@ def _to_capstone_evidence_hit(hit) -> CapstoneEvidenceHit:
     return CapstoneEvidenceHit(
         company=chunk.context.company_name,
         text=chunk.text,
-        evidence_id=chunk.chunk_id,
+        chunk_id=chunk.chunk_id,
+        element_ids=chunk.source_element_ids,
         document_id=chunk.context.document_id,
+        document_sha256=chunk.context.document_sha256,
         section=" > ".join(chunk.context.heading_path) or chunk.element_type,
         period=chunk.context.reporting_period,
+        unit=_displayed_unit(chunk.financial.currency, chunk.financial.scale),
+        physical_page=chunk.context.physical_page,
+        printed_page=chunk.context.printed_page,
+        element_type=chunk.element_type,
+        bbox=chunk.context.bbox,
         source_reference=chunk.context.official_source_url,
+        crop_asset_key=_crop_asset_key_for(chunk.context.company_name, chunk.context.physical_page),
+        original_markdown=chunk.table.markdown if chunk.table is not None else None,
+        selection_reason=hit.retrieval.selection_reason,
+        channel_ranks=hit.retrieval.channel_ranks,
+        fused_score=hit.retrieval.fused_score,
     )
+
+
+def _displayed_unit(currency: str | None, scale: str | None) -> str | None:
+    if currency is None or scale is None:
+        return None
+    return f"{currency} {scale}"
+
+
+def _crop_asset_key_for(company: str, physical_page: int) -> str | None:
+    """Use only manifest-derived repository keys for the two certified table crops."""
+
+    mapping = {
+        ("NVIDIA", 165): "assets/course-data/capstone/crops/nvidia_segment_table_page_165.png",
+        (
+            "Schneider Electric",
+            16,
+        ): "assets/course-data/capstone/crops/schneider_revenue_tables_page_16.png",
+    }
+    return mapping.get((company, physical_page))
 
 
 def _validated_arguments(name: str, arguments: Mapping[str, Any]) -> dict[str, Any] | None:

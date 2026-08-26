@@ -47,7 +47,7 @@ def test_recorded_reference_run_is_complete_cited_and_bounded() -> None:
 
     assert result.status == "completed"
     assert result.run_id == "reference-run-001"
-    assert result.replan_count == 1
+    assert result.replan_count == 0
     assert len(result.initial_plan) == 5
     assert len(result.final_plan) <= 6
     assert result.evidence_gate.passed
@@ -58,11 +58,7 @@ def test_recorded_reference_run_is_complete_cited_and_bounded() -> None:
         "Schneider Electric",
     }
     assert all(fact.source_reference for fact in result.briefing.cited_facts)
-    assert all(
-        fact.evidence_id
-        for fact in result.briefing.cited_facts
-        if fact.provenance_kind == "document"
-    )
+    assert all(fact.chunk_id and fact.element_ids and fact.physical_page for fact in result.briefing.cited_facts)
     assert [metric.name for metric in result.deterministic_evaluation.metrics] == [
         "tool_call_correctness",
         "tool_call_efficiency",
@@ -76,35 +72,50 @@ def test_recorded_reference_run_is_complete_cited_and_bounded() -> None:
     assert result.judge_evaluation.status == "not_run"
 
 
-def test_unsupported_revenue_metric_replans_to_document_search() -> None:
+def test_recorded_mission_releases_only_real_document_evidence() -> None:
+    """A missing chunk or element provenance field must block the recorded route."""
+
+    result = build_reference_copilot(run_id_factory=lambda: "document-run-001").run(
+        ResearchRequest.reference()
+    )
+
+    assert result.status == "completed"
+    assert result.evidence_gate.passed
+    assert result.replan_count <= 1
+    assert {hit.company for hit in result.evidence_gate.evidence_hits} == {
+        "NVIDIA",
+        "Schneider Electric",
+    }
+    assert all(
+        hit.chunk_id and hit.element_ids and hit.physical_page
+        for hit in result.evidence_gate.evidence_hits
+    )
+    assert any("193,479" in hit.text for hit in result.evidence_gate.evidence_hits)
+    assert any("40,152" in hit.text for hit in result.evidence_gate.evidence_hits)
+    assert result.briefing is not None
+    assert all(fact.chunk_id for fact in result.briefing.cited_facts)
+
+
+def test_default_document_plan_uses_search_inspection_and_comparison_without_replan() -> None:
     result = build_reference_copilot().run(ResearchRequest.reference())
 
-    errors = [event for event in result.trajectory if event.status == "error"]
-    assert [event.error_code for event in errors] == ["unsupported_metric"]
-    assert [
-        observation.error_code for observation in result.observations if observation.error_code
-    ] == ["unsupported_metric"]
     assert [observation.capability for observation in result.observations] == [
-        "get_company_metric",
-        "get_company_metric",
-        "get_company_metric",
         "search_financial_documents",
+        "inspect_document_evidence",
         "search_financial_documents",
+        "inspect_document_evidence",
+        "compare_reported_values",
     ]
-    assert result.observations[3].arguments["company"] == "NVIDIA"
-    assert result.observations[4].arguments["company"] == "Schneider Electric"
-    assert result.initial_plan != result.final_plan
-    assert result.replan_count == 1
+    assert result.observations[0].arguments["company"] == "NVIDIA"
+    assert result.observations[2].arguments["company"] == "Schneider Electric"
+    assert result.initial_plan == result.final_plan
+    assert result.replan_count == 0
     assert [observation.attempt_id for observation in result.observations] == [1, 2, 3, 4, 5]
-    assert [observation.plan_revision for observation in result.observations] == [0, 0, 0, 1, 1]
+    assert [observation.plan_revision for observation in result.observations] == [0, 0, 0, 0, 0]
     execution_events = [event for event in result.trajectory if event.phase == "execution"]
     assert [event.capability for event in execution_events] == [
         observation.capability for observation in result.observations
     ]
-    typed_failure = next(event for event in execution_events if event.status == "error")
-    assert typed_failure.capability == "get_company_metric"
-    replan = next(event for event in result.trajectory if event.phase == "replanning")
-    assert replan.capability == "get_company_metric"
     assert all(
         event.capability is None
         for event in result.trajectory
@@ -131,7 +142,9 @@ def test_failed_evidence_gate_returns_no_briefing() -> None:
 
     assert result.status == "insufficient_evidence"
     assert not result.evidence_gate.passed
-    assert result.evidence_gate.missing_requirements == ("Schneider Electric document evidence",)
+    assert result.evidence_gate.missing_requirements == (
+        "Schneider Electric contextual table evidence",
+    )
     assert result.briefing is None
     assert not result.deterministic_evaluation.release_passed
 
@@ -163,17 +176,29 @@ def test_duplicate_successful_call_stops_before_repeating_it() -> None:
     duplicate_plan = (
         PlanStep(
             step_id=1,
-            capability="get_company_metric",
-            arguments={"ticker": "NVDA", "metric": "P/E"},
-            purpose="Collect NVIDIA P/E.",
-            expected_evidence=("NVIDIA P/E",),
+            capability="search_financial_documents",
+            arguments={
+                "company": "NVIDIA",
+                "reporting_period": "FY2026",
+                "query": "reported segment revenue",
+                "element_type": "table",
+                "top_k": 1,
+            },
+            purpose="Collect NVIDIA revenue evidence.",
+            expected_evidence=("NVIDIA revenue table",),
         ),
         PlanStep(
             step_id=2,
-            capability="get_company_metric",
-            arguments={"metric": "P/E", "ticker": "NVDA"},
-            purpose="Repeat NVIDIA P/E.",
-            expected_evidence=("NVIDIA P/E",),
+            capability="search_financial_documents",
+            arguments={
+                "query": "reported segment revenue",
+                "top_k": 1,
+                "element_type": "table",
+                "reporting_period": "FY2026",
+                "company": "NVIDIA",
+            },
+            purpose="Repeat NVIDIA revenue evidence.",
+            expected_evidence=("NVIDIA revenue table",),
         ),
     )
     service = FinancialAnalystCopilot(
@@ -188,16 +213,16 @@ def test_duplicate_successful_call_stops_before_repeating_it() -> None:
     assert len(result.observations) == 1
     assert result.trajectory[-1].summary == "duplicate_successful_call"
     assert result.trajectory[-1].failure_owner == "replanner"
-    assert result.trajectory[-1].capability == "get_company_metric"
+    assert result.trajectory[-1].capability == "search_financial_documents"
 
 
-def test_exhausted_replan_budget_stops_truthfully() -> None:
+def test_document_plan_needs_no_replan_budget_for_certified_evidence() -> None:
     result = build_reference_copilot().run(ResearchRequest.reference(max_replans=0))
 
-    assert result.status == "replan_budget_exhausted"
+    assert result.status == "completed"
     assert result.replan_count == 0
-    assert len(result.observations) == 3
-    assert result.briefing is None
+    assert len(result.observations) == 5
+    assert result.briefing is not None
 
 
 def test_malformed_tool_outcome_stops_truthfully() -> None:
@@ -211,7 +236,7 @@ def test_malformed_tool_outcome_stops_truthfully() -> None:
     assert result.status == "execution_stopped"
     assert result.observations[-1].error_code == "malformed_tool_outcome"
     assert result.trajectory[-1].failure_owner == "tool_boundary"
-    assert result.trajectory[-1].capability == "get_company_metric"
+    assert result.trajectory[-1].capability == "inspect_document_evidence"
     assert result.briefing is None
 
 
@@ -271,7 +296,9 @@ def test_custom_question_stays_in_the_two_company_universe_and_keeps_result_shap
     assert {
         observation.result["company"]
         for observation in result.observations
-        if observation.status == "ok" and observation.result is not None
+        if observation.status == "ok"
+        and observation.capability == "search_financial_documents"
+        and observation.result is not None
     } == {"NVIDIA", "Schneider Electric"}
     assert "operating-growth" in result.initial_plan[0].purpose.casefold()
     assert result.briefing is not None

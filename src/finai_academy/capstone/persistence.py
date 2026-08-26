@@ -215,6 +215,28 @@ def _trajectory_payload(result: ResearchRunResult) -> dict[str, object]:
     return {
         "analysis_run_id": result.run_id,
         "events": [event.model_dump(mode="json") for event in result.trajectory],
+        "document_retrieval": [
+            {
+                "filters": {
+                    "company": observation.result["company"],
+                    "reporting_period": observation.result["reporting_period"],
+                    "element_type": observation.result["element_type"],
+                },
+                "candidate_chunk_ids": observation.result["candidate_chunk_ids"],
+                "selected_chunk_ids": observation.result["selected_chunk_ids"],
+                "channel_ranks": [
+                    {
+                        "chunk_id": hit["chunk_id"],
+                        "channel_ranks": hit["channel_ranks"],
+                    }
+                    for hit in observation.result["hits"]
+                ],
+            }
+            for observation in result.observations
+            if observation.status == "ok"
+            and observation.capability == "search_financial_documents"
+            and observation.result is not None
+        ],
     }
 
 
@@ -254,7 +276,15 @@ def _certified_dataset_identities() -> dict[str, object]:
                 "identity": str(dataset["dataset_id"]),
                 "sha256": str(dataset["sha256"]),
             }
-        )
+            )
+    record = manifest["capstone_derived_artifacts"][0]
+    identities.append(
+        {
+            "kind": "document_index",
+            "identity": "financial-context-v2",
+            "sha256": str(record["chunks"]["sha256"]),
+        }
+    )
     return {"schema_version": 1, "identities": identities}
 
 

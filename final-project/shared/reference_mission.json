@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "mission_id": "nvidia-schneider-reference-v1",
-  "mission": "Compare NVIDIA and Schneider Electric using official documents and selected financial metrics. Identify the main operating-growth evidence, explain why direct comparison is limited, and cite every factual claim.",
+  "mission": "Using the official FY2026 NVIDIA annual report and Schneider Electric FY2025 results, compare the reported revenue evidence. Cite the exact table or passage, preserve periods and units, and explain why the figures are not directly comparable.",
   "companies": [
     "NVIDIA",
     "Schneider Electric"
@@ -11,7 +11,8 @@
   "max_steps": 6,
   "max_replans": 1,
   "capabilities": [
-    "get_company_metric",
-    "search_financial_documents"
+    "search_financial_documents",
+    "inspect_document_evidence",
+    "compare_reported_values"
   ]
 }

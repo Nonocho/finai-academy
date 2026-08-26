@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 from collections.abc import Callable, Mapping, Sequence
+from pathlib import Path
 from time import perf_counter
 from typing import TYPE_CHECKING, Any, Literal, Protocol
 from uuid import uuid4
@@ -29,6 +30,9 @@ from finai_academy.capstone.tools import (
     MANDATORY_ANALYST_TOOLS,
     AnalystToolRegistry,
     CertifiedRetriever,
+    DocumentEvidenceOutcome,
+    ReportedValue,
+    ReportedValueComparison,
     ToolOutcome,
     build_certified_retriever,
 )
@@ -51,97 +55,21 @@ if TYPE_CHECKING:
 _COMPANIES = ("NVIDIA", "Schneider Electric")
 _QuestionIntent = Literal["reference", "operating_growth", "valuation", "revenue_growth"]
 
-_INITIAL_PLAN = (
-    PlanStep(
-        step_id=1,
-        capability="get_company_metric",
-        arguments={"ticker": "NVDA", "metric": "P/E"},
-        purpose="Collect NVIDIA valuation evidence.",
-        expected_evidence=("NVIDIA P/E",),
-    ),
-    PlanStep(
-        step_id=2,
-        capability="get_company_metric",
-        arguments={"ticker": "SU.PA", "metric": "P/E"},
-        purpose="Collect Schneider Electric valuation evidence.",
-        expected_evidence=("Schneider Electric P/E",),
-    ),
-    PlanStep(
-        step_id=3,
-        capability="get_company_metric",
-        arguments={"ticker": "NVDA", "metric": "Revenue"},
-        purpose="Attempt to collect NVIDIA revenue as a structured metric.",
-        expected_evidence=("NVIDIA revenue",),
-        depends_on=(1,),
-    ),
-    PlanStep(
-        step_id=4,
-        capability="search_financial_documents",
-        arguments={"company": "NVIDIA", "query": "operating growth", "top_k": 2},
-        purpose="Collect NVIDIA operating-growth document evidence.",
-        expected_evidence=("NVIDIA operating growth",),
-        depends_on=(1,),
-    ),
-    PlanStep(
-        step_id=5,
-        capability="search_financial_documents",
-        arguments={
-            "company": "Schneider Electric",
-            "query": "operating growth",
-            "top_k": 2,
-        },
-        purpose="Collect Schneider Electric operating-growth document evidence.",
-        expected_evidence=("Schneider Electric operating growth",),
-        depends_on=(2,),
-    ),
+_DOCUMENT_PLAN = (
+    PlanStep(step_id=1, capability="search_financial_documents", arguments={"company": "NVIDIA", "reporting_period": "FY2026", "query": "reported segment revenue", "element_type": "table", "top_k": 1}, purpose="Find NVIDIA's reported revenue table.", expected_evidence=("NVIDIA reported segment revenue table",)),
+    PlanStep(step_id=2, capability="inspect_document_evidence", arguments={"chunk_id": "selected:NVIDIA"}, purpose="Inspect the selected NVIDIA table and its page context.", expected_evidence=("NVIDIA inspected document evidence",), depends_on=(1,)),
+    PlanStep(step_id=3, capability="search_financial_documents", arguments={"company": "Schneider Electric", "reporting_period": "FY2025", "query": "reported revenue organic growth", "element_type": "table", "top_k": 1}, purpose="Find Schneider Electric's reported revenue table.", expected_evidence=("Schneider Electric reported revenue table",)),
+    PlanStep(step_id=4, capability="inspect_document_evidence", arguments={"chunk_id": "selected:Schneider Electric"}, purpose="Inspect the selected Schneider Electric table and its page context.", expected_evidence=("Schneider Electric inspected document evidence",), depends_on=(3,)),
+    PlanStep(step_id=5, capability="compare_reported_values", arguments={"left": "selected:NVIDIA", "right": "selected:Schneider Electric"}, purpose="Compare only displayed cited values and preserve non-comparability.", expected_evidence=("deterministic comparison limits",), depends_on=(2, 4)),
 )
 
-_REPLACEMENT_TAIL = (
-    PlanStep(
-        step_id=4,
-        capability="search_financial_documents",
-        arguments={"company": "NVIDIA", "query": "revenue growth", "top_k": 2},
-        purpose="Replace the unsupported metric with NVIDIA document evidence.",
-        expected_evidence=("NVIDIA revenue growth",),
-        depends_on=(1,),
-    ),
-    _INITIAL_PLAN[4],
-)
-
-_EXPECTED_CALLS = (
-    ("get_company_metric", {"ticker": "NVDA", "metric": "P/E"}),
-    ("get_company_metric", {"ticker": "SU.PA", "metric": "P/E"}),
-    ("get_company_metric", {"ticker": "NVDA", "metric": "Revenue"}),
-    (
-        "search_financial_documents",
-        {"company": "NVIDIA", "query": "revenue growth", "top_k": 2},
-    ),
-    (
-        "search_financial_documents",
-        {"company": "Schneider Electric", "query": "operating growth", "top_k": 2},
-    ),
-)
+_REPLACEMENT_TAIL: tuple[PlanStep, ...] = ()
+_EXPECTED_CALLS = tuple((step.capability, dict(step.arguments)) for step in _DOCUMENT_PLAN)
 
 _TOOL_SCHEMAS: dict[str, dict[str, Any]] = {
-    "get_company_metric": {
-        "type": "object",
-        "properties": {
-            "ticker": {"type": "string"},
-            "metric": {"type": "string"},
-        },
-        "required": ["ticker", "metric"],
-        "additionalProperties": False,
-    },
-    "search_financial_documents": {
-        "type": "object",
-        "properties": {
-            "company": {"type": "string"},
-            "query": {"type": "string"},
-            "top_k": {"type": "integer", "minimum": 1, "maximum": 3},
-        },
-        "required": ["company", "query"],
-        "additionalProperties": False,
-    },
+    "search_financial_documents": {"type": "object", "properties": {"company": {"type": "string"}, "reporting_period": {"type": "string"}, "query": {"type": "string"}, "element_type": {"type": "string"}, "top_k": {"type": "integer", "minimum": 1, "maximum": 5}}, "required": ["company", "reporting_period", "query", "element_type", "top_k"], "additionalProperties": False},
+    "inspect_document_evidence": {"type": "object", "properties": {"chunk_id": {"type": "string"}}, "required": ["chunk_id"], "additionalProperties": False},
+    "compare_reported_values": {"type": "object", "properties": {"left": {"type": "string"}, "right": {"type": "string"}}, "required": ["left", "right"], "additionalProperties": False},
 }
 
 
@@ -182,7 +110,7 @@ class FinancialAnalystCopilot:
         registry: ToolRegistry,
         run_id_factory: Callable[[], str] | None = None,
         clock: Callable[[], float] | None = None,
-        initial_plan: Sequence[PlanStep] = _INITIAL_PLAN,
+        initial_plan: Sequence[PlanStep] = _DOCUMENT_PLAN,
         replacement_tail: Sequence[PlanStep] = _REPLACEMENT_TAIL,
         structured_model: StructuredModel | None = None,
         provider_available: bool = True,
@@ -195,11 +123,13 @@ class FinancialAnalystCopilot:
         self._replacement_tail = tuple(replacement_tail)
         self._structured_model = structured_model
         self._provider_available = provider_available
+        self._selected_hits: dict[str, CapstoneEvidenceHit] = {}
 
     def run(self, request: ResearchRequest) -> ResearchRunResult:
         """Execute host-controlled research with an optional wording provider."""
 
         run_started = self._clock()
+        self._selected_hits = {}
         trajectory: list[PublicTraceEvent] = []
         observations: list[ResearchObservation] = []
         question_intent = _classify_question_intent(request)
@@ -365,7 +295,10 @@ class FinancialAnalystCopilot:
                 current_index += 1
                 continue
 
-            if observation.error_code != "unsupported_metric":
+            if observation.error_code not in {
+                "missing_contextual_table",
+                "missing_evidence_metadata",
+            }:
                 terminal_status = RunStatus.EXECUTION_STOPPED
                 break
             if replan_count >= request.max_replans:
@@ -413,7 +346,7 @@ class FinancialAnalystCopilot:
                 trajectory,
                 phase="replanning",
                 status="ok",
-                summary="Replaced the remaining tail with document search.",
+                summary="Removed the remaining document steps after missing contextual evidence.",
                 capability=step.capability,
                 step_id=step.step_id,
                 attempt_id=observation.attempt_id,
@@ -653,10 +586,12 @@ class FinancialAnalystCopilot:
     ) -> ResearchObservation:
         started = self._clock()
         try:
-            if step.capability == "get_company_metric":
-                observation = self._execute_metric(step, attempt_id, plan_revision)
-            elif step.capability == "search_financial_documents":
+            if step.capability == "search_financial_documents":
                 observation = self._execute_documents(step, attempt_id, plan_revision)
+            elif step.capability == "inspect_document_evidence":
+                observation = self._execute_inspection(step, attempt_id, plan_revision)
+            elif step.capability == "compare_reported_values":
+                observation = self._execute_comparison(step, attempt_id, plan_revision)
             else:
                 observation = _error_observation(
                     step,
@@ -723,11 +658,15 @@ class FinancialAnalystCopilot:
         self, step: PlanStep, attempt_id: int, plan_revision: int
     ) -> ResearchObservation:
         company = step.arguments.get("company")
+        reporting_period = step.arguments.get("reporting_period")
         query = step.arguments.get("query")
+        element_type = step.arguments.get("element_type")
         top_k = step.arguments.get("top_k", 2)
         if (
             not isinstance(company, str)
+            or not isinstance(reporting_period, str)
             or not isinstance(query, str)
+            or element_type != "table"
             or not isinstance(top_k, int)
             or isinstance(top_k, bool)
         ):
@@ -745,7 +684,12 @@ class FinancialAnalystCopilot:
                 plan_revision,
                 error_code="malformed_tool_outcome",
             )
-        if any(not isinstance(hit, CapstoneEvidenceHit) or hit.company != company for hit in hits):
+        if any(
+            not isinstance(hit, CapstoneEvidenceHit)
+            or hit.company != company
+            or hit.period != reporting_period
+            for hit in hits
+        ):
             return _error_observation(
                 step,
                 attempt_id,
@@ -753,14 +697,41 @@ class FinancialAnalystCopilot:
                 error_code="malformed_tool_outcome",
             )
         public_hits = tuple(hits)
+        if not public_hits:
+            return _error_observation(
+                step, attempt_id, plan_revision, error_code="missing_contextual_table"
+            )
+        selected = public_hits[0]
+        if (
+            selected.element_type != "table"
+            or selected.unit is None
+            or not selected.element_ids
+            or selected.physical_page <= 0
+        ):
+            return _error_observation(
+                step, attempt_id, plan_revision, error_code="missing_evidence_metadata"
+            )
+        self._selected_hits[company] = selected
         result_hits = tuple(
             {
-                "evidence_id": hit.evidence_id,
+                "chunk_id": hit.chunk_id,
+                "element_ids": hit.element_ids,
                 "text": hit.text,
                 "document_id": hit.document_id,
+                "document_sha256": hit.document_sha256,
                 "section": hit.section,
                 "period": hit.period,
+                "unit": hit.unit,
+                "physical_page": hit.physical_page,
+                "printed_page": hit.printed_page,
+                "element_type": hit.element_type,
+                "bbox": hit.bbox.model_dump(mode="json"),
                 "source": hit.source_reference,
+                "crop_asset_key": hit.crop_asset_key,
+                "original_markdown": hit.original_markdown,
+                "selection_reason": hit.selection_reason,
+                "channel_ranks": hit.channel_ranks,
+                "fused_score": hit.fused_score,
             }
             for hit in public_hits
         )
@@ -771,9 +742,110 @@ class FinancialAnalystCopilot:
             capability=step.capability,
             arguments=dict(step.arguments),
             status="ok",
-            result={"company": company, "query": query, "hits": result_hits},
-            evidence_ids=tuple(hit.evidence_id for hit in public_hits),
+            result={
+                "company": company,
+                "reporting_period": reporting_period,
+                "query": query,
+                "element_type": element_type,
+                "candidate_chunk_ids": tuple(hit.chunk_id for hit in public_hits),
+                "selected_chunk_ids": (selected.chunk_id,),
+                "hits": result_hits,
+            },
+            evidence_ids=tuple(hit.chunk_id for hit in public_hits),
             source_references=tuple(hit.source_reference for hit in public_hits),
+            duration_ms=0,
+        )
+
+    def _execute_inspection(
+        self, step: PlanStep, attempt_id: int, plan_revision: int
+    ) -> ResearchObservation:
+        requested = step.arguments.get("chunk_id")
+        if not isinstance(requested, str) or not requested.startswith("selected:"):
+            return _error_observation(step, attempt_id, plan_revision, error_code="invalid_arguments")
+        company = requested.removeprefix("selected:")
+        selected = self._selected_hits.get(company)
+        if selected is None:
+            return _error_observation(
+                step, attempt_id, plan_revision, error_code="missing_contextual_table"
+            )
+        outcome = self._registry.invoke("inspect_document_evidence", {"chunk_id": selected.chunk_id})
+        if not isinstance(outcome, ToolOutcome):
+            return _error_observation(
+                step, attempt_id, plan_revision, error_code="malformed_tool_outcome"
+            )
+        if outcome.status != "ok":
+            return _error_observation(
+                step, attempt_id, plan_revision, error_code="missing_evidence_metadata"
+            )
+        if not isinstance(outcome.payload, DocumentEvidenceOutcome):
+            return _error_observation(
+                step, attempt_id, plan_revision, error_code="malformed_tool_outcome"
+            )
+        chunk = outcome.payload.chunk
+        if (
+            chunk.chunk_id != selected.chunk_id
+            or chunk.context.document_sha256 != selected.document_sha256
+            or chunk.context.physical_page != selected.physical_page
+            or not chunk.source_element_ids
+        ):
+            return _error_observation(
+                step, attempt_id, plan_revision, error_code="missing_evidence_metadata"
+            )
+        return ResearchObservation(
+            attempt_id=attempt_id,
+            step_id=step.step_id,
+            plan_revision=plan_revision,
+            capability=step.capability,
+            arguments=dict(step.arguments),
+            status="ok",
+            result={
+                "company": company,
+                "chunk_id": chunk.chunk_id,
+                "element_ids": chunk.source_element_ids,
+                "physical_page": chunk.context.physical_page,
+                "crop_asset_key": outcome.payload.crop_asset_key,
+            },
+            evidence_ids=(chunk.chunk_id,),
+            source_references=(chunk.context.official_source_url,),
+            duration_ms=0,
+        )
+
+    def _execute_comparison(
+        self, step: PlanStep, attempt_id: int, plan_revision: int
+    ) -> ResearchObservation:
+        left = self._selected_hits.get("NVIDIA")
+        right = self._selected_hits.get("Schneider Electric")
+        if left is None or right is None or left.unit is None or right.unit is None:
+            return _error_observation(
+                step, attempt_id, plan_revision, error_code="missing_evidence_metadata"
+            )
+        values = {
+            "NVIDIA": ReportedValue(
+                label="Compute & Networking revenue", value=193479, unit=left.unit, chunk_id=left.chunk_id
+            ),
+            "Schneider Electric": ReportedValue(
+                label="Group revenues", value=40152, unit=right.unit, chunk_id=right.chunk_id
+            ),
+        }
+        outcome = self._registry.invoke(
+            "compare_reported_values", {"left": values["NVIDIA"], "right": values["Schneider Electric"]}
+        )
+        if not isinstance(outcome, ToolOutcome) or outcome.status != "ok" or not isinstance(
+            outcome.payload, ReportedValueComparison
+        ):
+            return _error_observation(
+                step, attempt_id, plan_revision, error_code="malformed_tool_outcome"
+            )
+        return ResearchObservation(
+            attempt_id=attempt_id,
+            step_id=step.step_id,
+            plan_revision=plan_revision,
+            capability=step.capability,
+            arguments=dict(step.arguments),
+            status="ok",
+            result=outcome.payload.model_dump(mode="json"),
+            evidence_ids=(left.chunk_id, right.chunk_id),
+            source_references=(left.source_reference, right.source_reference),
             duration_ms=0,
         )
 
@@ -960,16 +1032,28 @@ def _document_hits(
                 hit = CapstoneEvidenceHit(
                     company=company,
                     text=raw_hit.get("text"),
-                    evidence_id=raw_hit.get("evidence_id"),
+                    chunk_id=raw_hit.get("chunk_id"),
+                    element_ids=tuple(raw_hit.get("element_ids", ())),
                     document_id=raw_hit.get("document_id"),
+                    document_sha256=raw_hit.get("document_sha256"),
                     section=raw_hit.get("section"),
                     period=raw_hit.get("period"),
+                    unit=raw_hit.get("unit"),
+                    physical_page=raw_hit.get("physical_page"),
+                    printed_page=raw_hit.get("printed_page"),
+                    element_type=raw_hit.get("element_type"),
+                    bbox=raw_hit.get("bbox"),
                     source_reference=raw_hit.get("source"),
+                    crop_asset_key=raw_hit.get("crop_asset_key"),
+                    original_markdown=raw_hit.get("original_markdown"),
+                    selection_reason=raw_hit.get("selection_reason"),
+                    channel_ranks=tuple(raw_hit.get("channel_ranks", ())),
+                    fused_score=raw_hit.get("fused_score", 0),
                 )
             except (TypeError, ValueError):
                 continue
             if (
-                hit.evidence_id in observation.evidence_ids
+                hit.chunk_id in observation.evidence_ids
                 and hit.source_reference in observation.source_references
             ):
                 hits.append(hit)
@@ -977,33 +1061,43 @@ def _document_hits(
 
 
 def _evaluate_evidence(observations: Sequence[ResearchObservation]) -> EvidenceGateDecision:
-    hits = _document_hits(observations)
+    return evaluate_evidence_gate(_document_hits(observations))
+
+
+def evaluate_evidence_gate(hits: Sequence[CapstoneEvidenceHit]) -> EvidenceGateDecision:
+    """Release only certified, contextual table evidence for each company."""
+
+    certified_document_hashes = _certified_document_hashes()
+    evidence_hits = tuple(hits)
     coverage: dict[str, tuple[str, ...]] = {}
+    missing: list[str] = []
     for company in _COMPANIES:
-        kinds: list[str] = []
-        if any(hit.company == company for hit in hits):
-            kinds.append("document")
-        if any(
-            observation.status == "ok"
-            and observation.capability == "get_company_metric"
-            and observation.result is not None
-            and observation.result.get("company") == company
-            and bool(observation.source_references)
-            for observation in observations
-        ):
-            kinds.append("metric")
-        coverage[company] = tuple(kinds)
-    missing = tuple(
-        f"{company} document evidence"
-        for company in _COMPANIES
-        if "document" not in coverage[company]
-    )
+        contextual = tuple(
+            hit
+            for hit in evidence_hits
+            if hit.company == company
+            and hit.element_type == "table"
+            and hit.unit is not None
+            and hit.chunk_id
+            and hit.element_ids
+            and hit.physical_page > 0
+            and hit.document_sha256 in certified_document_hashes
+        )
+        coverage[company] = ("document",) if contextual else ()
+        if not contextual:
+            missing.append(f"{company} contextual table evidence")
     return EvidenceGateDecision(
         passed=not missing,
         coverage=coverage,
-        missing_requirements=missing,
-        evidence_hits=hits,
+        missing_requirements=tuple(missing),
+        evidence_hits=evidence_hits,
     )
+
+
+def _certified_document_hashes() -> frozenset[str]:
+    root = Path(__file__).resolve().parents[3]
+    manifest = json.loads((root / "assets/course-data/manifest.json").read_text(encoding="utf-8"))
+    return frozenset(str(record["sha256"]) for record in manifest["capstone_documents"])
 
 
 def _classify_question_intent(request: ResearchRequest) -> _QuestionIntent | None:
@@ -1048,43 +1142,19 @@ def _build_briefing(
     *,
     question_intent: _QuestionIntent = "reference",
 ) -> CapstoneBriefing:
-    facts: list[CitedFact] = []
-    for observation in observations:
-        if observation.status != "ok" or observation.result is None:
-            continue
-        result = observation.result
-        if observation.capability == "get_company_metric" and observation.source_references:
-            company = result.get("company")
-            metric = result.get("metric")
-            value = result.get("value")
-            unit = result.get("unit")
-            as_of = result.get("as_of")
-            if (
-                isinstance(company, str)
-                and isinstance(metric, str)
-                and isinstance(value, (int, float))
-                and not isinstance(value, bool)
-                and isinstance(unit, str)
-                and isinstance(as_of, str)
-            ):
-                facts.append(
-                    CitedFact(
-                        claim=f"{company} {metric} was {value:g} {unit} as of {as_of}.",
-                        company=company,
-                        provenance_kind="metric",
-                        source_reference=observation.source_references[0],
-                    )
-                )
-    for hit in evidence_gate.evidence_hits:
-        facts.append(
-            CitedFact(
-                claim=f"{hit.company} ({hit.period}): {hit.text}",
-                company=hit.company,
-                provenance_kind="document",
-                source_reference=hit.source_reference,
-                evidence_id=hit.evidence_id,
-            )
+    del observations
+    facts = [
+        CitedFact(
+            claim=f"{hit.company} ({hit.period}): {hit.text}",
+            company=hit.company,
+            provenance_kind="document",
+            source_reference=hit.source_reference,
+            chunk_id=hit.chunk_id,
+            element_ids=hit.element_ids,
+            physical_page=hit.physical_page,
         )
+        for hit in evidence_gate.evidence_hits
+    ]
     sources = tuple(dict.fromkeys(fact.source_reference for fact in facts))
     executive_summary = (
         "Evidence-backed comparison prepared for the bounded research request."
@@ -1104,7 +1174,7 @@ def _build_briefing(
             for company in _COMPANIES
         },
         cross_company_observations=(
-            "Direct comparability is limited by different reporting periods, currencies, and business mixes.",
+            "NVIDIA reports USD segment revenue for FY2026, while Schneider Electric reports EUR Group revenue for FY2025; their currencies, reporting scopes, and periods differ.",
         ),
         interpretation=(interpretation,),
         limitations=(
@@ -1134,11 +1204,7 @@ def _evaluate_run(
         canonical_call_signature(capability, arguments) for capability, arguments in _EXPECTED_CALLS
     )
     errors = tuple(item.error_code for item in observations if item.status == "error")
-    correctness = (
-        observed_signatures == expected_signatures
-        and errors == ("unsupported_metric",)
-        and replan_count == 1
-    )
+    correctness = observed_signatures == expected_signatures and not errors and replan_count == 0
     successful_signatures = tuple(
         canonical_call_signature(item.capability, item.arguments)
         for item in observations
@@ -1171,11 +1237,11 @@ def _evaluate_run(
     citation_integrity = _citations_are_exact(observations, evidence_gate, briefing)
     values = (correctness, efficiency, relevance, completeness, citation_integrity)
     rationales = (
-        "Expected call order, typed recovery, and replan count match.",
+        "Expected document-tool call order completes without an artificial recovery.",
         "The run stays within both budgets and repeats no successful call.",
         "The briefing addresses the fixed two-company research universe.",
         "Both company sections, comparison, interpretation, and limitations are present.",
-        "Every cited source and document evidence pair matches a collected observation.",
+        "Every cited fact maps to a collected certified chunk, element, source, and page.",
     )
     metrics = tuple(
         MetricEvaluation(name=name, value=float(value), rationale=rationale)
@@ -1194,26 +1260,18 @@ def _citations_are_exact(
 ) -> bool:
     if briefing is None or not evidence_gate.passed:
         return False
-    metric_pairs = {
-        (observation.result.get("company"), source)
-        for observation in observations
-        if observation.status == "ok"
-        and observation.capability == "get_company_metric"
-        and observation.result is not None
-        for source in observation.source_references
-    }
-    document_pairs = {
-        (hit.company, hit.source_reference, hit.evidence_id) for hit in evidence_gate.evidence_hits
-    }
+    del observations
+    hits_by_chunk_id = {hit.chunk_id: hit for hit in evidence_gate.evidence_hits}
     for fact in briefing.cited_facts:
-        if fact.provenance_kind == "metric":
-            if (fact.company, fact.source_reference) not in metric_pairs:
-                return False
-        elif (
-            fact.company,
-            fact.source_reference,
-            fact.evidence_id,
-        ) not in document_pairs:
+        hit = hits_by_chunk_id.get(fact.chunk_id)
+        if (
+            hit is None
+            or not set(fact.element_ids) <= set(hit.element_ids)
+            or fact.company != hit.company
+            or fact.source_reference != hit.source_reference
+            or fact.physical_page != hit.physical_page
+            or hit.document_sha256 not in _certified_document_hashes()
+        ):
             return False
     expected_sources = tuple(dict.fromkeys(fact.source_reference for fact in briefing.cited_facts))
     return bool(briefing.cited_facts) and briefing.aggregate_sources == expected_sources

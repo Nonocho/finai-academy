@@ -10,6 +10,7 @@ from typing import Any, Literal, Self
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
+from finai_academy.capstone.document_models import BoundingBox
 from finai_academy.research_planning import PlanStep, ResearchObservation
 
 _SECRET_PATTERN = re.compile(
@@ -219,11 +220,29 @@ class CapstoneEvidenceHit(_FrozenPublicModel):
 
     company: str = Field(min_length=1)
     text: str = Field(min_length=1)
-    evidence_id: str = Field(min_length=1)
+    chunk_id: str = Field(min_length=1)
+    element_ids: tuple[str, ...] = Field(min_length=1)
     document_id: str = Field(min_length=1)
+    document_sha256: str = Field(pattern=r"^[0-9a-f]{64}$")
     section: str = Field(min_length=1)
     period: str = Field(min_length=1)
+    unit: str | None = None
+    physical_page: int = Field(gt=0)
+    printed_page: int | None = Field(default=None, gt=0)
+    element_type: Literal["heading", "paragraph", "list", "table", "figure_caption", "footnote"]
+    bbox: BoundingBox
     source_reference: str = Field(min_length=1)
+    crop_asset_key: str | None = None
+    original_markdown: str | None = None
+    selection_reason: str = Field(min_length=1)
+    channel_ranks: tuple[tuple[str, int], ...] = ()
+    fused_score: float = Field(default=0, ge=0)
+
+    @property
+    def evidence_id(self) -> str:
+        """Compatibility alias for pre-document-index presentation seams."""
+
+        return self.chunk_id
 
 
 class CitedFact(_FrozenPublicModel):
@@ -231,17 +250,17 @@ class CitedFact(_FrozenPublicModel):
 
     claim: str = Field(min_length=1)
     company: str = Field(min_length=1)
-    provenance_kind: Literal["metric", "document"]
+    provenance_kind: Literal["document", "calculation"]
     source_reference: str = Field(min_length=1)
-    evidence_id: str | None = None
+    chunk_id: str = Field(min_length=1)
+    element_ids: tuple[str, ...] = Field(min_length=1)
+    physical_page: int = Field(gt=0)
 
-    @model_validator(mode="after")
-    def validate_provenance(self) -> CitedFact:
-        if self.provenance_kind == "document" and self.evidence_id is None:
-            raise ValueError("document fact requires evidence_id")
-        if self.provenance_kind == "metric" and self.evidence_id is not None:
-            raise ValueError("metric fact forbids evidence_id")
-        return self
+    @property
+    def evidence_id(self) -> str:
+        """Compatibility alias for presentation code still naming evidence IDs."""
+
+        return self.chunk_id
 
 
 class CapstoneBriefing(_FrozenPublicModel):
@@ -268,7 +287,7 @@ class EvidenceGateDecision(_FrozenPublicModel):
     """Public evidence-coverage decision made before any briefing is exposed."""
 
     passed: bool
-    coverage: dict[str, tuple[Literal["document", "metric"], ...]]
+    coverage: dict[str, tuple[Literal["document", "calculation"], ...]]
     missing_requirements: tuple[str, ...] = ()
     evidence_hits: tuple[CapstoneEvidenceHit, ...] = ()
 
@@ -380,19 +399,21 @@ class ResearchRunResult(_FrozenPublicModel):
         """Bind every displayed document fact and evidence section to collected hits."""
 
         assert self.briefing is not None
-        hits_by_id = {hit.evidence_id: hit for hit in self.evidence_gate.evidence_hits}
-        if len(hits_by_id) != len(self.evidence_gate.evidence_hits):
-            raise ValueError("collected evidence IDs must be unique")
+        hits_by_chunk_id = {hit.chunk_id: hit for hit in self.evidence_gate.evidence_hits}
+        if len(hits_by_chunk_id) != len(self.evidence_gate.evidence_hits):
+            raise ValueError("collected chunk IDs must be unique")
         for fact in self.briefing.cited_facts:
-            if fact.provenance_kind != "document":
-                continue
-            hit = hits_by_id.get(fact.evidence_id)
+            hit = hits_by_chunk_id.get(fact.chunk_id)
             if hit is None:
-                raise ValueError("document fact evidence_id is not in collected evidence")
+                raise ValueError("cited fact chunk_id is not in collected evidence")
+            if not set(fact.element_ids) <= set(hit.element_ids):
+                raise ValueError("cited fact element_ids must be contained in collected evidence")
             if hit.source_reference != fact.source_reference:
-                raise ValueError("document fact source_reference must match collected evidence")
+                raise ValueError("cited fact source_reference must match collected evidence")
             if hit.company != fact.company:
-                raise ValueError("document fact company must match collected evidence")
+                raise ValueError("cited fact company must match collected evidence")
+            if hit.physical_page != fact.physical_page:
+                raise ValueError("cited fact physical_page must match collected evidence")
 
         if self.status != RunStatus.COMPLETED or self.request.mode != ResearchMode.REFERENCE:
             return
@@ -405,6 +426,6 @@ class ResearchRunResult(_FrozenPublicModel):
             for hit in company_evidence:
                 if hit.company != company:
                     raise ValueError("company evidence must remain in its company section")
-                collected = hits_by_id.get(hit.evidence_id)
+                collected = hits_by_chunk_id.get(hit.chunk_id)
                 if collected != hit:
                     raise ValueError("company evidence must match collected evidence")
