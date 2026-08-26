@@ -50,6 +50,11 @@ class CompletedSmokeResult:
     )
 
 
+class ProviderFailedSmokeResult(CompletedSmokeResult):
+    status = "provider_error"
+    briefing = None
+
+
 def _load_smoke_module():
     script_path = Path(__file__).resolve().parents[1] / "scripts/smoke_capstone_openai.py"
     spec = importlib.util.spec_from_file_location("smoke_capstone_openai", script_path)
@@ -78,7 +83,7 @@ def test_openai_smoke_prints_only_safe_completed_summary(monkeypatch, capsys) ->
     )
 
 
-def test_openai_smoke_fails_silently_for_a_non_openai_route(monkeypatch, capsys) -> None:
+def test_openai_smoke_reports_a_safe_code_for_a_non_openai_route(monkeypatch, capsys) -> None:
     smoke_capstone_openai = _load_smoke_module()
     monkeypatch.setattr(
         smoke_capstone_openai.Settings,
@@ -87,7 +92,7 @@ def test_openai_smoke_fails_silently_for_a_non_openai_route(monkeypatch, capsys)
     )
 
     assert smoke_capstone_openai.main() == 1
-    assert capsys.readouterr().out == ""
+    assert capsys.readouterr().out == "status=failed stage=configuration code=openai_route_required\n"
 
 
 def test_openai_smoke_rejects_an_unexpected_citation_count(monkeypatch, capsys) -> None:
@@ -105,7 +110,46 @@ def test_openai_smoke_rejects_an_unexpected_citation_count(monkeypatch, capsys) 
     )
 
     assert smoke_capstone_openai.main() == 1
-    assert capsys.readouterr().out == ""
+    assert capsys.readouterr().out == "status=failed stage=validation code=citation_count_invalid\n"
+
+
+def test_openai_smoke_hides_provider_exception_details(monkeypatch, capsys) -> None:
+    smoke_capstone_openai = _load_smoke_module()
+    secret = "sk-secret-provider-value"
+    monkeypatch.setattr(
+        smoke_capstone_openai.Settings,
+        "from_environment",
+        lambda: Settings(provider="openai", chat_model="gpt-5.6-luna"),
+    )
+    monkeypatch.setattr(
+        smoke_capstone_openai,
+        "build_copilot_for_request",
+        lambda request, configured_settings: (_ for _ in ()).throw(
+            RuntimeError(f"provider failure {secret} /Users/private/request.json")
+        ),
+    )
+
+    assert smoke_capstone_openai.main() == 1
+    output = capsys.readouterr().out
+    assert output == "status=failed stage=provider code=live_run_failed\n"
+    assert secret not in output
+    assert "/Users/" not in output
+
+
+def test_openai_smoke_reports_a_safe_provider_result_code(monkeypatch, capsys) -> None:
+    smoke_capstone_openai = _load_smoke_module()
+    settings = Settings(provider="openai", chat_model="gpt-5.6-luna")
+    monkeypatch.setattr(smoke_capstone_openai.Settings, "from_environment", lambda: settings)
+    monkeypatch.setattr(
+        smoke_capstone_openai,
+        "build_copilot_for_request",
+        lambda request, configured_settings: SimpleNamespace(
+            run=lambda received_request: ProviderFailedSmokeResult()
+        ),
+    )
+
+    assert smoke_capstone_openai.main() == 1
+    assert capsys.readouterr().out == "status=failed stage=provider code=provider_result_failed\n"
 
 
 def test_openai_adapter_uses_luna_medium_structured_responses() -> None:
