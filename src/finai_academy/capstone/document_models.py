@@ -27,7 +27,10 @@ _WINDOWS_PERSONAL_PATH_PATTERN = re.compile(
     r"(?i)(?:^|[^A-Za-z0-9])(?:[A-Za-z]:)?\\+(?:Users|home)(?:\\+|$)"
 )
 _WINDOWS_DRIVE_PATH_PATTERN = re.compile(r"(?i)(?:^|[^A-Za-z0-9])[A-Za-z]:(?=[^:])")
-_WINDOWS_ROOTED_PATH_PATTERN = re.compile(r"(?:^|\s)\\+")
+_WINDOWS_ROOTED_PATH_PATTERN = re.compile(
+    r"(?:^|[^A-Za-z0-9_./\\])\\+(?=(?:[A-Za-z0-9][A-Za-z0-9._ -]*\\+)+"
+    r"[A-Za-z0-9][A-Za-z0-9._ -]*)"
+)
 
 
 def _require_url_without_userinfo(value: str | AnyUrl) -> None:

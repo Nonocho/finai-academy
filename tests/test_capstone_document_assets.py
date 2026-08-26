@@ -126,6 +126,33 @@ def test_public_contract_rejects_windows_personal_paths_in_all_public_strings(
 
 
 @pytest.mark.parametrize(
+    "public_text",
+    (
+        r"note=\reports\report.pdf",
+        r"note:\reports\report.pdf",
+        r"note(\reports\report.pdf)",
+    ),
+)
+def test_public_contract_rejects_embedded_rooted_windows_paths(public_text: str) -> None:
+    with pytest.raises(ValueError, match="rooted filesystem paths"):
+        sample_source(company_name=public_text)
+    with pytest.raises(ValueError, match="rooted filesystem paths"):
+        sample_context(parser_name=public_text)
+
+
+@pytest.mark.parametrize(
+    "public_text",
+    (
+        r"escaped newline: \n",
+        r"regular expression: \d+\s+",
+        "https://example.com/reports/report.pdf",
+    ),
+)
+def test_public_contract_accepts_ordinary_escapes_and_url_paths(public_text: str) -> None:
+    assert sample_source(company_name=public_text).company_name == public_text
+
+
+@pytest.mark.parametrize(
     "local_asset_key",
     (
         "/Users/example/report.pdf",
