@@ -13,3 +13,5 @@ Artifacts: elements `f70afed5f935c4a11b637b689b1bdb49f0c44ad66eff92bddaef53d61cc
 Corpus commit: `eaa42e1` (`feat: build offline capstone document corpus`).
 
 Concerns: full reports include valid source strings such as financial labels with colon syntax and ordinary authorization wording; privacy detection now rejects credential-shaped assignments and actual drive-root paths without rejecting those source values. Some non-target numeric tables have no explicit unit in locally extracted context; bulk artifacts preserve them with `scale=None`, while direct strict table construction still fails closed.
+
+Fix round 1 verification: `UV_CACHE_DIR=/tmp/finai-uv-cache uv run --extra capstone pytest tests/test_capstone_document_artifacts.py::test_builder_certifies_complete_document_target_tables -q` — 1 passed in 22.79s; `...::test_builder_regenerates_byte_identical_artifacts -q` — 1 passed in 21.96s; committed-artifact hash/privacy tests — 2 passed in 0.03s. Ruff passed for the artifact builder, artifact tests, document models, and chunking module.
