@@ -242,6 +242,37 @@ def test_table_elements_require_a_consistent_table_matrix() -> None:
         )
 
 
+def test_table_matrix_preserves_literal_empty_cells_without_relaxing_public_strings() -> None:
+    table = TableMatrix(
+        rows=(("", "Metric"), ("Revenue", "215.9")),
+        row_count=2,
+        column_count=2,
+        markdown="|  | Metric |\n| Revenue | 215.9 |",
+    )
+
+    assert table.rows[0][0] == ""
+    with pytest.raises(ValueError, match="must not be blank"):
+        sample_source(company_name="")
+
+
+@pytest.mark.parametrize(
+    ("cell", "message"),
+    (
+        ("api_key=super-secret", "credential-shaped"),
+        ("/Users/example", "personal filesystem paths"),
+        ("https://alice@example.com/report.pdf", "URL userinfo"),
+    ),
+)
+def test_table_matrix_rejects_unsafe_nonempty_cells(cell: str, message: str) -> None:
+    with pytest.raises(ValueError, match=message):
+        TableMatrix(
+            rows=((cell, "Metric"),),
+            row_count=1,
+            column_count=2,
+            markdown="| Cell | Metric |",
+        )
+
+
 def test_financial_chunk_requires_matching_source_element_ids_and_finite_score() -> None:
     chunk = FinancialChunk(
         chunk_id="chunk-1",

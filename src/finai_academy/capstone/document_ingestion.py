@@ -4,8 +4,10 @@ from __future__ import annotations
 
 import hashlib
 import json
+import math
 import re
 from collections.abc import Iterable
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Protocol
 
@@ -24,7 +26,6 @@ from finai_academy.capstone.document_models import (
 
 _WHITESPACE = re.compile(r"\s+")
 _PRINTED_PAGE = re.compile(r"\s*(\d{1,4})\s*")
-_EMPTY_CELL = "\u200b"
 
 
 class FinancialDocumentParser(Protocol):
@@ -40,8 +41,17 @@ class FinancialDocumentParser(Protocol):
 
 
 class OcrAdapter(Protocol):
-    """Optional OCR metadata provider; OCR engines remain application-injected."""
+    """Optional, bounded per-page OCR adapter supplied by the application."""
 
+    def extract(self, *, asset_path: Path, page_number: int) -> OcrExtraction: ...
+
+
+@dataclass(frozen=True)
+class OcrExtraction:
+    """A single OCR text region returned for one certified PDF page."""
+
+    text: str
+    bbox: BoundingBox
     engine: str
     language: str
     confidence: float | None
@@ -65,15 +75,18 @@ class PyMuPDF4LLMParser:
     ) -> ParsedDocument:
         _validate_pages(pages, page_count=source.page_count)
         verify_source_asset(source, project_root)
+        asset_path = project_root / source.local_asset_key
         selected = None if pages is None else [page - 1 for page in pages]
         raw = json.loads(
             pymupdf4llm.to_json(
-                str(project_root / source.local_asset_key),
+                str(asset_path),
                 pages=selected,
                 use_ocr=False,
             )
         )
-        return _normalize_document(source, raw, ocr_adapter=self._ocr_adapter)
+        return _normalize_document(
+            source, raw, asset_path=asset_path, ocr_adapter=self._ocr_adapter
+        )
 
 
 def render_evidence_crop(
@@ -89,8 +102,8 @@ def render_evidence_crop(
 
     if page_number < 1 or page_number > source.page_count:
         raise ValueError("page_number must be within the certified document")
-    if scale <= 0:
-        raise ValueError("scale must be positive")
+    if not math.isfinite(scale) or scale <= 0:
+        raise ValueError("scale must be a finite positive number")
     verify_source_asset(source, project_root)
     document = pymupdf.open(project_root / source.local_asset_key)
     try:
@@ -121,6 +134,7 @@ def _normalize_document(
     source: FinancialDocumentSource,
     raw: dict[str, Any],
     *,
+    asset_path: Path,
     ocr_adapter: OcrAdapter | None,
 ) -> ParsedDocument:
     pending: list[dict[str, Any]] = []
@@ -131,10 +145,18 @@ def _normalize_document(
         physical_page = int(page["page_number"])
         boxes = page.get("boxes", [])
         table_boxes = [box for box in boxes if box.get("boxclass") == "table"]
-        if not _page_text(page.get("fulltext")).strip() and not table_boxes:
-            diagnostics.append(_ocr_diagnostic(physical_page, ocr_adapter))
-
         printed_page = _printed_page(boxes)
+        if not _page_text(page.get("fulltext")).strip() and not table_boxes:
+            ocr_element, ocr_diagnostic = _extract_ocr(
+                ocr_adapter,
+                asset_path=asset_path,
+                physical_page=physical_page,
+                printed_page=printed_page,
+                heading_path=heading_path,
+            )
+            diagnostics.append(ocr_diagnostic)
+            if ocr_element is not None:
+                pending.append(ocr_element)
         for box in boxes:
             element = _normalize_box(
                 source,
@@ -190,6 +212,7 @@ def _normalize_box(
             "original_markdown": original_markdown,
             "table": table,
             "heading_path": heading_path,
+            "extraction_method": "native_text",
         }
 
     text = _box_text(box.get("textlines"))
@@ -205,6 +228,7 @@ def _normalize_box(
         "original_markdown": None,
         "table": None,
         "heading_path": heading_path,
+        "extraction_method": "native_text",
     }
 
 
@@ -237,8 +261,7 @@ def _table_matrix(table: dict[str, Any]) -> TableMatrix:
 
 
 def _cell_text(value: Any) -> str:
-    normalized = _collapse_whitespace(str(value or ""))
-    return normalized or _EMPTY_CELL
+    return _collapse_whitespace(str(value or ""))
 
 
 def _table_text(rows: Iterable[Iterable[str]]) -> str:
@@ -320,6 +343,7 @@ def _finalize_elements(
             heading_path=element["heading_path"],
             previous_element_id=ids[index - 1] if index else None,
             next_element_id=ids[index + 1] if index + 1 < len(ids) else None,
+            extraction_method=element["extraction_method"],
         )
         for index, (element_id, element) in enumerate(zip(ids, pending, strict=True))
     )
@@ -335,6 +359,7 @@ def _element_id(
     original_text: str,
     original_markdown: str | None,
     table: TableMatrix | None,
+    extraction_method: str,
     **_: Any,
 ) -> str:
     payload = {
@@ -346,30 +371,62 @@ def _element_id(
         "original_text": original_text,
         "original_markdown": original_markdown,
         "table": table.model_dump(mode="json") if table else None,
+        "extraction_method": extraction_method,
     }
     encoded = json.dumps(payload, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
     return hashlib.sha256(encoded.encode("utf-8")).hexdigest()
 
 
-def _ocr_diagnostic(
-    physical_page: int, ocr_adapter: OcrAdapter | None
-) -> ExtractionDiagnostic:
+def _extract_ocr(
+    ocr_adapter: OcrAdapter | None,
+    *,
+    asset_path: Path,
+    physical_page: int,
+    printed_page: int | None,
+    heading_path: tuple[str, ...],
+) -> tuple[dict[str, Any] | None, ExtractionDiagnostic]:
     if ocr_adapter is None:
-        return ExtractionDiagnostic(
+        return None, ExtractionDiagnostic(
             code="ocr_required",
             severity="error",
             physical_page=physical_page,
             message="Page has no usable native text layer.",
             extraction_method="native_text",
         )
-    confidence = "unknown" if ocr_adapter.confidence is None else str(ocr_adapter.confidence)
-    return ExtractionDiagnostic(
-        code="ocr_required",
+    try:
+        result = ocr_adapter.extract(asset_path=asset_path, page_number=physical_page)
+    except Exception:  # noqa: BLE001 - injected OCR adapters must fail closed
+        return None, ExtractionDiagnostic(
+            code="ocr_failed",
+            severity="error",
+            physical_page=physical_page,
+            message="OCR extraction failed.",
+            extraction_method="ocr",
+        )
+    text = _collapse_whitespace(result.text)
+    if not text:
+        return None, ExtractionDiagnostic(
+            code="ocr_empty",
+            severity="error",
+            physical_page=physical_page,
+            message="OCR extraction returned no usable text.",
+            extraction_method="ocr",
+        )
+    confidence = "unknown" if result.confidence is None else str(result.confidence)
+    return {
+        "physical_page": physical_page,
+        "printed_page": printed_page,
+        "element_type": "paragraph",
+        "bbox": result.bbox,
+        "original_text": text,
+        "original_markdown": None,
+        "table": None,
+        "heading_path": heading_path,
+        "extraction_method": "ocr",
+    }, ExtractionDiagnostic(
+        code="ocr_used",
         severity="warning",
         physical_page=physical_page,
-        message=(
-            "Page has no usable native text layer; "
-            f"OCR engine={ocr_adapter.engine}, language={ocr_adapter.language}, confidence={confidence}."
-        ),
+        message=f"OCR engine={result.engine}, language={result.language}, confidence={confidence}.",
         extraction_method="ocr",
     )

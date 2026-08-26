@@ -69,7 +69,6 @@ def _clean_public_value(value: Any) -> Any:
     if isinstance(value, str):
         return _require_safe_public_string(value)
     if isinstance(value, BaseModel):
-        _clean_public_value(value.model_dump(mode="python"))
         return value
     if isinstance(value, AnyUrl):
         _require_url_without_userinfo(value)
@@ -175,6 +174,30 @@ class TableMatrix(FrozenDocumentModel):
     column_count: int = Field(gt=0)
     markdown: str = Field(min_length=1)
 
+    @model_validator(mode="before")
+    @classmethod
+    def clean_public_state(cls, value: Any) -> Any:
+        """Preserve source-empty cells while enforcing safety everywhere else."""
+
+        if not isinstance(value, dict):
+            return _clean_public_value(value)
+        cleaned = {
+            key: _clean_public_value(item)
+            for key, item in value.items()
+            if key != "rows"
+        }
+        rows = value.get("rows")
+        if not isinstance(rows, (tuple, list)):
+            cleaned["rows"] = _clean_public_value(rows)
+            return cleaned
+        cleaned["rows"] = tuple(
+            tuple(_clean_table_cell(cell) for cell in row)
+            if isinstance(row, (tuple, list))
+            else _clean_public_value(row)
+            for row in rows
+        )
+        return cleaned
+
     @model_validator(mode="after")
     def require_consistent_dimensions(self) -> Self:
         if len(self.rows) != self.row_count:
@@ -182,6 +205,15 @@ class TableMatrix(FrozenDocumentModel):
         if any(len(row) != self.column_count for row in self.rows):
             raise ValueError("column_count must match every row")
         return self
+
+
+def _clean_table_cell(value: Any) -> str:
+    if not isinstance(value, str):
+        _clean_public_value(value)
+        raise TypeError("table cells must be strings")
+    if value == "":
+        return value
+    return _require_safe_public_string(value)
 
 
 class ExtractionDiagnostic(FrozenDocumentModel):
