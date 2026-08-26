@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import re
 from collections.abc import Mapping
 from typing import Any
 
@@ -13,6 +14,7 @@ from finai_academy.capstone.models import CapstoneEvidenceHit
 from finai_academy.capstone.tools import (
     MANDATORY_ANALYST_TOOLS,
     AnalystToolRegistry,
+    ToolOutcome,
 )
 from finai_academy.research_planning import PlanStep
 
@@ -25,6 +27,45 @@ class MissingSchneiderRetriever:
         if company == "Schneider Electric":
             return ()
         return self._wrapped.search(company, query, top_k)
+
+
+class ForgedNvidiaRetriever:
+    """Returns a hit that reuses a real chunk identity with forged public fields."""
+
+    def __init__(self, wrapped: Any, updates: Mapping[str, object]) -> None:
+        self._wrapped = wrapped
+        self._updates = dict(updates)
+
+    def search(self, company: str, query: str, top_k: int = 2) -> tuple[CapstoneEvidenceHit, ...]:
+        hits = self._wrapped.search(company, query, top_k)
+        if company != "NVIDIA":
+            return hits
+        return (hits[0].model_copy(update=self._updates),)
+
+
+class AmbiguousInspectionRegistry:
+    """Removes a selected table to exercise the comparison fail-closed branch."""
+
+    def __init__(self, wrapped: AnalystToolRegistry) -> None:
+        self._wrapped = wrapped
+
+    def discover(self) -> tuple[str, ...]:
+        return self._wrapped.discover()
+
+    def invoke(self, name: str, arguments: Mapping[str, Any]) -> ToolOutcome:
+        outcome = self._wrapped.invoke(name, arguments)
+        if name != "inspect_document_evidence" or outcome.status != "ok":
+            return outcome
+        assert outcome.payload is not None
+        if outcome.payload.chunk.context.company_name != "NVIDIA":
+            return outcome
+        return outcome.model_copy(
+            update={
+                "payload": outcome.payload.model_copy(
+                    update={"chunk": outcome.payload.chunk.model_copy(update={"table": None})}
+                )
+            }
+        )
 
 
 class MalformedRegistry:
@@ -94,6 +135,85 @@ def test_recorded_mission_releases_only_real_document_evidence() -> None:
     assert any("40,152" in hit.text for hit in result.evidence_gate.evidence_hits)
     assert result.briefing is not None
     assert all(fact.chunk_id for fact in result.briefing.cited_facts)
+
+
+def test_inspection_rejects_forged_search_provenance_and_content() -> None:
+    """A real chunk ID alone must not authorize forged evidence or cited prose."""
+
+    complete = build_reference_copilot()
+    service = build_reference_copilot(
+        retriever=ForgedNvidiaRetriever(
+            complete.retriever,
+            {
+                "text": "Forged NVIDIA revenue was 1.",
+                "element_ids": ("forged-element",),
+                "source_reference": "https://example.invalid/forged",
+                "unit": "FORGED units",
+                "bbox": {"x0": 99, "y0": 99, "x1": 100, "y1": 100},
+            },
+        )
+    )
+
+    result = service.run(ResearchRequest.reference())
+
+    assert result.status == "completed"
+    assert result.briefing is not None
+    assert "Forged NVIDIA revenue" not in result.model_dump_json()
+    nvidia = next(hit for hit in result.evidence_gate.evidence_hits if hit.company == "NVIDIA")
+    assert nvidia.element_ids != ("forged-element",)
+    assert nvidia.source_reference != "https://example.invalid/forged"
+    assert nvidia.unit != "FORGED units"
+    assert nvidia.bbox.x0 != 99
+
+
+def test_comparison_uses_the_displayed_values_from_inspected_cited_tables() -> None:
+    """Comparison inputs must come from the same certified chunks shown in citations."""
+
+    complete = build_reference_copilot()
+    service = build_reference_copilot(
+        retriever=ForgedNvidiaRetriever(
+            complete.retriever,
+            {"text": "Forged NVIDIA revenue was $ 1."},
+        )
+    )
+
+    result = service.run(ResearchRequest.reference())
+
+    assert result.status == "completed"
+    assert result.briefing is not None
+    comparison = result.observations[-1].result
+    assert comparison is not None
+    cited_nvidia = next(hit for hit in result.evidence_gate.evidence_hits if hit.company == "NVIDIA")
+    cited_schneider = next(
+        hit for hit in result.evidence_gate.evidence_hits if hit.company == "Schneider Electric"
+    )
+    displayed_value = int(re.search(r"\$ ([\d,]+)", cited_nvidia.text).group(1).replace(",", ""))
+    displayed_schneider_value = int(
+        re.search(r"40,152", cited_schneider.text).group().replace(",", "")
+    )
+    assert comparison["left"]["value"] == displayed_value
+    assert comparison["left"]["chunk_id"] == cited_nvidia.chunk_id
+    assert comparison["left"]["label"].split()[0] in (cited_nvidia.original_markdown or "")
+    assert comparison["right"]["value"] == displayed_schneider_value
+    assert comparison["right"]["chunk_id"] == cited_schneider.chunk_id
+    assert comparison["right"]["label"].split()[0] in (cited_schneider.original_markdown or "")
+
+
+def test_ambiguous_inspected_table_stops_comparison_with_a_typed_outcome() -> None:
+    """Missing inspected table cells never fall back to preselected numeric constants."""
+
+    complete = build_reference_copilot()
+    service = build_reference_copilot(
+        retriever=complete.retriever,
+        registry=AmbiguousInspectionRegistry(registry()),
+    )
+
+    result = service.run(ResearchRequest.reference())
+
+    assert result.status == "execution_stopped"
+    assert result.observations[-1].capability == "compare_reported_values"
+    assert result.observations[-1].error_code == "unavailable_comparison_input"
+    assert result.briefing is None
 
 
 def test_default_document_plan_uses_search_inspection_and_comparison_without_replan() -> None:

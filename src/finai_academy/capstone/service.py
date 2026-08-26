@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import re
 from collections.abc import Callable, Mapping, Sequence
 from pathlib import Path
 from time import perf_counter
@@ -12,6 +13,7 @@ from uuid import uuid4
 from pydantic import BaseModel, ConfigDict, Field
 
 from finai_academy.agent_evaluation import METRIC_NAMES, canonical_call_signature
+from finai_academy.capstone.document_models import FinancialChunk
 from finai_academy.capstone.models import (
     CapstoneBriefing,
     CapstoneEvidenceHit,
@@ -124,12 +126,14 @@ class FinancialAnalystCopilot:
         self._structured_model = structured_model
         self._provider_available = provider_available
         self._selected_hits: dict[str, CapstoneEvidenceHit] = {}
+        self._inspected_chunks: dict[str, FinancialChunk] = {}
 
     def run(self, request: ResearchRequest) -> ResearchRunResult:
         """Execute host-controlled research with an optional wording provider."""
 
         run_started = self._clock()
         self._selected_hits = {}
+        self._inspected_chunks = {}
         trajectory: list[PublicTraceEvent] = []
         observations: list[ResearchObservation] = []
         question_intent = _classify_question_intent(request)
@@ -715,20 +719,6 @@ class FinancialAnalystCopilot:
         result_hits = tuple(
             {
                 "chunk_id": hit.chunk_id,
-                "element_ids": hit.element_ids,
-                "text": hit.text,
-                "document_id": hit.document_id,
-                "document_sha256": hit.document_sha256,
-                "section": hit.section,
-                "period": hit.period,
-                "unit": hit.unit,
-                "physical_page": hit.physical_page,
-                "printed_page": hit.printed_page,
-                "element_type": hit.element_type,
-                "bbox": hit.bbox.model_dump(mode="json"),
-                "source": hit.source_reference,
-                "crop_asset_key": hit.crop_asset_key,
-                "original_markdown": hit.original_markdown,
                 "selection_reason": hit.selection_reason,
                 "channel_ranks": hit.channel_ranks,
                 "fused_score": hit.fused_score,
@@ -752,7 +742,7 @@ class FinancialAnalystCopilot:
                 "hits": result_hits,
             },
             evidence_ids=tuple(hit.chunk_id for hit in public_hits),
-            source_references=tuple(hit.source_reference for hit in public_hits),
+            source_references=(),
             duration_ms=0,
         )
 
@@ -784,13 +774,20 @@ class FinancialAnalystCopilot:
         chunk = outcome.payload.chunk
         if (
             chunk.chunk_id != selected.chunk_id
-            or chunk.context.document_sha256 != selected.document_sha256
-            or chunk.context.physical_page != selected.physical_page
             or not chunk.source_element_ids
         ):
             return _error_observation(
                 step, attempt_id, plan_revision, error_code="missing_evidence_metadata"
             )
+        certified = _certified_hit_from_inspection(
+            chunk,
+            crop_asset_key=outcome.payload.crop_asset_key,
+            selection_reason=selected.selection_reason,
+            channel_ranks=selected.channel_ranks,
+            fused_score=selected.fused_score,
+        )
+        self._selected_hits[company] = certified
+        self._inspected_chunks[company] = chunk
         return ResearchObservation(
             attempt_id=attempt_id,
             step_id=step.step_id,
@@ -800,13 +797,10 @@ class FinancialAnalystCopilot:
             status="ok",
             result={
                 "company": company,
-                "chunk_id": chunk.chunk_id,
-                "element_ids": chunk.source_element_ids,
-                "physical_page": chunk.context.physical_page,
-                "crop_asset_key": outcome.payload.crop_asset_key,
+                "hit": certified.model_dump(mode="json"),
             },
-            evidence_ids=(chunk.chunk_id,),
-            source_references=(chunk.context.official_source_url,),
+            evidence_ids=(certified.chunk_id,),
+            source_references=(certified.source_reference,),
             duration_ms=0,
         )
 
@@ -815,18 +809,21 @@ class FinancialAnalystCopilot:
     ) -> ResearchObservation:
         left = self._selected_hits.get("NVIDIA")
         right = self._selected_hits.get("Schneider Electric")
-        if left is None or right is None or left.unit is None or right.unit is None:
+        left_chunk = self._inspected_chunks.get("NVIDIA")
+        right_chunk = self._inspected_chunks.get("Schneider Electric")
+        if left is None or right is None or left_chunk is None or right_chunk is None:
             return _error_observation(
-                step, attempt_id, plan_revision, error_code="missing_evidence_metadata"
+                step, attempt_id, plan_revision, error_code="unavailable_comparison_input"
             )
-        values = {
-            "NVIDIA": ReportedValue(
-                label="Compute & Networking revenue", value=193479, unit=left.unit, chunk_id=left.chunk_id
-            ),
-            "Schneider Electric": ReportedValue(
-                label="Group revenues", value=40152, unit=right.unit, chunk_id=right.chunk_id
-            ),
-        }
+        try:
+            values = {
+                "NVIDIA": _reported_value_from_inspected_table(left_chunk),
+                "Schneider Electric": _reported_value_from_inspected_table(right_chunk),
+            }
+        except ValueError:
+            return _error_observation(
+                step, attempt_id, plan_revision, error_code="unavailable_comparison_input"
+            )
         outcome = self._registry.invoke(
             "compare_reported_values", {"left": values["NVIDIA"], "right": values["Schneider Electric"]}
         )
@@ -973,6 +970,121 @@ def _error_observation(
     )
 
 
+def _certified_hit_from_inspection(
+    chunk: FinancialChunk,
+    *,
+    crop_asset_key: str | None,
+    selection_reason: str,
+    channel_ranks: tuple[tuple[str, int], ...],
+    fused_score: float,
+) -> CapstoneEvidenceHit:
+    """Expose only immutable inspection content while retaining search rank lineage."""
+
+    unit = _displayed_unit(chunk)
+    if unit is None:
+        raise ValueError("inspected table has no displayed unit")
+    return CapstoneEvidenceHit(
+        company=chunk.context.company_name,
+        text=chunk.text,
+        chunk_id=chunk.chunk_id,
+        element_ids=chunk.source_element_ids,
+        document_id=chunk.context.document_id,
+        document_sha256=chunk.context.document_sha256,
+        section=" > ".join(chunk.context.heading_path) or chunk.element_type,
+        period=chunk.context.reporting_period,
+        unit=unit,
+        physical_page=chunk.context.physical_page,
+        printed_page=chunk.context.printed_page,
+        element_type=chunk.element_type,
+        bbox=chunk.context.bbox,
+        source_reference=chunk.context.official_source_url,
+        crop_asset_key=crop_asset_key,
+        original_markdown=chunk.table.markdown if chunk.table is not None else None,
+        selection_reason=selection_reason,
+        channel_ranks=channel_ranks,
+        fused_score=fused_score,
+    )
+
+
+def _reported_value_from_inspected_table(chunk: FinancialChunk) -> ReportedValue:
+    """Extract one unambiguous displayed revenue input from an inspected target table."""
+
+    table = chunk.table
+    unit = _displayed_unit(chunk)
+    if table is None or unit is None:
+        raise ValueError("inspected evidence has no contextual table value")
+    if chunk.context.company_name == "NVIDIA":
+        return _nvidia_reported_value(chunk, unit)
+    if chunk.context.company_name == "Schneider Electric":
+        return _schneider_reported_value(chunk, unit)
+    raise ValueError("inspected evidence company is not eligible for comparison")
+
+
+def _nvidia_reported_value(chunk: FinancialChunk, unit: str) -> ReportedValue:
+    table = chunk.table
+    if table is None:
+        raise ValueError("NVIDIA evidence has no table")
+    headers = table.rows[0]
+    revenue_rows = [row for row in table.rows if row and row[0].casefold() == "revenue"]
+    if len(revenue_rows) != 3:
+        raise ValueError("NVIDIA table does not contain one value per reported year")
+    values = _numeric_cells(revenue_rows[0])
+    if len(values) != 3:
+        raise ValueError("NVIDIA reported revenue row is ambiguous")
+    segment_positions = [index for index, header in enumerate(headers) if header.strip()]
+    if len(segment_positions) != 3:
+        raise ValueError("NVIDIA segment header is ambiguous")
+    segment_index = segment_positions[0]
+    amount = _parse_displayed_number(revenue_rows[0][segment_index])
+    return ReportedValue(
+        label=f"{headers[segment_index]} {revenue_rows[0][0].casefold()}",
+        value=amount,
+        unit=unit,
+        chunk_id=chunk.chunk_id,
+    )
+
+
+def _schneider_reported_value(chunk: FinancialChunk, unit: str) -> ReportedValue:
+    table = chunk.table
+    if table is None or len(table.rows) < 3:
+        raise ValueError("Schneider table has no reportable rows")
+    period_row, metric_row, *data_rows = table.rows
+    target_positions = [
+        index
+        for index, value in enumerate(period_row)
+        if value.casefold().replace(" ", "") == chunk.context.reporting_period.casefold()
+    ]
+    if len(target_positions) != 1:
+        raise ValueError("Schneider reporting-period column is ambiguous")
+    amount_index = target_positions[0] - 1
+    if amount_index < 0 or "revenue" not in metric_row[amount_index].casefold():
+        raise ValueError("Schneider table has no reported revenue column")
+    total_rows = [row for row in data_rows if row and row[0].casefold().startswith("total ")]
+    if not total_rows:
+        raise ValueError("Schneider table has no total row")
+    row = total_rows[-1]
+    amount = _parse_displayed_number(row[amount_index])
+    metric = metric_row[amount_index].split("€", maxsplit=1)[0].strip().casefold()
+    return ReportedValue(label=f"{row[0]} {metric}", value=amount, unit=unit, chunk_id=chunk.chunk_id)
+
+
+def _displayed_unit(chunk: FinancialChunk) -> str | None:
+    if chunk.financial.currency is None or chunk.financial.scale is None:
+        return None
+    return f"{chunk.financial.currency} {chunk.financial.scale}"
+
+
+def _numeric_cells(row: tuple[str, ...]) -> tuple[str, ...]:
+    return tuple(cell for cell in row if re.search(r"\d", cell))
+
+
+def _parse_displayed_number(value: str) -> float:
+    matches = re.findall(r"(?:\d{1,3}(?:,\d{3})+|\d+)", value)
+    if len(matches) != 1:
+        raise ValueError("displayed table value is ambiguous")
+    return float(matches[0].replace(",", ""))
+
+
 def _certified_statement_units(
     briefing: CapstoneBriefing,
 ) -> dict[str, dict[str, str]]:
@@ -1013,50 +1125,22 @@ def _document_hits(
     for observation in observations:
         if (
             observation.status != "ok"
-            or observation.capability != "search_financial_documents"
+            or observation.capability != "inspect_document_evidence"
             or observation.result is None
         ):
             continue
-        company = observation.result.get("company")
-        raw_hits = observation.result.get("hits")
-        if (
-            not isinstance(company, str)
-            or not isinstance(raw_hits, Sequence)
-            or isinstance(raw_hits, (str, bytes))
-        ):
+        raw_hit = observation.result.get("hit")
+        if not isinstance(raw_hit, Mapping):
             continue
-        for raw_hit in raw_hits:
-            if not isinstance(raw_hit, Mapping):
-                continue
-            try:
-                hit = CapstoneEvidenceHit(
-                    company=company,
-                    text=raw_hit.get("text"),
-                    chunk_id=raw_hit.get("chunk_id"),
-                    element_ids=tuple(raw_hit.get("element_ids", ())),
-                    document_id=raw_hit.get("document_id"),
-                    document_sha256=raw_hit.get("document_sha256"),
-                    section=raw_hit.get("section"),
-                    period=raw_hit.get("period"),
-                    unit=raw_hit.get("unit"),
-                    physical_page=raw_hit.get("physical_page"),
-                    printed_page=raw_hit.get("printed_page"),
-                    element_type=raw_hit.get("element_type"),
-                    bbox=raw_hit.get("bbox"),
-                    source_reference=raw_hit.get("source"),
-                    crop_asset_key=raw_hit.get("crop_asset_key"),
-                    original_markdown=raw_hit.get("original_markdown"),
-                    selection_reason=raw_hit.get("selection_reason"),
-                    channel_ranks=tuple(raw_hit.get("channel_ranks", ())),
-                    fused_score=raw_hit.get("fused_score", 0),
-                )
-            except (TypeError, ValueError):
-                continue
-            if (
-                hit.chunk_id in observation.evidence_ids
-                and hit.source_reference in observation.source_references
-            ):
-                hits.append(hit)
+        try:
+            hit = CapstoneEvidenceHit.model_validate(raw_hit)
+        except (TypeError, ValueError):
+            continue
+        if (
+            hit.chunk_id in observation.evidence_ids
+            and hit.source_reference in observation.source_references
+        ):
+            hits.append(hit)
     return tuple(hits)
 
 
