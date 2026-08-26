@@ -1,0 +1,227 @@
+{"kind":"deck","id":"pr/x9mps6","name":"Deck"}
+{"kind":"layout","layoutId":"/ppt/slideMasters/slideMaster1.xml","name":"Master","type":"master"}
+{"kind":"layout","layoutId":"/ppt/slideLayouts/slideLayout1.xml","name":"Title Slide","type":"title"}
+{"kind":"slide","id":"sl/y90nupkv","slide":1,"title":"FIRST FINANCE","textShapes":5}
+{"kind":"shape","id":"sh/sryl4zqx","slide":1,"bbox":[102,82,132,8]}
+{"kind":"textbox","id":"sh/547294r6","slide":1,"text":"FIRST FINANCE","textPreview":"FIRST FINANCE","textChars":13,"textLines":1,"bbox":[102,112,300,44]}
+{"kind":"textbox","id":"sh/k3yl0zql","slide":1,"text":"Evaluate the agent, not only the answer","textPreview":"Evaluate the agent, not only the answer","textChars":39,"textLines":1,"bbox":[102,248,1396,94]}
+{"kind":"textbox","id":"sh/7qp4be9c","slide":1,"text":"Evaluating Agentic Systems with MLflow","textPreview":"Evaluating Agentic Systems with MLflow","textChars":38,"textLines":1,"bbox":[102,374,1180,54]}
+{"kind":"textbox","id":"sh/65g3298r","slide":1,"text":"PATH  ·  ANSWER  ·  TRACE  ·  RELEASE","textPreview":"PATH  ·  ANSWER  ·  TRACE  ·  RELEASE","textChars":37,"textLines":1,"bbox":[102,680,1000,42]}
+{"kind":"textbox","id":"sh/ts7md4r2","slide":1,"text":"First Finance - Arnaud Demes","textPreview":"First Finance - Arnaud Demes","textChars":28,"textLines":1,"bbox":[102,742,500,40]}
+{"kind":"notes","id":"nt/y90nupkv","slide":1,"text":"Instructor purpose: Frame the lesson around release evidence: the agent's path, answer, trace, and decision.\nPlanned timing: 0:00-1:00\n[Sources]\nchapters/12-evaluating-agentic-systems.md\nhttps://mlflow.org/docs/latest/genai/eval-monitor/quickstart/\n[/Sources]"}
+{"kind":"slide","id":"sl/hwbqtkby","slide":2,"title":"WHY EVALUATE","textShapes":21}
+{"kind":"textbox","id":"sh/ba9cn6l4","slide":2,"text":"WHY EVALUATE","textPreview":"WHY EVALUATE","textChars":12,"textLines":1,"bbox":[102,70,500,36]}
+{"kind":"textbox","id":"sh/9072xkry","slide":2,"text":"A good answer can still come from a bad agent","textPreview":"A good answer can still come from a bad agent","textChars":45,"textLines":1,"bbox":[102,124,1396,82]}
+{"kind":"textbox","id":"sh/ozy1ofad","slide":2,"text":"BOUNDED PATH","textPreview":"BOUNDED PATH","textChars":12,"textLines":1,"bbox":[108,294,260,38]}
+{"kind":"shape","id":"sh/b29kza94","slide":2,"bbox":[390,288,250,68]}
+{"kind":"textbox","id":"sh/a10jqpsj","slide":2,"text":"PLAN","textPreview":"PLAN","textChars":4,"textLines":1,"bbox":[400,298,230,48]}
+{"kind":"shape","id":"sh/x4r21kru","slide":2,"bbox":[646,288,210,68]}
+{"kind":"textbox","id":"sh/w3i1sfa9","slide":2,"text":"TOOL","textPreview":"TOOL","textChars":4,"textLines":1,"bbox":[656,298,190,48]}
+{"kind":"shape","id":"sh/r65knqtk","slide":2,"bbox":[862,288,176,68]}
+{"kind":"textbox","id":"sh/q5wjelsz","slide":2,"text":"EVIDENCE","textPreview":"EVIDENCE","textChars":8,"textLines":1,"bbox":[872,298,156,48]}
+{"kind":"shape","id":"sh/ove9o7yd","slide":2,"bbox":[1044,288,112,68]}
+{"kind":"textbox","id":"sh/9wnqhczy","slide":2,"text":"COPY","textPreview":"COPY","textChars":4,"textLines":1,"bbox":[1054,298,92,48]}
+{"kind":"textbox","id":"sh/mtwrmxg7","slide":2,"text":"SAME ANSWER","textPreview":"SAME ANSWER","textChars":11,"textLines":1,"bbox":[1260,294,230,38]}
+{"kind":"textbox","id":"sh/nu58f2hs","slide":2,"text":"REDUNDANT PATH","textPreview":"REDUNDANT PATH","textChars":14,"textLines":1,"bbox":[108,448,260,38]}
+{"kind":"shape","id":"sh/wjy9sry9","slide":2,"bbox":[390,442,330,68]}
+{"kind":"textbox","id":"sh/xk7qlczu","slide":2,"text":"PLAN + TOOL","textPreview":"PLAN + TOOL","textChars":11,"textLines":1,"bbox":[400,452,310,48]}
+{"kind":"shape","id":"sh/ahwrqhgj","slide":2,"bbox":[726,442,310,68]}
+{"kind":"textbox","id":"sh/bip8jmho","slide":2,"text":"TOOL AGAIN","textPreview":"TOOL AGAIN","textChars":10,"textLines":1,"bbox":[736,452,290,48]}
+{"kind":"shape","id":"sh/cnupgny5","slide":2,"bbox":[1042,442,210,68]}
+{"kind":"textbox","id":"sh/do3q9szq","slide":2,"text":"REPORT","textPreview":"REPORT","textChars":6,"textLines":1,"bbox":[1052,452,190,48]}
+{"kind":"textbox","id":"sh/t8byxkn2","slide":2,"text":"DIFFERENT PATH","textPreview":"DIFFERENT PATH","textChars":14,"textLines":1,"bbox":[1260,448,230,38]}
+{"kind":"textbox","id":"sh/s72xofmh","slide":2,"text":"RISK","textPreview":"RISK","textChars":4,"textLines":1,"bbox":[108,602,260,38]}
+{"kind":"shape","id":"sh/76twva5c","slide":2,"bbox":[390,596,348,68]}
+{"kind":"textbox","id":"sh/65kfmpor","slide":2,"text":"correct evidence","textPreview":"correct evidence","textChars":16,"textLines":1,"bbox":[400,606,328,48]}
+{"kind":"shape","id":"sh/hcvy14ne","slide":2,"bbox":[744,596,502,68]}
+{"kind":"textbox","id":"sh/gbmxszmt","slide":2,"text":"extra call after gate","textPreview":"extra call after gate","textChars":21,"textLines":1,"bbox":[754,606,482,48]}
+{"kind":"textbox","id":"sh/fadgzu58","slide":2,"text":"FAIL","textPreview":"FAIL","textChars":4,"textLines":1,"bbox":[1260,602,230,38]}
+{"kind":"shape","id":"sh/u94fqp4n","slide":2,"bbox":[390,296,3,366]}
+{"kind":"shape","id":"sh/p0vy54na","slide":2,"bbox":[108,718,1382,64]}
+{"kind":"textbox","id":"sh/4zmxwzmp","slide":2,"text":"The final paragraph cannot reveal redundant calls or a failed gate.","textPreview":"The final paragraph cannot reveal redundant calls or a failed gate.","textChars":67,"textLines":1,"bbox":[144,728,1310,42]}
+{"kind":"shape","id":"sh/mlgvq147","slide":2,"bbox":[90,829,1420,3]}
+{"kind":"shape","id":"sh/nmpcj6ls","slide":2,"bbox":[90,829,840,4]}
+{"kind":"textbox","id":"sh/onydsbmd","slide":2,"text":"First Finance - Arnaud Demes","textPreview":"First Finance - Arnaud Demes","textChars":28,"textLines":1,"bbox":[102,846,390,34]}
+{"kind":"textbox","id":"sh/9o7ulg3y","slide":2,"text":"PATH","textPreview":"PATH","textChars":4,"textLines":1,"bbox":[1280,846,190,34]}
+{"kind":"textbox","id":"sh/a9gvulkj","slide":2,"text":"02","textPreview":"02","textChars":2,"textLines":1,"bbox":[1484,846,28,34]}
+{"kind":"notes","id":"nt/hwbqtkby","slide":2,"text":"Instructor purpose: Contrast two equally plausible answers whose execution paths carry very different risk.\nPlanned timing: 1:00-2:15\n[Sources]\nchapters/12-evaluating-agentic-systems.md\nhttps://mlflow.org/docs/latest/genai/tracing/\n[/Sources]"}
+{"kind":"slide","id":"sl/ofy9wn61","slide":3,"title":"EVALUATION CONTRACT","textShapes":9}
+{"kind":"textbox","id":"sh/czmhc7id","slide":3,"text":"EVALUATION CONTRACT","textPreview":"EVALUATION CONTRACT","textChars":19,"textLines":1,"bbox":[102,70,500,36]}
+{"kind":"textbox","id":"sh/cza94vmx","slide":3,"text":"Score the answer and the path separately","textPreview":"Score the answer and the path separately","textChars":40,"textLines":1,"bbox":[102,124,1396,82]}
+{"kind":"shape","id":"sh/a9kfadwn","slide":3,"bbox":[108,718,1382,64]}
+{"kind":"textbox","id":"sh/batgjixs","slide":3,"text":"The release decision needs both scorecards.","textPreview":"The release decision needs both scorecards.","textChars":43,"textLines":1,"bbox":[144,728,1310,42]}
+{"kind":"shape","id":"sh/l4fi9cza","slide":3,"bbox":[90,829,1420,3]}
+{"kind":"shape","id":"sh/k3m1g7yp","slide":3,"bbox":[90,829,840,4]}
+{"kind":"textbox","id":"sh/z2d07mh4","slide":3,"text":"First Finance - Arnaud Demes","textPreview":"First Finance - Arnaud Demes","textChars":28,"textLines":1,"bbox":[102,846,390,34]}
+{"kind":"textbox","id":"sh/y14jehgj","slide":3,"text":"SCORE","textPreview":"SCORE","textChars":5,"textLines":1,"bbox":[1280,846,190,34]}
+{"kind":"textbox","id":"sh/x0vi5czy","slide":3,"text":"03","textPreview":"03","textChars":2,"textLines":1,"bbox":[1484,846,28,34]}
+{"kind":"textbox","id":"sh/hwzihwzi","slide":3,"text":"INPUT","textPreview":"INPUT","textChars":5,"textLines":1,"bbox":[175,650,250,28]}
+{"kind":"textbox","id":"sh/wv61obyx","slide":3,"text":"PUBLIC PATH","textPreview":"PUBLIC PATH","textChars":11,"textLines":1,"bbox":[676,650,250,28]}
+{"kind":"textbox","id":"sh/4nuhs7uh","slide":3,"text":"CITED ANSWER","textPreview":"CITED ANSWER","textChars":12,"textLines":1,"bbox":[1168,650,250,28]}
+{"kind":"table","id":"tb/07u9k32p","slide":3,"name":"","rows":4,"cols":3,"preview":"LAYER | VISIBLE METRICS | FINANCE QUESTION","bbox":[108,270,1382,420]}
+{"kind":"image","id":"im/hg7apkj6","slide":3,"name":"","alt":"Lesson 12 evaluation contract: versioned cases scored on path and answer","bbox":[152,270,1290,410]}
+{"kind":"notes","id":"nt/ofy9wn61","slide":3,"text":"Instructor purpose: Separate path correctness and efficiency from answer completeness and citation integrity.\nPlanned timing: 2:15-3:45\n[Sources]\nchapters/12-evaluating-agentic-systems.md\nnotebooks/12_evaluating_agentic_systems.ipynb\nassets/lesson-12/evaluation-contract.png\nhttps://mlflow.org/docs/latest/genai/eval-monitor/scorers/index.html\n[/Sources]"}
+{"kind":"slide","id":"sl/jyx0ra1s","slide":4,"title":"MLFLOW EVALUATION","textShapes":19}
+{"kind":"textbox","id":"sh/vy5gbe14","slide":4,"text":"MLFLOW EVALUATION","textPreview":"MLFLOW EVALUATION","textChars":17,"textLines":1,"bbox":[102,70,500,36]}
+{"kind":"textbox","id":"sh/1cj2d8b6","slide":4,"text":"MLflow turns every case into inspectable evidence","textPreview":"MLflow turns every case into inspectable evidence","textChars":49,"textLines":1,"bbox":[102,124,1396,82]}
+{"kind":"shape","id":"sh/tsrqlc7u","slide":4,"bbox":[108,718,1382,64]}
+{"kind":"textbox","id":"sh/sri9s7q9","slide":4,"text":"One run compares cases; each row opens the trace behind the score.","textPreview":"One run compares cases; each row opens the trace behind the score.","textChars":66,"textLines":1,"bbox":[144,728,1310,42]}
+{"kind":"shape","id":"sh/ilwf69kv","slide":4,"bbox":[90,829,1420,3]}
+{"kind":"shape","id":"sh/jm5gze1g","slide":4,"bbox":[90,829,840,4]}
+{"kind":"textbox","id":"sh/knex8j21","slide":4,"text":"First Finance - Arnaud Demes","textPreview":"First Finance - Arnaud Demes","textChars":28,"textLines":1,"bbox":[102,846,390,34]}
+{"kind":"textbox","id":"sh/5ony1oj6","slide":4,"text":"RUN","textPreview":"RUN","textChars":3,"textLines":1,"bbox":[1280,846,190,34]}
+{"kind":"textbox","id":"sh/axcf29kj","slide":4,"text":"04","textPreview":"04","textChars":2,"textLines":1,"bbox":[1484,846,28,34]}
+{"kind":"textbox","id":"sh/wzex4z2p","slide":4,"text":"EVALUATION RUN","textPreview":"EVALUATION RUN","textChars":14,"textLines":1,"bbox":[118,245,250,30]}
+{"kind":"textbox","id":"sh/nulw7u18","slide":4,"text":"1","textPreview":"1","textChars":1,"textLines":1,"bbox":[118,629,34,24]}
+{"kind":"textbox","id":"sh/fm5c3q54","slide":4,"text":"Versioned cases","textPreview":"Versioned cases","textChars":15,"textLines":1,"bbox":[164,622,260,28]}
+{"kind":"textbox","id":"sh/elwba54j","slide":4,"text":"Inputs + expectations","textPreview":"Inputs + expectations","textChars":21,"textLines":1,"bbox":[164,650,260,26]}
+{"kind":"textbox","id":"sh/0netcvm9","slide":4,"text":"2","textPreview":"2","textChars":1,"textLines":1,"bbox":[468,629,34,24]}
+{"kind":"textbox","id":"sh/rilczq5s","slide":4,"text":"Run the agent","textPreview":"Run the agent","textChars":13,"textLines":1,"bbox":[514,622,260,28]}
+{"kind":"textbox","id":"sh/qhcb6l47","slide":4,"text":"One root trace per case","textPreview":"One root trace per case","textChars":23,"textLines":1,"bbox":[514,650,260,26]}
+{"kind":"textbox","id":"sh/sjut8vmd","slide":4,"text":"3","textPreview":"3","textChars":1,"textLines":1,"bbox":[818,629,34,24]}
+{"kind":"textbox","id":"sh/3elcv65w","slide":4,"text":"Apply scorers","textPreview":"Apply scorers","textChars":13,"textLines":1,"bbox":[864,622,260,28]}
+{"kind":"textbox","id":"sh/idcb2lob","slide":4,"text":"Path + answer metrics","textPreview":"Path + answer metrics","textChars":21,"textLines":1,"bbox":[864,650,260,26]}
+{"kind":"textbox","id":"sh/tkjq5c3e","slide":4,"text":"4","textPreview":"4","textChars":1,"textLines":1,"bbox":[1168,629,34,24]}
+{"kind":"textbox","id":"sh/6x8rahk3","slide":4,"text":"Open failures","textPreview":"Open failures","textChars":13,"textLines":1,"bbox":[1214,622,260,28]}
+{"kind":"textbox","id":"sh/7ih83mlo","slide":4,"text":"Inspect spans and owners","textPreview":"Inspect spans and owners","textChars":24,"textLines":1,"bbox":[1214,650,260,26]}
+{"kind":"image","id":"im/upwbex4j","slide":4,"name":"","alt":"Official MLflow evaluation overview with per-trace scores and run evidence","bbox":[118,278,1360,338]}
+{"kind":"image","id":"im/xw3ax8nq","slide":4,"name":"","alt":"Evaluation step 1","bbox":[118,625,34,34]}
+{"kind":"image","id":"im/ypkva1o3","slide":4,"name":"","alt":"Evaluation step 2","bbox":[468,625,34,34]}
+{"kind":"image","id":"im/ql0v61or","slide":4,"name":"","alt":"Evaluation step 3","bbox":[818,625,34,34]}
+{"kind":"image","id":"im/7upwnm98","slide":4,"name":"","alt":"Evaluation step 4","bbox":[1168,625,34,34]}
+{"kind":"notes","id":"nt/jyx0ra1s","slide":4,"text":"Instructor purpose: Show how a versioned dataset becomes one comparable MLflow run with a trace behind every row.\nPlanned timing: 3:45-5:15\n[Sources]\nchapters/12-evaluating-agentic-systems.md\nhttps://www.mlflow.org/docs/latest/genai/eval-monitor/running-evaluation/traces/\nassets/lesson-12/mlflow-trace-evaluation-overview.png\n[/Sources]"}
+{"kind":"slide","id":"sl/i107q5of","slide":5,"title":"TRACE VIEWER","textShapes":20}
+{"kind":"textbox","id":"sh/5o7mhcju","slide":5,"text":"TRACE VIEWER","textPreview":"TRACE VIEWER","textChars":12,"textLines":1,"bbox":[102,70,500,36]}
+{"kind":"textbox","id":"sh/dgbulwnm","slide":5,"text":"A trace reveals what the agent actually did","textPreview":"A trace reveals what the agent actually did","textChars":43,"textLines":1,"bbox":[102,124,1396,82]}
+{"kind":"textbox","id":"sh/gfi5grih","slide":5,"text":"TRACE","textPreview":"TRACE","textChars":5,"textLines":1,"bbox":[108,744,160,34]}
+{"kind":"textbox","id":"sh/fe94nm1w","slide":5,"text":"Open a score, follow its span tree, find the earliest public failure.","textPreview":"Open a score, follow its span tree, find the earliest public failure.","textChars":69,"textLines":1,"bbox":[284,734,1198,50]}
+{"kind":"shape","id":"sh/ud0ne10b","slide":5,"bbox":[90,829,1420,3]}
+{"kind":"shape","id":"sh/pkr6tgjy","slide":5,"bbox":[90,829,840,4]}
+{"kind":"textbox","id":"sh/4ji5kbid","slide":5,"text":"First Finance - Arnaud Demes","textPreview":"First Finance - Arnaud Demes","textChars":28,"textLines":1,"bbox":[102,846,390,34]}
+{"kind":"textbox","id":"sh/3i94r61s","slide":5,"text":"TRACE","textPreview":"TRACE","textChars":5,"textLines":1,"bbox":[1280,846,190,34]}
+{"kind":"textbox","id":"sh/2h0ni107","slide":5,"text":"05","textPreview":"05","textChars":2,"textLines":1,"bbox":[1484,846,28,34]}
+{"kind":"textbox","id":"sh/vu5kbihc","slide":5,"text":"HOW TO READ IT","textPreview":"HOW TO READ IT","textChars":14,"textLines":1,"bbox":[1180,280,280,34]}
+{"kind":"textbox","id":"sh/xwn2dszi","slide":5,"text":"1","textPreview":"1","textChars":1,"textLines":1,"bbox":[1180,335,42,28]}
+{"kind":"textbox","id":"sh/ihw3mxg3","slide":5,"text":"Span tree","textPreview":"Span tree","textChars":9,"textLines":1,"bbox":[1236,327,250,28]}
+{"kind":"textbox","id":"sh/ji5kf2ho","slide":5,"text":"Where time and branching occurred","textPreview":"Where time and branching occurred","textChars":33,"textLines":1,"bbox":[1236,355,250,42]}
+{"kind":"textbox","id":"sh/5kn2hszu","slide":5,"text":"2","textPreview":"2","textChars":1,"textLines":1,"bbox":[1180,415,42,28]}
+{"kind":"textbox","id":"sh/e1sjatgz","slide":5,"text":"Inputs / outputs","textPreview":"Inputs / outputs","textChars":16,"textLines":1,"bbox":[1236,407,250,28]}
+{"kind":"textbox","id":"sh/zmlk3yhk","slide":5,"text":"What entered and left each span","textPreview":"What entered and left each span","textChars":31,"textLines":1,"bbox":[1236,435,250,42]}
+{"kind":"textbox","id":"sh/ehkzepsn","slide":5,"text":"3","textPreview":"3","textChars":1,"textLines":1,"bbox":[1180,495,42,28]}
+{"kind":"textbox","id":"sh/1kvi94re","slide":5,"text":"Tools + errors","textPreview":"Tools + errors","textChars":14,"textLines":1,"bbox":[1236,487,250,28]}
+{"kind":"textbox","id":"sh/gjmhgzqt","slide":5,"text":"Calls, arguments and typed failures","textPreview":"Calls, arguments and typed failures","textChars":35,"textLines":1,"bbox":[1236,515,250,42]}
+{"kind":"textbox","id":"sh/2l4zip8j","slide":5,"text":"4","textPreview":"4","textChars":1,"textLines":1,"bbox":[1180,575,42,28]}
+{"kind":"textbox","id":"sh/povid4ra","slide":5,"text":"Assessments","textPreview":"Assessments","textChars":11,"textLines":1,"bbox":[1236,567,250,28]}
+{"kind":"textbox","id":"sh/onmhkzqp","slide":5,"text":"Scores, feedback and expectations","textPreview":"Scores, feedback and expectations","textChars":33,"textLines":1,"bbox":[1236,595,250,42]}
+{"kind":"image","id":"im/vmdgjqpk","slide":5,"name":"","alt":"Official MLflow trace detail view showing span tree, inputs and outputs, and assessments","bbox":[112,252,1030,430]}
+{"kind":"image","id":"im/5gfi9krm","slide":5,"name":"","alt":"accent rule","bbox":[1180,260,260,5]}
+{"kind":"image","id":"im/jex07a9g","slide":5,"name":"","alt":"Cue 1","bbox":[1180,330,42,42]}
+{"kind":"image","id":"im/rix0bu9s","slide":5,"name":"","alt":"Cue 2","bbox":[1180,410,42,42]}
+{"kind":"image","id":"im/c3alg3ah","slide":5,"name":"","alt":"Cue 3","bbox":[1180,490,42,42]}
+{"kind":"image","id":"im/ozalc3al","slide":5,"name":"","alt":"Cue 4","bbox":[1180,570,42,42]}
+{"kind":"notes","id":"nt/i107q5of","slide":5,"text":"Instructor purpose: Teach the MLflow trace viewer as the debugging surface for spans, tool calls, errors, and assessments.\nPlanned timing: 5:15-7:00\n[Sources]\nchapters/12-evaluating-agentic-systems.md\nhttps://mlflow.org/docs/latest/genai/tracing/observe-with-traces/ui\nassets/lesson-12/mlflow-trace-detail.png\n[/Sources]"}
+{"kind":"slide","id":"sl/x8f69ofe","slide":6,"title":"CASE-LEVEL SCORES","textShapes":15}
+{"kind":"textbox","id":"sh/u907axkf","slide":6,"text":"CASE-LEVEL SCORES","textPreview":"CASE-LEVEL SCORES","textChars":17,"textLines":1,"bbox":[102,70,500,36]}
+{"kind":"textbox","id":"sh/yhg7epsj","slide":6,"text":"Per-case failures matter more than averages","textPreview":"Per-case failures matter more than averages","textChars":43,"textLines":1,"bbox":[102,124,1396,82]}
+{"kind":"shape","id":"sh/jet8nm1c","slide":6,"bbox":[90,829,1420,3]}
+{"kind":"shape","id":"sh/idk7ehkr","slide":6,"bbox":[90,829,840,4]}
+{"kind":"textbox","id":"sh/50bqpcj2","slide":6,"text":"First Finance - Arnaud Demes","textPreview":"First Finance - Arnaud Demes","textChars":28,"textLines":1,"bbox":[102,846,390,34]}
+{"kind":"textbox","id":"sh/4f2pgr2h","slide":6,"text":"CASES","textPreview":"CASES","textChars":5,"textLines":1,"bbox":[1280,846,190,34]}
+{"kind":"textbox","id":"sh/va98j210","slide":6,"text":"06","textPreview":"06","textChars":2,"textLines":1,"bbox":[1484,846,28,34]}
+{"kind":"textbox","id":"sh/7698f214","slide":6,"text":"READ ROWS BEFORE MEANS","textPreview":"READ ROWS BEFORE MEANS","textChars":22,"textLines":1,"bbox":[1120,282,330,38]}
+{"kind":"textbox","id":"sh/m5076xkj","slide":6,"text":"Averages can hide one severe citation or stop-control failure.","textPreview":"Averages can hide one severe citation or stop-control failure.","textChars":62,"textLines":1,"bbox":[1120,336,330,82]}
+{"kind":"textbox","id":"sh/netcjqxo","slide":6,"text":"✓","textPreview":"✓","textChars":1,"textLines":1,"bbox":[1120,451,36,26]}
+{"kind":"textbox","id":"sh/of2tcvy9","slide":6,"text":"Find the weakest case","textPreview":"Find the weakest case","textChars":21,"textLines":1,"bbox":[1170,447,280,48]}
+{"kind":"textbox","id":"sh/ep0b6lg7","slide":6,"text":"✓","textPreview":"✓","textChars":1,"textLines":1,"bbox":[1120,515,36,26]}
+{"kind":"textbox","id":"sh/fq9cfqxc","slide":6,"text":"Open its trace","textPreview":"Open its trace","textChars":14,"textLines":1,"bbox":[1170,511,280,48]}
+{"kind":"textbox","id":"sh/1sbuh0fi","slide":6,"text":"✓","textPreview":"✓","textChars":1,"textLines":1,"bbox":[1120,579,36,26]}
+{"kind":"textbox","id":"sh/ql0b21gv","slide":6,"text":"Locate the first failed span","textPreview":"Locate the first failed span","textChars":28,"textLines":1,"bbox":[1170,575,280,48]}
+{"kind":"textbox","id":"sh/9gfeh4zy","slide":6,"text":"✓","textPreview":"✓","textChars":1,"textLines":1,"bbox":[1120,643,36,26]}
+{"kind":"textbox","id":"sh/8f6x8jid","slide":6,"text":"Assign the fix to its owner","textPreview":"Assign the fix to its owner","textChars":27,"textLines":1,"bbox":[1170,639,280,48]}
+{"kind":"image","id":"im/yh0n6x87","slide":6,"name":"","alt":"Lesson 12 per-case heatmap comparing agent configurations","bbox":[108,244,950,500]}
+{"kind":"image","id":"im/ji9of2ps","slide":6,"name":"","alt":"accent rule","bbox":[1120,260,310,5]}
+{"kind":"image","id":"im/10n2lone","slide":6,"name":"","alt":"Check 1","bbox":[1120,448,36,36]}
+{"kind":"image","id":"im/exw3a9on","slide":6,"name":"","alt":"Check 2","bbox":[1120,512,36,36]}
+{"kind":"image","id":"im/nm5kny5k","slide":6,"name":"","alt":"Check 3","bbox":[1120,576,36,36]}
+{"kind":"image","id":"im/wrylk361","slide":6,"name":"","alt":"Check 4","bbox":[1120,640,36,36]}
+{"kind":"notes","id":"nt/x8f69ofe","slide":6,"text":"Instructor purpose: Read the lowest case before trusting a configuration average, then open the matching trace.\nPlanned timing: 7:00-8:30\n[Sources]\nchapters/12-evaluating-agentic-systems.md\nnotebooks/12_evaluating_agentic_systems.ipynb\nassets/lesson-12/per-case-heatmap.png\n[/Sources]"}
+{"kind":"slide","id":"sl/gnmp4jqx","slide":7,"title":"RELEASE GATES","textShapes":6}
+{"kind":"textbox","id":"sh/c3a5wzq5","slide":7,"text":"RELEASE GATES","textPreview":"RELEASE GATES","textChars":13,"textLines":1,"bbox":[102,70,500,36]}
+{"kind":"textbox","id":"sh/cb2tkvap","slide":7,"text":"Code gates release; judges add context","textPreview":"Code gates release; judges add context","textChars":38,"textLines":1,"bbox":[102,124,1396,82]}
+{"kind":"shape","id":"sh/e5o32lor","slide":7,"bbox":[108,718,1382,64]}
+{"kind":"textbox","id":"sh/f6xkvq5c","slide":7,"text":"Deterministic checks decide release. Optional judges never override the gate.","textPreview":"Deterministic checks decide release. Optional judges never override the gate.","textChars":77,"textLines":1,"bbox":[144,728,1310,42]}
+{"kind":"shape","id":"sh/p0zmlk7u","slide":7,"bbox":[90,829,1420,3]}
+{"kind":"shape","id":"sh/ozq5szq9","slide":7,"bbox":[90,829,840,4]}
+{"kind":"textbox","id":"sh/nyh4jupo","slide":7,"text":"First Finance - Arnaud Demes","textPreview":"First Finance - Arnaud Demes","textChars":28,"textLines":1,"bbox":[102,846,390,34]}
+{"kind":"textbox","id":"sh/2x8nqp83","slide":7,"text":"GATE","textPreview":"GATE","textChars":4,"textLines":1,"bbox":[1280,846,190,34]}
+{"kind":"textbox","id":"sh/x4j6p47q","slide":7,"text":"07","textPreview":"07","textChars":2,"textLines":1,"bbox":[1484,846,28,34]}
+{"kind":"table","id":"tb/c3e9wf29","slide":7,"name":"","rows":5,"cols":3,"preview":"DECISION LAYER | DETERMINISTIC RELEASE GATE | OPTIONAL LLM JUDGE","bbox":[108,258,1382,432]}
+{"kind":"notes","id":"nt/gnmp4jqx","slide":7,"text":"Instructor purpose: Keep deterministic finance rules as release gates and optional semantic judges as context.\nPlanned timing: 8:30-9:45\n[Sources]\nchapters/12-evaluating-agentic-systems.md\nhttps://mlflow.org/docs/latest/genai/eval-monitor/scorers/index.html\n[/Sources]"}
+{"kind":"slide","id":"sl/fu1gfa1s","slide":8,"title":"FAILURE OWNERSHIP","textShapes":6}
+{"kind":"textbox","id":"sh/z61s7il4","slide":8,"text":"FAILURE OWNERSHIP","textPreview":"FAILURE OWNERSHIP","textChars":17,"textLines":1,"bbox":[102,70,500,36]}
+{"kind":"textbox","id":"sh/18byd4zy","slide":8,"text":"Fix the earliest public owner","textPreview":"Fix the earliest public owner","textChars":29,"textLines":1,"bbox":[102,124,1396,82]}
+{"kind":"shape","id":"sh/x4ne1wni","slide":8,"bbox":[108,718,1382,64]}
+{"kind":"textbox","id":"sh/w3ed8r6x","slide":8,"text":"A trace turns a low score into an actionable owner and next step.","textPreview":"A trace turns a low score into an actionable owner and next step.","textChars":65,"textLines":1,"bbox":[144,728,1310,42]}
+{"kind":"shape","id":"sh/m9sb2x4v","slide":8,"bbox":[90,829,1420,3]}
+{"kind":"shape","id":"sh/na1sb2lg","slide":8,"bbox":[90,829,840,4]}
+{"kind":"textbox","id":"sh/8bat47ml","slide":8,"text":"First Finance - Arnaud Demes","textPreview":"First Finance - Arnaud Demes","textChars":28,"textLines":1,"bbox":[102,846,390,34]}
+{"kind":"textbox","id":"sh/9w3uds36","slide":8,"text":"OWNER","textPreview":"OWNER","textChars":5,"textLines":1,"bbox":[1280,846,190,34]}
+{"kind":"textbox","id":"sh/y5sbed4j","slide":8,"text":"08","textPreview":"08","textChars":2,"textLines":1,"bbox":[1484,846,28,34]}
+{"kind":"table","id":"tb/zy1sjido","slide":8,"name":"","rows":5,"cols":3,"preview":"SCORE PATTERN | EARLIEST PUBLIC OWNER | RELEASE","bbox":[108,258,1382,432]}
+{"kind":"notes","id":"nt/fu1gfa1s","slide":8,"text":"Instructor purpose: Map each failed score to the earliest public component that can own and fix it.\nPlanned timing: 9:45-11:00\n[Sources]\nchapters/12-evaluating-agentic-systems.md\nhttps://mlflow.org/docs/latest/genai/tracing/observe-with-traces/ui\n[/Sources]"}
+{"kind":"slide","id":"sl/udsvah03","slide":9,"title":"RELEASE DECISION","textShapes":17}
+{"kind":"textbox","id":"sh/xgzitk76","slide":9,"text":"RELEASE DECISION","textPreview":"RELEASE DECISION","textChars":16,"textLines":1,"bbox":[102,70,500,36]}
+{"kind":"textbox","id":"sh/1cfmhgne","slide":9,"text":"Release only when path, answer, and citations pass","textPreview":"Release only when path, answer, and citations pass","textChars":50,"textLines":1,"bbox":[102,124,1396,82]}
+{"kind":"textbox","id":"sh/87a18zqt","slide":9,"text":"CAPSTONE","textPreview":"CAPSTONE","textChars":8,"textLines":1,"bbox":[108,744,160,34]}
+{"kind":"textbox","id":"sh/76h0zup8","slide":9,"text":"Use the failures to design the capstone, not to hide them.","textPreview":"Use the failures to design the capstone, not to hide them.","textChars":58,"textLines":1,"bbox":[284,734,1198,50]}
+{"kind":"shape","id":"sh/ml8j6p8n","slide":9,"bbox":[90,829,1420,3]}
+{"kind":"shape","id":"sh/hcji5o7a","slide":9,"bbox":[90,829,840,4]}
+{"kind":"textbox","id":"sh/wba1cjqp","slide":9,"text":"First Finance - Arnaud Demes","textPreview":"First Finance - Arnaud Demes","textChars":28,"textLines":1,"bbox":[102,846,390,34]}
+{"kind":"textbox","id":"sh/va103ep4","slide":9,"text":"RELEASE","textPreview":"RELEASE","textChars":7,"textLines":1,"bbox":[1280,846,190,34]}
+{"kind":"textbox","id":"sh/u9sja98z","slide":9,"text":"09","textPreview":"09","textChars":2,"textLines":1,"bbox":[1484,846,28,34]}
+{"kind":"textbox","id":"sh/nmdg3q54","slide":9,"text":"RELEASE ONLY IF","textPreview":"RELEASE ONLY IF","textChars":15,"textLines":1,"bbox":[1130,286,310,38]}
+{"kind":"textbox","id":"sh/pofy50nu","slide":9,"text":"✓","textPreview":"✓","textChars":1,"textLines":1,"bbox":[1130,363,36,26]}
+{"kind":"textbox","id":"sh/apofe5of","slide":9,"text":"Public path passes","textPreview":"Public path passes","textChars":18,"textLines":1,"bbox":[1180,359,260,48]}
+{"kind":"textbox","id":"sh/cr6xgv6l","slide":9,"text":"✓","textPreview":"✓","textChars":1,"textLines":1,"bbox":[1130,429,36,26]}
+{"kind":"textbox","id":"sh/xcfy90n6","slide":9,"text":"Answer passes","textPreview":"Answer passes","textChars":13,"textLines":1,"bbox":[1180,425,260,48]}
+{"kind":"textbox","id":"sh/rutwv65w","slide":9,"text":"✓","textPreview":"✓","textChars":1,"textLines":1,"bbox":[1130,495,36,26]}
+{"kind":"textbox","id":"sh/7y14jyd8","slide":9,"text":"Citations resolve","textPreview":"Citations resolve","textChars":17,"textLines":1,"bbox":[1180,491,260,48]}
+{"kind":"textbox","id":"sh/903ml8be","slide":9,"text":"✓","textPreview":"✓","textChars":1,"textLines":1,"bbox":[1130,561,36,26]}
+{"kind":"textbox","id":"sh/8zu5c3ut","slide":9,"text":"No forbidden stop behavior","textPreview":"No forbidden stop behavior","textChars":26,"textLines":1,"bbox":[1180,557,260,48]}
+{"kind":"textbox","id":"sh/u1cnedcz","slide":9,"text":"Any failure blocks release and becomes the next experiment.","textPreview":"Any failure blocks release and becomes the next experiment.","textChars":59,"textLines":1,"bbox":[1130,621,310,48]}
+{"kind":"image","id":"im/j6x8faxs","slide":9,"name":"","alt":"Official MLflow quality dashboard for production traces","bbox":[110,252,930,410]}
+{"kind":"image","id":"im/t0za54zu","slide":9,"name":"","alt":"Release checklist panel","bbox":[1090,252,390,430]}
+{"kind":"image","id":"im/7ehs3uh4","slide":9,"name":"","alt":"Check 1","bbox":[1130,360,36,36]}
+{"kind":"image","id":"im/g3atgzyl","slide":9,"name":"","alt":"Check 2","bbox":[1130,426,36,36]}
+{"kind":"image","id":"im/p83udoz2","slide":9,"name":"","alt":"Check 3","bbox":[1130,492,36,36]}
+{"kind":"image","id":"im/14ne5sja","slide":9,"name":"","alt":"Check 4","bbox":[1130,558,36,36]}
+{"kind":"image","id":"im/czud83it","slide":9,"name":"","alt":"accent rule","bbox":[1130,610,310,4]}
+{"kind":"notes","id":"nt/udsvah03","slide":9,"text":"Instructor purpose: Close with a release checklist and use dashboard failures to define the capstone experiment.\nPlanned timing: 11:00-12:30\n[Sources]\nchapters/12-evaluating-agentic-systems.md\nhttps://mlflow.org/docs/latest/genai/tracing/observe-with-traces/dashboard/\nassets/lesson-12/mlflow-quality-dashboard.png\n[/Sources]"}
+{"kind":"slide","id":"sl/m90b6t0r","slide":10,"title":"FIRST FINANCE","textShapes":11}
+{"kind":"shape","id":"sh/kzu5c32t","slide":10,"bbox":[102,82,132,8]}
+{"kind":"textbox","id":"sh/xc3mho32","slide":10,"text":"FIRST FINANCE","textPreview":"FIRST FINANCE","textChars":13,"textLines":1,"bbox":[102,112,300,44]}
+{"kind":"textbox","id":"sh/cbu58j2h","slide":10,"text":"Quick quiz","textPreview":"Quick quiz","textChars":10,"textLines":1,"bbox":[102,248,1396,94]}
+{"kind":"textbox","id":"sh/zelojyl8","slide":10,"text":"Choose one answer for each question.","textPreview":"Choose one answer for each question.","textChars":36,"textLines":1,"bbox":[102,374,1180,54]}
+{"kind":"textbox","id":"sh/ydcnatkn","slide":10,"text":"LESSON 12  ·  3 QUESTIONS  ·  3 MINUTES","textPreview":"LESSON 12  ·  3 QUESTIONS  ·  3 MINUTES","textChars":39,"textLines":1,"bbox":[102,680,1000,42]}
+{"kind":"textbox","id":"sh/l036l83y","slide":10,"text":"First Finance - Arnaud Demes","textPreview":"First Finance - Arnaud Demes","textChars":28,"textLines":1,"bbox":[102,742,500,40]}
+{"kind":"textbox","id":"sh/725onyl4","slide":10,"name":"quiz-question-1","text":"1. Should path quality and answer quality be scored separately?","textPreview":"1. Should path quality and answer quality be scored separately?","textChars":63,"textLines":1,"bbox":[102,462,1396,30]}
+{"kind":"textbox","id":"sh/m1cnetkj","slide":10,"name":"quiz-options-1","text":"A  Yes     |     B  No     |     C  Only with OpenAI","textPreview":"A  Yes     |     B  No     |     C  Only with OpenAI","textChars":52,"textLines":1,"bbox":[132,494,1366,26]}
+{"kind":"textbox","id":"sh/s7yt4b21","slide":10,"name":"quiz-question-2","text":"2. Which gate must run for every release case?","textPreview":"2. Which gate must run for every release case?","textChars":46,"textLines":1,"bbox":[102,534,1396,30]}
+{"kind":"textbox","id":"sh/d87uxg3m","slide":10,"name":"quiz-options-2","text":"A  Deterministic gate     |     B  Optional LLM judge     |     C  Manual demo","textPreview":"A  Deterministic gate     |     B  Optional LLM judge     |     C  Manual demo","textChars":78,"textLines":1,"bbox":[132,566,1366,26]}
+{"kind":"textbox","id":"sh/q5gb21kb","slide":10,"name":"quiz-question-3","text":"3. How should an unavailable optional judge be recorded?","textPreview":"3. How should an unavailable optional judge be recorded?","textChars":56,"textLines":1,"bbox":[102,606,1396,30]}
+{"kind":"textbox","id":"sh/r6pcv6lw","slide":10,"name":"quiz-options-3","text":"A  NOT RUN     |     B  PASS     |     C  Zero cost","textPreview":"A  NOT RUN     |     B  PASS     |     C  Zero cost","textChars":51,"textLines":1,"bbox":[132,638,1366,26]}
+{"kind":"notes","id":"nt/m90b6t0r","slide":10,"text":"Instructor purpose: Check the three core decisions before the lesson closes.\nPlanned timing: 3 minutes.\nFacilitation: ask for one letter per question.\n[Sources]\n- chapters/12-evaluating-agentic-systems.md\n[/Sources]"}
+{"kind":"slide","id":"sl/jetc3ut0","slide":11,"title":"FIRST FINANCE","textShapes":11}
+{"kind":"shape","id":"sh/o7ih0r6h","slide":11,"bbox":[102,82,132,8]}
+{"kind":"textbox","id":"sh/xcryxg7y","slide":11,"text":"FIRST FINANCE","textPreview":"FIRST FINANCE","textChars":13,"textLines":1,"bbox":[102,112,300,44]}
+{"kind":"textbox","id":"sh/wbih4b6d","slide":11,"text":"Answers","textPreview":"Answers","textChars":7,"textLines":1,"bbox":[102,248,1396,94]}
+{"kind":"textbox","id":"sh/n69grmpw","slide":11,"text":"Check the idea, not only the letter.","textPreview":"Check the idea, not only the letter.","textChars":36,"textLines":1,"bbox":[102,374,1180,54]}
+{"kind":"textbox","id":"sh/250zy18b","slide":11,"text":"LESSON 12  ·  CORRECTION","textPreview":"LESSON 12  ·  CORRECTION","textChars":24,"textLines":1,"bbox":[102,680,1000,42]}
+{"kind":"textbox","id":"sh/98rytw72","slide":11,"text":"First Finance - Arnaud Demes","textPreview":"First Finance - Arnaud Demes","textChars":28,"textLines":1,"bbox":[102,742,500,40]}
+{"kind":"textbox","id":"sh/72t03qp0","slide":11,"name":"quiz-answer-1","text":"1. A. Yes","textPreview":"1. A. Yes","textChars":9,"textLines":1,"bbox":[102,462,1396,30]}
+{"kind":"textbox","id":"sh/61kzalof","slide":11,"name":"quiz-explanation-1","text":"A plausible answer can still come from an inefficient or unsafe path.","textPreview":"A plausible answer can still come from an inefficient or unsafe path.","textChars":69,"textLines":1,"bbox":[132,494,1366,26]}
+{"kind":"textbox","id":"sh/ofqtgnyt","slide":11,"name":"quiz-answer-2","text":"2. A. Deterministic gate","textPreview":"2. A. Deterministic gate","textChars":24,"textLines":1,"bbox":[102,534,1396,30]}
+{"kind":"textbox","id":"sh/9gza9sze","slide":11,"name":"quiz-explanation-2","text":"Stable rules make release decisions reproducible and inspectable.","textPreview":"Stable rules make release decisions reproducible and inspectable.","textChars":65,"textLines":1,"bbox":[132,566,1366,26]}
+{"kind":"textbox","id":"sh/mdobedg3","slide":11,"name":"quiz-answer-3","text":"3. A. NOT RUN","textPreview":"3. A. NOT RUN","textChars":13,"textLines":1,"bbox":[102,606,1396,30]}
+{"kind":"textbox","id":"sh/nehs7iho","slide":11,"name":"quiz-explanation-3","text":"An optional judge must never be silently replaced or reported as executed.","textPreview":"An optional judge must never be silently replaced or reported as executed.","textChars":74,"textLines":1,"bbox":[132,638,1366,26]}
+{"kind":"notes","id":"nt/jetc3ut0","slide":11,"text":"Instructor purpose: Correct the quiz and restate the practical rule behind each answer.\nPlanned timing: 3 minutes.\nFacilitation: ask learners to explain each rule in their own words.\n[Sources]\n- chapters/12-evaluating-agentic-systems.md\n[/Sources]"}

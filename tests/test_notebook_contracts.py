@@ -82,6 +82,24 @@ def stream_text(notebook) -> str:
     )
 
 
+def visible_output_text(notebook) -> str:
+    """Return learner-visible stream and rich-text output from an executed notebook."""
+    parts: list[str] = []
+    for cell in notebook.cells:
+        if cell.cell_type != "code":
+            continue
+        for output in cell.get("outputs", []):
+            if output.get("output_type") == "stream":
+                parts.append(output.get("text", ""))
+                continue
+            data = output.get("data", {})
+            for mime_type in ("text/markdown", "text/plain"):
+                if mime_type in data:
+                    parts.append(data[mime_type])
+                    break
+    return "\n".join(parts)
+
+
 def test_valid_notebook_passes_the_teaching_contract(tmp_path: Path) -> None:
     notebook_path = tmp_path / "01_valid.ipynb"
     write_notebook(notebook_path, body="Clear learner-facing explanation.")
@@ -256,24 +274,18 @@ def test_model_gateway_offline_run_reaches_the_grounding_target(tmp_path: Path) 
 
     assert result.returncode == 0, result.stderr
     executed = nbformat.read(output_dir / notebook_path.name, as_version=4)
-    stream_text = "".join(
-        output.get("text", "")
-        for cell in executed.cells
-        if cell.cell_type == "code"
-        for output in cell.get("outputs", [])
-        if output.get("output_type") == "stream"
-    )
-    assert "Grounding score: 4/4" in stream_text
-    assert "Token usage: unavailable for this provider response" in stream_text
-    assert "Streaming demo:" in stream_text
-    assert stream_text.count("PASS — provider-neutral model gateway verified") == 1
+    output_text = visible_output_text(executed)
+    assert "### First gateway run" in output_text
+    assert "Unavailable" in output_text
+    assert "**Streaming demo**" in output_text
+    assert "### Curated SEC evidence card" in output_text
+    assert "### Grounding score: 4/4" in output_text
+    assert output_text.count("PASS — provider-neutral model gateway verified") == 1
 
 
 def test_model_gateway_keeps_mlflow_out_of_executable_lesson_code() -> None:
     notebook = nbformat.read(ROOT / "notebooks" / "01_model_gateway.ipynb", as_version=4)
-    executable_code = "\n".join(
-        cell.source for cell in notebook.cells if cell.cell_type == "code"
-    )
+    executable_code = "\n".join(cell.source for cell in notebook.cells if cell.cell_type == "code")
 
     assert "import mlflow" not in executable_code.casefold()
     assert "from mlflow" not in executable_code.casefold()
@@ -303,6 +315,7 @@ def test_structured_outputs_offline_run_reaches_the_validation_target(
 
     assert result.returncode == 0, result.stderr
     executed = nbformat.read(output_dir / notebook_path.name, as_version=4)
+    output_text = visible_output_text(executed)
     stream_text = "".join(
         output.get("text", "")
         for cell in executed.cells
@@ -311,12 +324,16 @@ def test_structured_outputs_offline_run_reaches_the_validation_target(
         if output.get("output_type") == "stream"
     )
     assert "Validation caught the unsupported candidate" in stream_text
-    assert (
-        "Prompt progression: vague -> six_part -> delimited -> few_shot -> "
-        "prompt_json -> schema_bound"
-    ) in stream_text
+    assert "Prompt comparison: zero-shot -> few-shot -> schema-bound" in stream_text
     assert "Prompt injection remains source data: PASS" in stream_text
     assert stream_text.count("PASS — structured financial brief verified") == 1
+    assert "### Five-layer prompt contract" in output_text
+    assert "### Zero-shot vs few-shot" in output_text
+    assert "### Why the candidate failed" in output_text
+    assert "### Accepted AnalystBrief" in output_text
+    assert "### Three reliability layers" in output_text
+    assert "### Verification: 6/6" in output_text
+    assert len(executed.cells) <= 16
 
 
 def test_cag_notebook_offline_run_produces_visual_evidence_and_a_decision(
@@ -360,8 +377,9 @@ def test_cag_notebook_offline_run_produces_visual_evidence_and_a_decision(
     )
 
     assert len(visual_outputs) >= 3
-    assert "Decision: RAG required" in stream_text
-    assert "PASS — CAG boundary verified" in stream_text
+    assert "Decision: CAG for the bounded official context pack" in stream_text
+    assert "Decision: RAG for the complete official filing" in stream_text
+    assert "PASS — real-document CAG/RAG boundary verified" in stream_text
 
 
 def test_cag_notebook_distinguishes_context_cache_memory_grounding_and_rag() -> None:
@@ -370,9 +388,7 @@ def test_cag_notebook_distinguishes_context_cache_memory_grounding_and_rag() -> 
         as_version=4,
     )
     source = "\n".join(cell.source for cell in notebook.cells)
-    executable = "\n".join(
-        cell.source for cell in notebook.cells if cell.cell_type == "code"
-    )
+    executable = "\n".join(cell.source for cell in notebook.cells if cell.cell_type == "code")
 
     for concept in ("Context", "Cache", "Memory", "Grounding", "RAG"):
         assert concept in source
@@ -384,6 +400,11 @@ def test_cag_notebook_distinguishes_context_cache_memory_grounding_and_rag() -> 
     assert "if not live_mode:" in executable
     assert "assert grounding_result.passed" in executable
     assert "import mlflow" not in executable
+    assert "assets/course-data/downloads/nvidia_fy2026_form_10k.html" in source
+    assert "bounded official context pack" in source.casefold()
+    assert "complete official filing" in source.casefold()
+    assert "synthetic neutral appendix" not in source.casefold()
+    assert len(notebook.cells) <= 16
 
 
 def test_naive_rag_notebook_offline_run_visualizes_and_verifies_baseline(
@@ -426,29 +447,39 @@ def test_naive_rag_notebook_offline_run_visualizes_and_verifies_baseline(
         if output.get("output_type") == "stream"
     )
 
-    assert len(visual_outputs) >= 5
-    assert "Retrieval check:" in stream_text
+    assert len(visual_outputs) >= 4
+    assert "Official filing verified: PASS" in stream_text
+    assert "Retrieval check: PASS" in stream_text
     assert "Grounding check:" in stream_text
-    assert "PASS — naive RAG baseline verified" in stream_text
+    assert "Failure diagnosis: RETRIEVAL" in stream_text
+    assert "PASS — real-document naive RAG boundary verified" in stream_text
 
 
-def test_naive_rag_notebook_compares_context_baselines_before_retrieval() -> None:
+def test_naive_rag_notebook_uses_the_official_filing_and_stays_compact() -> None:
     notebook = nbformat.read(
         ROOT / "notebooks" / "04_rag_from_scratch.ipynb",
         as_version=4,
     )
     source = "\n".join(cell.source for cell in notebook.cells)
-    executable = "\n".join(
-        cell.source for cell in notebook.cells if cell.cell_type == "code"
-    )
+    executable = "\n".join(cell.source for cell in notebook.cells if cell.cell_type == "code")
+    setup_cell = notebook.cells[1]
 
-    assert "No context → full context → naive RAG" in source
-    assert "naive paragraph split" in source
+    assert "assets/course-data/downloads/nvidia_fy2026_form_10k.html" in source
+    assert "Why RAG?" in source
+    assert "naive HTML parsing" in source
+    assert "naive character windows" in source
+    assert "Parsing → chunking → retrieval → generation" in source
+    assert "Instructor setup — run once" in source
+    assert "This is everything the model can see" in source
+    assert "Schneider Electric" not in source
     assert "Live answer grounding remains an observation" in source
-    assert "Path comparison:" in executable
+    assert "naive_parse_html" in executable
+    assert "naive_fixed_windows" in executable
     assert "if not live_mode:" in executable
-    assert "assert all(grounding_checks.values())" in executable
+    assert "assert retrieval_check.passed" in executable
     assert "import mlflow" not in executable
+    assert setup_cell.metadata["jupyter"]["source_hidden"] is True
+    assert len(notebook.cells) == 12
 
 
 def test_document_chunking_notebook_offline_run_is_visual_and_verified(
@@ -508,9 +539,7 @@ def test_document_chunking_notebook_teaches_the_contextual_progression() -> None
         as_version=4,
     )
     source = "\n".join(cell.source for cell in notebook.cells)
-    executable = "\n".join(
-        cell.source for cell in notebook.cells if cell.cell_type == "code"
-    )
+    executable = "\n".join(cell.source for cell in notebook.cells if cell.cell_type == "code")
 
     assert "Parser ladder" in source
     assert "Provider-aware semantic boundaries" in source
@@ -546,57 +575,56 @@ def test_hybrid_retrieval_notebook_offline_run_is_visual_and_verified(tmp_path):
 
     assert result.returncode == 0, result.stderr
     executed = nbformat.read(output_dir / notebook_path.name, as_version=4)
-    assert count_png_outputs(executed) >= 8
+    assert count_png_outputs(executed) >= 6
     output_text = stream_text(executed)
+    assert "BM25 exact-term recovery reproduced" in output_text
     assert "Dense exact-term failure reproduced" in output_text
     assert "Cross-company leakage blocked" in output_text
     assert "Hybrid retrieval improves maintained recall" in output_text
-    assert "Stage timings recorded" in output_text
     assert "PASS — hybrid retrieval laboratory verified" in output_text
 
 
 def test_hybrid_retrieval_notebook_separates_live_and_controlled_outcomes():
     notebook = nbformat.read(ROOT / "notebooks" / "06_hybrid_retrieval.ipynb", as_version=4)
-    code_by_id = {
-        cell.id: cell.source for cell in notebook.cells if cell.cell_type == "code"
-    }
-
-    assert "controlled_dense_index" in code_by_id["lesson06-012"]
-    assert "controlled_dense_index" in code_by_id["lesson06-014"]
-    assert "observed_cosine_min" in code_by_id["lesson06-009"]
-    assert (
-        'if not live_mode:\n    assert maintained_recall["Reranked hybrid"] '
-        '> maintained_recall["Dense"]'
-        in code_by_id["lesson06-019"]
+    executable = "\n".join(
+        cell.source for cell in notebook.cells if cell.cell_type == "code"
     )
-    assert '"provider vectors are finite"' in code_by_id["lesson06-021"]
-    assert "if not live_mode:\n    assert moved_rankings" in code_by_id["lesson06-023"]
+
+    assert "controlled_dense_index" in executable
+    assert "if not live_mode:" in executable
+    assert 'maintained_recall["Reranked hybrid"]' in executable
+    assert '"provider vectors are finite"' in executable
 
 
 def test_hybrid_retrieval_notebook_qualifies_offline_success_in_markdown():
     notebook = nbformat.read(ROOT / "notebooks" / "06_hybrid_retrieval.ipynb", as_version=4)
-    learning_objectives = next(cell for cell in notebook.cells if cell.id == "lesson06-001")
+    learning_objectives = next(
+        cell for cell in notebook.cells
+        if cell.cell_type == "markdown" and "success condition" in cell.source
+    )
 
     assert "deterministic offline laboratory success condition" in learning_objectives.source
     assert "Live OpenAI and Ollama runs report observed recall" in learning_objectives.source
     assert "provider-invariant structural behavior" in learning_objectives.source
 
 
-def test_hybrid_retrieval_notebook_prepares_the_mlflow_trace_handoff() -> None:
+def test_hybrid_retrieval_notebook_is_compact_and_bm25_focused() -> None:
     notebook = nbformat.read(
         ROOT / "notebooks" / "06_hybrid_retrieval.ipynb",
         as_version=4,
     )
     source = "\n".join(cell.source for cell in notebook.cells)
-    executable = "\n".join(
-        cell.source for cell in notebook.cells if cell.cell_type == "code"
-    )
+    executable = "\n".join(cell.source for cell in notebook.cells if cell.cell_type == "code")
 
-    assert "Stage timings" in source
-    assert "Local index versus pgvector/HNSW" in source
-    assert "documents → chunks → embeddings" in source
-    assert "MLflow span handoff" in source
-    assert "stage_measurements" in executable
+    assert len(notebook.cells) <= 18
+    assert sum(cell.cell_type == "code" for cell in notebook.cells) <= 8
+    assert sum(len(cell.source.splitlines()) for cell in notebook.cells if cell.cell_type == "code") <= 320
+    assert "BM25" in source
+    assert "BM25Index" in executable
+    assert "Reciprocal-rank fusion" in source
+    assert "Stage timings" not in source
+    assert "Local index versus pgvector/HNSW" not in source
+    assert "stage_measurements" not in executable
     assert "import mlflow" not in executable
 
 
@@ -606,8 +634,26 @@ def test_rag_evaluation_notebook_is_output_free_and_complete() -> None:
     source = "\n".join(cell.source for cell in notebook.cells)
 
     assert all(not cell.get("outputs") for cell in notebook.cells if cell.cell_type == "code")
-    assert all(cell.get("execution_count") is None for cell in notebook.cells if cell.cell_type == "code")
+    assert all(
+        cell.get("execution_count") is None for cell in notebook.cells if cell.cell_type == "code"
+    )
     assert len({cell.id for cell in notebook.cells}) == len(notebook.cells)
+    assert len(notebook.cells) <= 18
+    assert sum(cell.cell_type == "code" for cell in notebook.cells) <= 8
+    assert sum(
+        len(cell.source.splitlines())
+        for cell in notebook.cells
+        if cell.cell_type == "code"
+    ) <= 340
+    executable = "\n".join(
+        cell.source for cell in notebook.cells if cell.cell_type == "code"
+    )
+    for cell in notebook.cells:
+        if cell.cell_type == "code":
+            compile(cell.source, f"{notebook_path.name}:{cell.id}", "exec")
+    assert "BM25Index" in executable
+    assert "KeywordIndex" not in executable
+    assert "retrieval_weights" in executable
     for marker in (
         "Versioned golden set",
         "Retrieval metrics and answer metrics",
@@ -643,7 +689,7 @@ def test_rag_evaluation_notebook_offline_run_is_visual_and_verified(tmp_path: Pa
 
     assert result.returncode == 0, result.stderr
     executed = nbformat.read(output_dir / notebook_path.name, as_version=4)
-    assert count_png_outputs(executed) >= 8
+    assert 6 <= count_png_outputs(executed) <= 7
     output_text = stream_text(executed)
     assert output_text.count("PASS — RAG evaluation and tracing verified") == 1
     assert "MLflow traces recorded: 8" in output_text
@@ -675,4 +721,5 @@ def test_lesson08_notebook_offline_run_is_visual_and_verified(tmp_path: Path) ->
     assert output_text.count("LESSON_08_PASS") == 1
     assert "get_market_price" in output_text
     assert "convert_currency" in output_text
-    assert "unsupported_dependency" in output_text
+    assert "workflow_compound_status=completed" in output_text
+    assert "preferred_architecture=workflow" in output_text

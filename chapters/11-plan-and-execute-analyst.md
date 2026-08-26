@@ -6,9 +6,10 @@
 ## Instructor outcome
 
 Students inspect a bounded research mission for NVIDIA (`NVDA`) and Schneider
-Electric (`SU.PA`). They validate a proposed plan, execute discovered read-only
-MCP tools through one lifecycle, retain a typed failure, replace only unfinished
-work, and require evidence before a cited briefing can be written.
+Electric (`SU.PA`). They see and approve a proposed plan before execution,
+execute discovered read-only MCP tools through one mission lifecycle, retain a
+typed failure, replace only unfinished work, and require evidence before a cited
+briefing can be written.
 
 The full Lesson 11 route is ready for an instructor-led test class. Use the
 [Lesson 11 concept deck](../decks/11-plan-and-execute-analyst.pptx) with this
@@ -16,7 +17,7 @@ chapter and the companion notebook. This lesson does not use live market data
 and does not provide investment advice.
 
 ```text
-mission -> discovered catalog -> validated plan -> observations -> revised tail
+mission -> discover -> propose -> approve -> execute -> replan
 -> evidence gate -> cited briefing
 ```
 
@@ -109,18 +110,19 @@ a substitute for a metric, document evidence ID, and source reference.
 
 ## 12-minute concept deck route
 
-Use the certified nine-slide
+Use the nine teaching slides in the 11-slide
 [Lesson 11 concept deck](../decks/11-plan-and-execute-analyst.pptx) for this
-script. The static matrices and notebook figures remain recovery material if a
-presentation cannot be opened in class.
+script. Slides 10-11 provide the quiz and answers for the final debrief. The
+deck combines official Anthropic and OpenAI agent diagrams with real notebook
+outputs, so every abstract control idea has a visible example.
 
 | Time | Slide | Instructor job |
 |---:|---:|---|
-| 0:00-2:00 | 1-2 | Contrast a fixed workflow and one-action ReAct loop with a coordinated research plan. State the bounded mission and read-only boundary. |
-| 2:00-5:00 | 3-4 | Separate a model proposal from the host plan gate. Show that a valid schema is not sufficient business permission. |
-| 5:00-8:00 | 5-6 | Walk through planner, policy gate, executor, replanner, evidence gate, and report writer. Connect execution to the discovered MCP catalog. |
-| 8:00-10:00 | 7-8 | Surface the `Revenue` failure and show tail-only `replace_remaining`. Explain why the two successful metric calls stay immutable. |
-| 10:00-12:00 | 9 | Explain that Lesson 12 scores answer quality and trajectory quality separately. |
+| 0:00-2:00 | 1-2 | State the bounded mission. Use the official Anthropic action-feedback loop to explain why several evidence gaps justify planning before the loop begins. |
+| 2:00-4:30 | 3-4 | Use the OpenAI agent graph to separate connectivity from authorization, then inspect the actual approved plan before attempt 1. |
+| 4:30-7:00 | 5-6 | Show how MCP discovery narrows the capability set. Read the typed `unsupported_metric` observation and explain why it remains in the trace. |
+| 7:00-10:00 | 7-8 | Compare retained, superseded, and replacement steps. Apply the four-cell evidence gate before writing. |
+| 10:00-12:00 | 9 | Trace one official report figure to its evidence ID and cited claim. Explain that Lesson 12 scores the answer and path separately. |
 
 The rows total 12 minutes. Do not read slides aloud. The lesson point is host
 control over a multi-step research route, not a live provider demonstration.
@@ -128,19 +130,20 @@ control over a multi-step research route, not a live provider demonstration.
 ## 40-minute notebook route
 
 Use the checked-in stable cell IDs and expected visible outputs. The source
-notebook has cells `lesson11-000` through `lesson11-027`; do not insert a second
-server, re-run a successful call, or replace course evidence with live data.
+notebook has 18 cells, `lesson11-000` through `lesson11-017`. A short read-only
+preview lifecycle exposes the catalog and proposed plan; after learner approval,
+the complete mission runs through one execution lifecycle. Do not re-run a
+successful call or replace course evidence with live data.
 
 | Time | Cells | Instructor action | Expected visible output |
 |---:|---|---|---|
-| 0:00-5:00 | `lesson11-000` to `lesson11-005` | State the mission, boundary, and why this task needs a plan. Run setup and compare workflow, ReAct, and plan-and-execute. | Offline provider label and Figure 1 control-pattern comparison. |
-| 5:00-10:00 | `lesson11-006` to `lesson11-008` | Run the one-lifecycle mission, inspect the discovered catalog and four contracts, then show the initial plan. | Real MCP server name, permitted tools, contract table, and Figure 2 initial-plan dependencies. |
-| 10:00-16:00 | `lesson11-009` to `lesson11-011` | Validate the proposed plan before a call. Identify model-owned proposal and host-owned policy. | Initial and final step IDs, plan-gate result, and Figure 3 six-node graph. |
-| 16:00-23:00 | `lesson11-012` to `lesson11-014` | Expose the controlled third attempt. Read the `unsupported_metric` error rather than correcting it in place. | Typed error table and Figure 4 attempt timeline. |
-| 23:00-29:00 | `lesson11-015` to `lesson11-017` | Request the recorded replan. Read `replace_remaining`; compare executed prefix, superseded tail, and replacements. | Replacement IDs 5 and 6, retained failure, and Figure 5 tail revision. |
-| 29:00-34:00 | `lesson11-018` to `lesson11-020` | Confirm the completed sequence, one replan, and no duplicate successful calls. | Steps 1, 2, 3, 5, and 6 plus Figure 6 evidence coverage matrix. |
-| 34:00-37:00 | `lesson11-021` to `lesson11-024` | Run the evidence gate. Only then inspect the cited briefing and optional live route configuration. | Passed coverage table; complete fact claims with per-claim source references and evidence IDs; cross-company observations, interpretation, limitations, aggregate sources, and trajectory table. |
-| 37:00-40:00 | `lesson11-025` to `lesson11-027` | Run verification, answer the knowledge check, and state the Lesson 12 handoff. | One `LESSON_11_PASS` marker and challenge constraints. |
+| 0:00-5:00 | `lesson11-000` to `lesson11-004` | State the outcome, locate Lesson 11 in the course, and load the offline or optional live policy. | Runtime label and the rule that the model proposes while the host approves. |
+| 5:00-12:00 | `lesson11-005` to `lesson11-006` | Discover the real MCP catalog, create the initial plan, and validate it before any mission tool runs. | Two tool contracts, `Plan approved before execution: True`, and Figure 1 approved-plan view. |
+| 12:00-15:00 | `lesson11-007` | Pause at the learner decision checkpoint. Ask what should run, what should be rejected, and which limits the host must enforce. | A verbal approval decision before execution. |
+| 15:00-23:00 | `lesson11-008` to `lesson11-009` | Run the complete mission in one MCP lifecycle. Inspect attempts, statuses, error codes, and the replan decision. | Steps 1, 2, 3, 5, and 6; one `unsupported_metric`; `Learner decision: replan the unfinished tail`. |
+| 23:00-29:00 | `lesson11-010` to `lesson11-011` | Read the typed failure and compare kept, retained, superseded, and replacement steps. | Figure 2 tail-only replan trace. |
+| 29:00-37:00 | `lesson11-012` to `lesson11-014` | Apply the evidence gate, then inspect per-claim provenance and the briefing. | Passed four-cell coverage table, exact sources/evidence IDs, and Figure 3 evidence matrix. |
+| 37:00-40:00 | `lesson11-015` to `lesson11-017` | Explain the optional live route, run verification, and state the Lesson 12 handoff. | `Plan revisions: 1`, one `LESSON_11_PASS`, knowledge check, and challenge constraints. |
 
 The rows total 40 minutes. In offline mode, the expected final results are one
 `unsupported_metric` error, `Plan revisions: 1`, a passed evidence gate, and
@@ -179,6 +182,8 @@ exceeds six steps, uses an unknown capability, or exceeds one replan.
 | 2:00-4:00 | Ask what the model proposed and what Python controlled. | Planner, replanner, and report writer propose data; host validates, executes, limits, and gates. |
 | 4:00-6:00 | Ask why a plausible report can still fail. | Each fact declares `metric` or `document` provenance. Metric facts cite one metric-tool source and no evidence ID; document facts cite one exact returned source/evidence-ID pair. |
 | 6:00-8:00 | Connect the trajectory to Lesson 12. | `LESSON_11_PASS`, `reported_facts`, `cross_company_observations`, `interpretation`, `limitations`, `source_references`, and evaluation fields listed below. |
+
+Use slides 10-11 for the three-question quiz and immediate answer debrief.
 
 The rows total 8 minutes. The full slot is 12 + 40 + 8 = 60 minutes, from
 13:30-14:30.
@@ -245,13 +250,13 @@ they are recovery material, not observed runtime output.
 
 If the class is five or more minutes late, keep this route:
 
-1. Run `lesson11-007` and name the two discovered read-only tools.
-2. Run `lesson11-013` and retain the `unsupported_metric` failed step.
-3. Run `lesson11-016` and `lesson11-017` to show `replace_remaining`, the
-   immutable successful prefix, and replacement IDs 5 and 6.
-4. Run `lesson11-020` through `lesson11-022` to show the evidence gate and the
-   cited briefing boundary.
-5. Run `lesson11-026` for `LESSON_11_PASS`, then state the Lesson 12 fields.
+1. Run `lesson11-005` and name the two discovered read-only tools.
+2. Show `lesson11-006`, then require an approval decision at `lesson11-007`.
+3. Run `lesson11-008` and `lesson11-009`; retain the `unsupported_metric`
+   observation and show `replace_remaining` with replacement IDs 5 and 6.
+4. Run `lesson11-013` and `lesson11-014` to show the evidence gate and cited
+   briefing boundary.
+5. Run `lesson11-016` for `LESSON_11_PASS`, then state the Lesson 12 fields.
 
 Skip the extended pattern comparison, full contract walkthrough, timeline
 discussion, and live provider extension. Do not skip MCP discovery, the failed
@@ -308,5 +313,7 @@ efficiency, bounded replanning, evidence-gate behavior, and trace completeness.
 
 - [Lesson 09 instructor chapter](09-self-correcting-agent.md)
 - [Lesson 10 instructor chapter](10-financial-mcp.md)
+- [Anthropic - Building effective agents](https://www.anthropic.com/engineering/building-effective-agents)
+- [OpenAI Agents SDK - Agent visualization](https://openai.github.io/openai-agents-python/visualization/)
 - [Official MCP Python SDK](https://github.com/modelcontextprotocol/python-sdk)
 - [Lesson 11 design](../docs/superpowers/specs/2026-08-22-lesson-11-plan-and-execute-financial-analyst-design.md)

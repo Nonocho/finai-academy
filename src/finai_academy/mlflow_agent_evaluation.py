@@ -774,6 +774,11 @@ def _trace_case(
         run_id=run_id,
         attributes={"case_id": case.case_id, "source_kind": configuration.provider},
     ) as root_span:
+        # MLflow otherwise derives this metadata from the running executable, which
+        # can expose an instructor or learner's absolute local filesystem path.
+        mlflow.update_current_trace(
+            metadata={"mlflow.source.name": "finai_academy.mlflow_agent_evaluation"}
+        )
         root_span.set_inputs(root_inputs)
         emitted_chain_phases: set[str] = set()
         observations_by_attempt = {

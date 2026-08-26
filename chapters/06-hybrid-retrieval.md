@@ -4,7 +4,7 @@
 
 **Format:** 15 minutes of concepts and diagrams, 30 minutes of guided notebook work
 
-**Capstone increment:** filtered lexical+dense retrieval, reciprocal-rank fusion and
+**Capstone increment:** filtered BM25+dense retrieval, reciprocal-rank fusion and
 transparent reranking over a versioned local embedding index
 
 ## Teaching outcome
@@ -15,9 +15,9 @@ Students should leave with one operational principle:
 > eligible, complete or safe evidence.
 
 The notebook rebuilds the seven contextual structure-aware chunks from Lesson 05's
-versioned source manifest. It then embeds, pre-filters, retrieves, fuses and reranks those
-same chunks while measuring every executed stage. Nothing is silently replaced with the
-smaller unit-test corpus, and MLflow remains outside this lesson.
+versioned source manifest. It then uses BM25 and embeddings to retrieve, pre-filter, fuse
+and rerank those same chunks. Nothing is silently replaced with the smaller unit-test
+corpus. Timing, tracing and MLflow belong to Lesson 07.
 
 ## Connection to Lessons 05 and 07
 
@@ -25,8 +25,8 @@ Lesson 05 established trustworthy evidence units. Lesson 06 holds those units co
 changes their representation and ranking:
 
 ```text
-Lesson 05                         Lesson 06                         Lesson 07
-manifest → blocks → chunks  →  index → filter → rank → rerank  →  evaluate → trace
+Lesson 05                         Lesson 06                              Lesson 07
+manifest → blocks → chunks  →  BM25 + dense → filter → fuse → rerank  →  evaluate → trace
 ```
 
 Lesson 07 will treat each maintained question and expected-evidence token as an evaluation
@@ -37,14 +37,13 @@ case. Its traces should expose the stages created here rather than only the fina
 | Time | Concept | Instructor move | Expected learner statement |
 |---:|---|---|---|
 | 0:00–1:30 | Lesson boundary | Point from trusted Lesson 05 chunks to the new retrieval stages. | “The corpus stays fixed; representation and ranking change.” |
-| 1:30–3:30 | Embedding geometry | Define a vector and the dot product of normalized vectors. | “Cosine similarity measures alignment, not confidence.” |
-| 3:30–5:00 | 2D projection caveat | Contrast a teaching projection with the full-dimensional score. | “The map is explanatory; retrieval uses the original dimensions.” |
-| 5:00–7:00 | Metadata eligibility | Put company and period before both retrieval channels. | “Filtering after top-k can permanently lose eligible evidence.” |
-| 7:00–9:00 | Lexical versus dense | Contrast exact-number matching with conceptual similarity. | “Each channel covers a different failure mode.” |
+| 1:30–3:30 | Why hybrid retrieval | Use the sourced industry diagram and benchmark to show the complementary channels. | “Exact evidence and semantic evidence fail differently.” |
+| 3:30–5:00 | Embedding geometry | Define cosine as relative alignment, not confidence. | “A high cosine is not a probability of correctness.” |
+| 5:00–7:00 | BM25 versus dense | Contrast exact-number matching with conceptual similarity. | “BM25 protects literals; dense protects semantic recall.” |
+| 7:00–9:00 | Metadata eligibility | Put company and period before both retrieval channels. | “Filtering after top-k can permanently lose eligible evidence.” |
 | 9:00–11:00 | Reciprocal-rank fusion | Write `w / (k + rank)` and add contributions by passage ID. | “RRF combines rank positions, not raw score scales.” |
 | 11:00–13:00 | Transparent reranking | Name the five normalized features and the numeric weight. | “The rerank score is inspectable and is not confidence.” |
-| 13:00–14:00 | Versioned index | Tie provider, model, dimension, corpus hash, policy and IDs together. | “Any identity mismatch requires an index rebuild.” |
-| 14:00–15:00 | Failure forecast | Ask learners to predict the exact-number and leakage outcomes. | “Dense-only and unfiltered retrieval will fail in controlled ways.” |
+| 13:00–15:00 | Decision rules | Map each stage to the failure it repairs and forecast the notebook failures. | “Hybrid retrieval is a staged policy, not one magic score.” |
 
 Do not borrow notebook time to finish the deck. At 15:00, move to the executable pipeline.
 
@@ -52,19 +51,14 @@ Do not borrow notebook time to finish the deck. At 15:00, move to the executable
 
 | Time | Notebook action | Expected checkpoint |
 |---:|---|---|
-| 0:00–2:00 | Run imports and provider selection. | `Embedding runtime: offline / financial-concepts-v1` offline, or the selected live provider/model. |
-| 2:00–5:00 | Inspect Figure 1 and rebuild source data. | Exactly seven passages; manifest schema v1, evidence-set version and corpus-hash prefix print. |
-| 5:00–7:00 | Inspect Figure 2. | Seven passage points and four starred query points are visible; axes say “teaching view only.” |
-| 7:00–10:00 | Inspect Figure 3. | Four-by-seven matrix with raw cosine values, a “not confidence” colorbar and limits derived from the observed provider values, including negatives. |
-| 10:00–13:00 | Run all maintained questions and inspect Figure 4. | Keyword, dense and RRF ladders expose their own score types; green identifies expected evidence. |
-| 13:00–15:00 | Inspect stage timings, Figure 5. | Eligibility, keyword, dense, fusion and rerank each expose one `RunMeasurement`. |
-| 15:00–18:00 | Run the controlled exact-number failure, Figure 6. | The illustrative deterministic index finds `18.7%` lexically and ties at zero densely. |
-| 18:00–21:00 | Run controlled pre-filtering, Figure 7. | The illustrative unfiltered result is Schneider and every filtered candidate is NVIDIA. |
-| 21:00–23:00 | Inspect RRF contributions, Figure 8. | Each bar is the visible sum of keyword and dense reciprocal-rank terms. |
-| 23:00–25:00 | Inspect rerank features, Figure 9. | Weighted features sum to the displayed rerank score. |
-| 25:00–27:00 | Run Figure 10 scorecard. | Offline: reranked hybrid reaches 4/4; live recall remains observational. |
-| 27:00–28:30 | Verify and inspect Figure 11. | PASS gates hold; local index and pgvector/HNSW share the same logical schema and IDs. |
-| 28:30–30:00 | Run the weight challenge and debrief. | A moved ranking is an observation, not proof of improvement. |
+| 0:00–4:00 | Select the provider and rebuild the seven real Lesson 05 chunks. | Source hashes pass; the passage table retains company, period, section and stable ID. |
+| 4:00–8:00 | Inspect Figure 1: BM25 versus dense. | Green identifies the literal-bearing passage; raw score types stay distinct. |
+| 8:00–12:00 | Run Figure 2: exact-number failure. | BM25 finds `18.7%`; the controlled dense query ties at zero. |
+| 12:00–16:00 | Run Figure 3: filter safety. | The unfiltered winner is Schneider; every filtered candidate is NVIDIA. |
+| 16:00–20:00 | Inspect Figure 4: RRF contributions. | Each bar is the visible sum of BM25 and dense reciprocal-rank terms. |
+| 20:00–25:00 | Inspect Figures 5–6: rerank features and scorecard. | Weighted features stay visible; offline reranked hybrid reaches 4/4. |
+| 25:00–28:00 | Change the BM25 RRF weight. | A moved ranking is an observation, not proof of improvement. |
+| 28:00–30:00 | Run verification and debrief. | Every filter, ID, score, provenance field and index artifact passes. |
 
 ## Checkpoints and markers
 
@@ -82,6 +76,12 @@ Expected:
 
 If the chunk count is not seven, stop. Do not replace the manifest-derived chunks with a
 handwritten fixture.
+
+### `BM25 exact-term recovery reproduced`
+
+The query is only `18.7%`. BM25 tokenization preserves the numeric literal and ranks the
+Schneider Electric passage containing that figure first. The result demonstrates why a
+lexical channel remains valuable for financial values, identifiers and names.
 
 ### `Dense exact-term failure reproduced`
 
@@ -109,7 +109,7 @@ deterministic scorecard is:
 
 | Stage | Expected rank-1 recovery |
 |---|---:|
-| Keyword | 4/4 |
+| BM25 | 4/4 |
 | Dense | 3/4 |
 | RRF fusion | 3/4 |
 | Reranked hybrid | 4/4 |
@@ -122,16 +122,11 @@ miss while retaining the other expected evidence.
 
 This final marker is provider-neutral. It appears only after every maintained run proves
 that all channel, fused and final hits satisfy its filters; fused IDs are unique; fused
-ordering is exactly descending RRF score then passage ID; all four stages remain visible;
-every recorded score is finite; provenance is complete; provider vectors and normalized
-projection-query rows are finite; and both index artifacts exist. Offline mode additionally
+ordering is exactly descending RRF score then passage ID; every score is finite;
+provenance is complete; provider vectors are finite; and both index artifacts exist. Offline mode additionally
 requires every maintained evidence token to appear within the configured `final_k=2` result.
 Live mode does not require a particular ranking, tie, recall improvement or RRF weight
 response.
-
-Every run also exposes ordered `stage_measurements` for eligibility, keyword, dense,
-fusion and rerank. An abstention measures eligibility and marks downstream stages as
-skipped with zero duration rather than inventing work that did not happen.
 
 ## Core explanations
 
@@ -142,8 +137,15 @@ to one indicate greater directional alignment in the embedding space. The value 
 probability, calibrated relevance, confidence, truth or grounding score. Embedding model,
 normalization and corpus changes can all change the ranking.
 
-The 2D SVD figure is a projection for intuition. The similarity heatmap is the faithful
-view because it uses the full embedding dimension.
+The deck supplies the geometric intuition. The notebook stays focused on observable
+retrieval decisions rather than teaching projections.
+
+### BM25
+
+BM25 is the lexical channel. It rewards query terms that are rare across the corpus,
+saturates repeated terms and normalizes for passage length. In this lesson it protects exact
+financial figures such as `18.7%` and `$193.7 billion` that a semantic representation can
+downweight or omit. Its raw score is a ranking signal within one index, not confidence.
 
 ### Pre-filtering
 
@@ -155,7 +157,7 @@ broader, unsafe search.
 
 ### Reciprocal-rank fusion
 
-Keyword TF-IDF scores and embedding cosine similarities have different meanings and are
+BM25 scores and embedding cosine similarities have different meanings and are
 not calibrated to each other. RRF uses rank positions:
 
 ```text
@@ -178,27 +180,6 @@ The offline reranker exposes five normalized features:
 Candidates arrive only after pre-filtering, so metadata eligibility is one in this pipeline.
 The fixed weighted sum is a rerank score. It is bounded and inspectable, but it remains a
 ranking policy rather than confidence.
-
-### Measurements and trace handoff
-
-`RunMeasurement` stores one stage name, observed duration and small provider-neutral
-metadata. `retrieve_evidence(..., observer=...)` wraps the actual stage work with a shared
-`StageObserver` boundary. Lesson 06 uses the no-op observer and ordinary timing records;
-Lesson 07 supplies an MLflow observer to the same boundary. This keeps instrumentation
-outside retrieval logic and avoids an MLflow dependency in Lessons 01–06.
-
-### Local index versus pgvector/HNSW
-
-The classroom persists a manifest and NumPy vectors locally. A production implementation
-can move storage to PostgreSQL plus pgvector/HNSW while preserving the logical schema:
-
-```text
-documents → chunks → embeddings
-```
-
-Documents retain source identity and reporting metadata; chunks retain stable IDs,
-provenance and raw text; embedding rows retain provider, model, dimension and index
-version. Scaling the storage engine must not weaken eligibility, abstention or verification.
 
 ## Controlled failure debrief
 
@@ -232,19 +213,19 @@ The correct conclusion is:
 | Mistake | Diagnostic response |
 |---|---|
 | Calling cosine similarity “confidence” | Ask what event the number is a probability of; no calibrated event exists. |
-| Comparing TF-IDF and dense raw scores directly | Return to the three score labels in Figure 4 and use ranks for fusion. |
+| Comparing BM25 and dense raw scores directly | Return to the channel labels in Figure 1 and use ranks for fusion. |
 | Filtering after global top-k | Show that an omitted eligible passage cannot be restored by post-filtering. |
 | Rebuilding a four-passage fixture | Inspect the manifest loop and require the seven-chunk assertion to pass. |
 | Dropping document type or URL during adaptation | Inspect the `IndexedPassage` constructor and fail the provenance check. |
-| Treating the 2D map as retrieval truth | Compare Figure 2 with the full-dimensional heatmap in Figure 3. |
+| Treating BM25 or cosine as confidence | Ask what calibrated event the number represents; neither score is a probability. |
 | Calling the rerank value confidence | Name it “rerank score” and inspect its weighted feature sum. |
 | Tuning RRF on one question | Require the complete versioned evidence scorecard before choosing a weight. |
 | Reusing vectors after a corpus or model change | Read the index manifest mismatch; rebuild instead of editing metadata. |
 
 ## Provider modes
 
-The source manifest, parsers, chunking, filters, fusion and reranking remain the same in
-every mode. The active index uses the shared embedding gateway. Figures 6 and 7 deliberately
+The source manifest, parsers, chunking, BM25, filters, fusion and reranking remain the same in
+every mode. The active dense index uses the shared embedding gateway. Figures 2 and 3 deliberately
 use a separate deterministic teaching index so their controlled failures remain reproducible
 without imposing offline rank assumptions on the live provider.
 
@@ -262,8 +243,8 @@ unrelated provider environment values cannot break the deterministic path.
   --output-dir /private/tmp/finai-lesson06-executed
 ```
 
-Expected: all four execution-contract markers print, the scorecard is 4/4 after reranking,
-the weight challenge reports at least one moved ranking and final verification passes.
+Expected: all five execution-contract markers print, the scorecard is 4/4 after reranking
+and final verification passes. The weight challenge reports the observed moved rankings.
 
 ### Ollama
 
@@ -278,9 +259,9 @@ FINAI_EMBEDDING_MODEL=qwen3-embedding:0.6b \
 Ensure Ollama is running and the configured embedding model is available. The executor
 sets `FINAI_LIVE_MODE=1` and selects the provider through shared settings.
 
-Expected: Figures 6 and 7 still print their clearly labelled controlled markers. The live
+Expected: Figures 2 and 3 still print their clearly labelled controlled markers. The live
 scorecard prints observed recall without asserting 4/4 or improvement; provider vectors,
-dimensions, filtered companies, visible stages, finite scores and provenance are verified.
+dimensions, filtered companies, finite scores and provenance are verified.
 The challenge may report moved rankings or no movement. Final verification must pass.
 
 ### OpenAI
@@ -328,13 +309,13 @@ each run into a trace with at least:
 - query and exact metadata filter;
 - index identity;
 - eligible candidate count;
-- keyword and dense ranks with their correctly named score types;
+- BM25 and dense ranks with their correctly named score types;
 - RRF contributions;
 - rerank feature values and final evidence IDs; and
 - answer groundedness measured separately from retrieval recall.
 
-The `stage_measurements` mapping becomes the exact MLflow span handoff; context assembly
-and generation are added as later spans rather than hidden inside retrieval.
+Lesson 07 attaches trace spans to these same decisions, then adds context assembly and
+generation as later stages rather than hiding them inside retrieval.
 
 End with: “We can now explain which evidence won. Next we measure whether it should have
 won, and whether the generated answer actually used it.”
@@ -343,6 +324,10 @@ won, and whether the generated answer actually used it.”
 
 - [NVIDIA fiscal 2026 Form 10-K](https://www.sec.gov/Archives/edgar/data/1045810/000104581026000021/nvda-20260125.htm)
 - [Schneider Electric 2025 full-year results](https://www.se.com/ww/en/assets/564/document/528237/release-fy-results-2025.pdf)
+- [Anthropic — Contextual Retrieval](https://www.anthropic.com/engineering/contextual-retrieval)
+- [Azure AI Search — Hybrid search overview](https://learn.microsoft.com/en-us/azure/search/hybrid-search-overview)
+- [Elastic — Hybrid search](https://www.elastic.co/what-is/hybrid-search)
+- [OpenAI — text-embedding-3-small](https://developers.openai.com/api/docs/models/text-embedding-3-small)
 - Course source metadata and hashes: `assets/course-data/manifest.json`
 - Reusable retrieval interfaces: `src/finai_academy/hybrid_retrieval.py`,
   `src/finai_academy/retrieval_pipeline.py` and `src/finai_academy/reranking.py`

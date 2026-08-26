@@ -84,6 +84,8 @@ def test_lesson09_notebook_is_output_free_and_contains_the_teaching_contract() -
     )
     assert len({cell.id for cell in notebook.cells}) == len(notebook.cells)
     assert notebook.metadata["finai"]["expected_runtime_minutes"] == 30
+    assert len(notebook.cells) <= 17
+    assert sum(cell.cell_type == "code" for cell in notebook.cells) <= 8
     for heading in (
         "## Learning objectives",
         "## Where this fits",
@@ -105,6 +107,9 @@ def test_lesson09_notebook_is_output_free_and_contains_the_teaching_contract() -
         "Ollama",
         "OpenAI",
         "LESSON_09_PASS",
+        "ModelAgentAction",
+        "model-correctable",
+        "transient",
     ):
         assert marker in source
 
@@ -132,7 +137,10 @@ def test_lesson09_notebook_executes_offline_with_visual_evidence(tmp_path: Path)
     assert result.returncode == 0, result.stderr
     executed = nbformat.read(output_dir / NOTEBOOK.name, as_version=4)
     assert _png_output_count(executed) >= 4
-    assert "LESSON_09_PASS" in _stream_text(executed)
+    stream = _stream_text(executed)
+    assert "success_path=completed" in stream
+    assert "failure_path=retry_budget_exhausted" in stream
+    assert "LESSON_09_PASS" in stream
 
 
 def test_lesson09_chapter_and_indexes_are_discoverable() -> None:
@@ -171,9 +179,14 @@ def test_lesson09_deck_is_visual_simple_and_fully_sourced() -> None:
     assert all("[Sources]" in text and "[/Sources]" in text for text in note_texts)
     assert "—" not in joined
     for marker in (
-        "SELF-CORRECTING FINANCIAL AGENT",
-        "ERRORS BECOME CONTEXT",
-        "EXPLICIT GRAPH STATE",
+        "A TOOL ERROR CAN BECOME THE NEXT INPUT",
+        "Errors need different recovery strategies",
+        "External feedback changes the next action",
+        "MODEL-CORRECTABLE",
+        "TRANSIENT",
+        "USER-FIXABLE",
+        "UNEXPECTED",
+        "LANGGRAPH MAKES THE RECOVERY ROUTE EXPLICIT",
         "agent",
         "tools",
         "unsupported_metric",
@@ -182,7 +195,12 @@ def test_lesson09_deck_is_visual_simple_and_fully_sourced() -> None:
         "P/E",
         "MAX_RETRIES = 1",
         "MAX_TOOL_CALLS = 4",
+        "Self-correction does not guarantee truth",
         "LESSON 10",
         "MCP",
     ):
         assert marker.casefold() in joined.casefold()
+    assert "Self-correction needs feedback, state and limits" not in joined
+    notes_joined = " ".join(note_texts)
+    assert "docs.langchain.com/oss/python/langgraph/thinking-in-langgraph" in notes_joined
+    assert "arxiv.org/abs/2310.01798" in notes_joined

@@ -4,8 +4,8 @@ import json
 import subprocess
 import sys
 
-from finai_academy import capstone
 from finai_academy.capstone import ResearchRequest, build_reference_copilot
+from finai_academy.capstone.views import to_run_view
 
 
 def recorded_result():
@@ -14,17 +14,27 @@ def recorded_result():
     )
 
 
-def test_run_view_is_json_serializable_and_contains_only_public_display_fields() -> None:
-    assert hasattr(capstone, "to_run_view")
-    view = capstone.to_run_view(recorded_result())
+def test_run_view_is_json_serializable_and_leads_with_plain_language_answer() -> None:
+    """Removing the learner-facing answer model must fail this test."""
 
+    view = to_run_view(recorded_result())
     payload = view.model_dump(mode="json")
     encoded = json.dumps(payload)
 
     assert payload["run_id"] == "reference-run-001"
-    assert payload["readiness"]["provider"] == "Recorded demo"
-    assert payload["readiness"]["data_mode"] == "Certified snapshots"
-    assert payload["release"]["decision"] == "Release passed"
+    assert view.answer is not None
+    assert view.answer.conclusion == (
+        "Evidence-backed comparison prepared for the bounded research request."
+    )
+    assert [section.company for section in view.answer.company_evidence] == [
+        "NVIDIA",
+        "Schneider Electric",
+    ]
+    assert view.answer.comparison_limits == (
+        "The companies report in different currencies and periods.",
+        "Their business mixes and disclosed operating measures are not directly comparable.",
+        "Open question: Which aligned operating measure would be most useful for a later comparison?",
+    )
     assert "arguments" not in encoded
     assert "private_reasoning" not in encoded
     assert "system_prompt" not in encoded
@@ -32,72 +42,59 @@ def test_run_view_is_json_serializable_and_contains_only_public_display_fields()
     assert "/Users/" not in encoded
 
 
-def test_fact_rows_preserve_company_and_document_or_metric_provenance() -> None:
-    view = capstone.to_run_view(recorded_result())
+def test_run_view_maps_certified_document_evidence_to_side_by_side_display_data() -> None:
+    """Dropping a crop, table, context, or provenance label must fail this test."""
 
-    metric = next(row for row in view.cited_facts if row.provenance == "Metric")
-    document = next(row for row in view.cited_facts if row.provenance == "Document")
+    result = recorded_result()
+    view = to_run_view(result)
+    nvidia_hit = next(hit for hit in result.evidence_gate.evidence_hits if hit.company == "NVIDIA")
+    evidence = next(item for item in view.evidence if item.company == "NVIDIA")
 
-    assert metric.company == "NVIDIA"
-    assert metric.source == "First Finance controlled classroom fixture"
-    assert metric.evidence_id == "Not applicable"
-    assert document.company == "NVIDIA"
-    assert document.source == "assets/course-data/fixtures/nvidia_fy2026_excerpt.html"
-    assert document.evidence_id == "NVDA-FY2026-GAMING-001"
-    assert {row.company for row in view.evidence} == {"NVIDIA", "Schneider Electric"}
-    assert all(row.provenance == "Document" for row in view.evidence)
-
-
-def test_view_formats_plan_trace_scores_and_failed_evidence_gate() -> None:
-    complete = recorded_result()
-    complete_view = capstone.to_run_view(complete)
-    insufficient = build_reference_copilot(
-        retriever=_MissingSchneiderRetriever(build_reference_copilot().retriever)
-    ).run(ResearchRequest.reference())
-    failed_view = capstone.to_run_view(insufficient)
-
-    assert complete_view.plan[0].step == "1"
-    assert complete_view.replan_count == 1
-    assert complete_view.trace[2].duration.endswith(" ms")
-    assert [row.score for row in complete_view.scores] == ["100%"] * 5
-    assert len(complete_view.scores) == 5
-    assert complete_view.release.evidence_gate == "Evidence gate passed"
-    assert complete_view.outcome.status == "passed"
-    assert complete_view.outcome.message == "Release passed"
-    assert complete_view.outcome.assistant_message == (
-        "The evidence-backed research run completed. Review the public result below."
+    assert evidence.page_label == "NVIDIA · FY2026 · page 165"
+    assert evidence.crop_asset_key == (
+        "assets/course-data/capstone/crops/nvidia_segment_table_page_165.png"
     )
-    assert failed_view.release.decision == "Release blocked"
-    assert failed_view.release.evidence_gate == "Evidence gate failed"
-    assert failed_view.release.missing_requirements == (
-        "Schneider Electric document evidence",
+    assert "Compute &" in evidence.extracted_markdown
+    assert "Networking" in evidence.extracted_markdown
+    assert evidence.retrieved_chunk == nvidia_hit.text
+    assert evidence.selection_reason == nvidia_hit.selection_reason
+    assert dict(evidence.source_details) == {
+        "Report": "NVIDIA FY2026 annual report",
+        "Section": (
+            "AI Reinvents\nComputer Graphics > NVIDIA Corporation > Forward-Looking Statements "
+            "> NOTICE OF 2026 ANNUAL MEETING OF STOCKHOLDERS > NCGC > Note 16 - "
+            "Segment Information"
+        ),
+        "Reporting period": "FY2026",
+        "Page": "165",
+        "Unit": "USD millions",
+        "Source": (
+            "https://s201.q4cdn.com/141608511/files/doc_financials/2026/ar/"
+            "2026-Annual-Report-Web.pdf"
+        ),
+        "Document hash": "0e725ba048221539dca3eb1a4e70febfcbb785e9afb96cd3ff0b035d7d734e5c",
+    }
+
+
+def test_how_it_worked_keeps_technical_lineage_out_of_answer_and_evidence() -> None:
+    """Putting ranks or trace data in the public answer must fail this test."""
+
+    result = recorded_result()
+    view = to_run_view(result)
+
+    assert len(view.how_it_worked.pipeline_steps) == 5
+    assert view.how_it_worked.retrieval_details[0].channel_ranks == (
+        ("bm25", 1),
+        ("dense", 4),
     )
-    assert failed_view.briefing is None
-    assert failed_view.outcome.status == "blocked"
-    assert failed_view.outcome.message == "Release blocked"
-
-
-def test_request_boundary_maps_data_mode_and_keeps_the_company_universe() -> None:
-    assert hasattr(capstone, "build_capstone_request")
-
-    reference = capstone.build_capstone_request(
-        mode="reference",
-        question=None,
-        provider="recorded",
-        model="recorded-capstone-v1",
-        data_mode="certified",
-    )
-    custom = capstone.build_capstone_request(
-        mode="custom",
-        question="Compare operating-growth evidence.",
-        provider="openai",
-        model="gpt-5-mini",
-        data_mode="live_enrichment",
-    )
-
-    assert reference.include_news is False
-    assert custom.include_news is True
-    assert custom.companies == ("NVIDIA", "Schneider Electric")
+    assert len(view.how_it_worked.tool_activity) == len(result.observations)
+    assert len(view.how_it_worked.trace) == len(result.trajectory)
+    assert [row.score for row in view.how_it_worked.scores] == ["100%"] * 5
+    assert view.how_it_worked.model_route == "Recorded demo · recorded-capstone-v1"
+    assert view.answer is not None
+    assert "bm25" not in view.answer.model_dump_json().casefold()
+    assert "dense" not in view.answer.model_dump_json().casefold()
+    assert "trajectory" not in view.evidence[0].model_dump_json().casefold()
 
 
 class _MissingSchneiderRetriever:
@@ -108,6 +105,21 @@ class _MissingSchneiderRetriever:
         if company == "Schneider Electric":
             return ()
         return self._wrapped.search(company, query, top_k)
+
+
+def test_blocked_run_withholds_the_answer_but_retains_safe_evidence_context() -> None:
+    """Releasing a conclusion after insufficient evidence must fail this test."""
+
+    complete = build_reference_copilot()
+    result = build_reference_copilot(
+        retriever=_MissingSchneiderRetriever(complete.retriever)
+    ).run(ResearchRequest.reference())
+    view = to_run_view(result)
+
+    assert view.answer is None
+    assert view.outcome.status == "blocked"
+    assert view.release.missing_requirements == ("Schneider Electric contextual table evidence",)
+    assert len(view.evidence) == 1
 
 
 def test_core_capstone_import_does_not_require_optional_streamlit() -> None:

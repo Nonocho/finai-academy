@@ -78,7 +78,7 @@ def test_chat_factory_builds_the_configured_openai_model(
     model = providers.create_chat_model(Settings(provider="openai"))
 
     assert model.__class__.__name__ == "ChatOpenAI"
-    assert model.model_name == "gpt-5-mini"
+    assert model.model_name == "gpt-5.6-luna"
 
 
 @pytest.mark.parametrize(

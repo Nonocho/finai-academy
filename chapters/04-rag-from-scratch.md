@@ -1,262 +1,244 @@
-# Lesson 04 — Naive RAG from First Principles
+# Lesson 04 — How RAG Chooses Evidence
 
 **Schedule:** Day 1, 11:30–12:00
 
-**Format:** 8 minutes of concepts and diagrams, 22 minutes of guided notebook work
+**Format:** 10 minutes of concepts and visual explanation, 20 minutes of guided notebook work
 
-**Capstone increment:** first retrieval-backed financial answer with separate retrieval
-and grounding checks
+**Capstone increment:** first retrieval-backed answer over a complete official filing, with
+retrieval and grounding evaluated separately
 
 ## Teaching outcome
 
 Students should leave with one operational definition:
 
-> Retrieval-Augmented Generation is a retrieval system followed by controlled context
-> construction and evidence-bounded generation.
+> RAG is an application pipeline that selects evidence before generation.
 
-They build a complete but intentionally naive baseline over prepared NVIDIA and
-Schneider Electric passages. They can inspect the representation, ranking, selected
-context and answer, then identify whether a failure occurred before or after the model
-call.
-
-The lesson keeps one question fixed and compares three application paths:
+They build a deliberately naive but fully inspectable pipeline over NVIDIA's complete
+FY2026 Form 10-K:
 
 ```text
-No context → full context → naive RAG
+official filing → flattened text → overlapping windows → TF-IDF rank
+               → top-k evidence → controlled prompt → answer
 ```
 
-- no context exposes why a fluent model cannot recover missing company evidence;
-- full context supplies all six mixed-company passages and becomes the reference;
-- naive RAG selects two passages before generation and makes that decision inspectable.
+The goal is not to present the baseline as production-ready. The goal is to make every
+decision visible and diagnose the earliest stage that produced a failure.
+
+## Why RAG comes after Lesson 03
+
+Lesson 03 established the routing decision:
+
+```text
+bounded reusable context → CAG
+large or changing evidence universe → RAG
+```
+
+Lesson 04 opens the RAG path. The complete filing contains roughly 90,000 estimated text
+tokens after naive flattening, while one concise answer needs only a small evidence set.
+Retrieval reduces that boundary before the model call.
+
+RAG can therefore improve:
+
+- **focus:** the model sees fewer irrelevant passages;
+- **cost and latency:** a smaller prompt crosses the model boundary;
+- **traceability:** selected evidence carries stable identifiers and source provenance; and
+- **diagnosability:** retrieval can be evaluated independently from generation.
+
+RAG also introduces a new failure mode: relevant evidence may exist in the corpus but
+never enter top-k.
+
+## Source policy
+
+The notebook reads the committed official NVIDIA FY2026 Form 10-K, accession
+`0001045810-26-000021`, from:
+
+```text
+assets/course-data/downloads/nvidia_fy2026_form_10k.html
+```
+
+It verifies the recorded byte count and SHA-256 through the course manifest before
+parsing. There are no manually paraphrased teaching passages in this lesson.
 
 ## State the limitation before teaching the mechanism
 
-Call this a **naive RAG baseline** throughout the lesson. It is useful because every
-stage is visible, not because it is ready for production.
+Call this a **naive real-document RAG baseline** throughout the lesson.
 
-The baseline assumes:
+The baseline intentionally:
 
-- six passages have already been extracted and segmented correctly;
-- TF-IDF lexical overlap is an adequate representation;
-- cosine similarity is the only ranking signal;
-- top-k selection needs no metadata filter or reranker; and
-- two retrieved passages provide enough context for the question.
+- strips HTML/XBRL markup and collapses visible text into one string;
+- discards table, row, column, heading and hierarchy boundaries;
+- creates 1,600-character windows with 200-character overlap;
+- represents windows with TF-IDF lexical weights;
+- ranks with cosine similarity; and
+- sends only the top two windows to the model.
 
-Lesson 05 removes the first assumption by parsing real financial documents and
-comparing chunking strategies. Lesson 06 improves representation and ranking with
-embeddings, metadata, hybrid retrieval and reranking.
-
-## Why this lesson comes before parsing and chunking
-
-Students first need to understand the retrieval loop in isolation. Starting with raw
-PDF complexity would combine several failure sources at once:
-
-```text
-raw document → parsing → structure → chunks → index → rank → context → answer
-```
-
-Lesson 04 deliberately begins at `chunks`. Once students can observe the index,
-ranking and prompt, Lesson 05 can change the chunks while keeping the downstream
-mechanism understandable.
-
-For one visible baseline only, the notebook joins the six prepared passages and
-applies a blank-line paragraph split. This is explicitly a **naive paragraph split**:
-it ignores headings, tables, semantic boundaries and hierarchy. Lesson 05 replaces
-that simplification rather than treating it as a production parser.
-
-## Financial evidence pack
-
-The corpus contains three NVIDIA fiscal 2026 passages and three Schneider Electric
-fiscal 2025 passages.
-
-NVIDIA evidence covers:
-
-- total revenue of approximately $215.9 billion and 65% year-on-year growth;
-- Data Center revenue of approximately $193.7 billion and 68% growth; and
-- Gaming revenue of approximately $16.0 billion and 41% growth.
-
-Schneider Electric evidence covers:
-
-- fiscal 2025 revenue of approximately €40.2 billion and 8.9% organic growth;
-- 10% organic growth in Energy Management, with Data Center demand leading fourth-
-  quarter growth; and
-- adjusted EBITA of approximately €7.5 billion at an 18.7% margin.
-
-The passages are paraphrased teaching extracts. Their stable identifiers and official
-source URLs remain attached throughout retrieval and prompt construction.
+These are inspectable choices, not best practices.
 
 ## Concept sequence
 
-### 1. RAG controls evidence selection
+### 1. One answer does not need the complete filing
 
-A model does not query the corpus directly in this baseline. The application ranks all
-passages, selects top-k, and constructs a new prompt. Any passage outside top-k is
-invisible to the model call.
+The complete source may fit inside a modern context window, but capacity is not the same
+as evidence focus. Sending everything forces the model to navigate irrelevant material,
+increases input size and weakens the application's control over citations.
 
-### 2. TF-IDF creates weighted lexical vectors
+### 2. Parsing determines what survives
 
-Term Frequency–Inverse Document Frequency gives higher weight to terms that help
-distinguish one passage from the rest of the corpus. It does not represent financial
-meaning or synonym relationships.
+The official filing contains 64 HTML tables and no semantic `h1`–`h6` headings. Naive
+flattening preserves words and numbers but erases their structural relationships. A value
+may remain present while its row, column, unit or section meaning becomes ambiguous.
 
-### 3. Cosine similarity creates a ranking
+### 3. Chunking creates the retrieval candidates
 
-The query is transformed with the same vocabulary as the corpus. Cosine similarity
-compares the query vector with each passage vector. The complete score distribution is
-more informative than printing only the winner.
+Overlapping character windows are simple and reproducible. They can also begin or end in
+the middle of a sentence, table or financial relationship. Overlap reduces hard boundary
+loss but does not make the chunks structure-aware.
 
-### 4. Top-k is a decision boundary
+### 4. Retrieval creates the model's evidence boundary
 
-A smaller k reduces context size but can omit necessary evidence. A larger k may
-recover more evidence but increases noise, token usage and cross-company leakage. The
-notebook uses `top_k=2` because the question needs both total revenue and Data Center
-evidence.
+The application—not the model—represents every window, ranks it and applies top-k.
+Everything below the selection line is invisible to generation.
 
-### 5. Context construction preserves provenance
+### 5. A prompt is assembled after retrieval
 
-Selected passages enter a prompt with passage identifiers, company, period, section
-and source URL. Retrieved content is explicitly treated as untrusted data rather than
-instructions.
+Selected windows enter a controlled prompt with stable chunk identifiers and the official
+SEC URL. Retrieved text is treated as untrusted data rather than instructions.
 
-### 6. Retrieval and generation are evaluated separately
+### 6. Retrieval and grounding are different checks
 
-Retrieval recall asks whether the expected passages entered the prompt. Grounding
-checks ask whether the generated answer used those passages, preserved citations and
-stated an evidence limitation.
+Retrieval asks whether the expected windows entered the prompt. Grounding asks whether the
+answer used the supplied evidence, cited it and respected the evidence boundary. A single
+end-to-end score hides which stage needs repair.
 
-### 7. A lexical failure creates the next engineering question
+### 7. The model cannot repair missing evidence
 
-The failure query expresses a related idea with vocabulary absent from the corpus.
-Relevant evidence loses its score. This does not prove that one embedding model will
-solve the problem; it proves that the baseline representation has a measurable limit.
+For the maintained precise-revenue question, the window containing `$193,737 million`
+ranks 21st under the fixed naive policy. With `top_k=2`, the required table never reaches
+the model. The earliest measured failure is retrieval, influenced by the flattened parsing
+and naive chunk representation.
 
 ## Notebook pacing
 
 | Time | Activity | Instructor emphasis |
 |---:|---|---|
-| 0–3 min | Compare no context and full context | Same question; different evidence boundary. |
-| 3–5 min | Inspect the prepared corpus and paragraph split | Prepared passages are a deliberate simplification. |
-| 5–9 min | Build TF-IDF and inspect the matrix | Representation determines which similarity signals exist. |
-| 9–13 min | Rank every passage and apply top-k | The model has not been called yet. |
-| 13–16 min | Assemble and visualize the prompt budget | Retrieval controls what the model can see. |
-| 16–19 min | Generate with offline, Ollama or OpenAI | Add naive RAG to the three-path table. |
-| 19–21 min | Run retrieval and grounding checks | Keep the two evaluation layers distinct. |
-| 21–22 min | Trigger the lexical failure | Map each weakness to the next lesson. |
+| 0–3 min | Verify the official filing and compare its scale with one answer | RAG reduces evidence before generation. |
+| 3–7 min | Flatten the real HTML and inspect the revenue table | Words survive; financial structure does not. |
+| 7–10 min | Build overlapping character windows | Chunks are application-created evidence candidates. |
+| 10–14 min | Rank every window and apply top-k | The model has not been called yet. |
+| 14–17 min | Build the prompt and generate with the configured provider | Provenance must survive retrieval. |
+| 17–19 min | Separate retrieval and grounding checks | Diagnose before changing the model. |
+| 19–20 min | Reproduce the precise-table miss | Lessons 05–06 repair different stages. |
 
 ## Visual teaching contract
 
 The notebook produces six executable figures:
 
-1. the prepared NVIDIA–Schneider corpus and passage sizes;
-2. selected TF-IDF term weights for every passage and the query;
-3. the complete cosine-similarity ranking with a visible top-k boundary;
-4. the final prompt allocation after retrieval;
-5. ranking signals for explicit versus mismatched vocabulary; and
-6. the map from naive components to Lessons 05 and 06.
+1. complete filing tokens versus a concise-answer budget;
+2. HTML structure counts beside the flattened revenue table;
+3. overlapping character-window construction;
+4. the complete visible top-k ranking boundary;
+5. complete filing versus retrieved evidence and final prompt size; and
+6. the precise Data Center table stranded outside top-k.
 
-The deck mirrors the same mechanism with editable diagrams. Students should be able
-to point from a slide element to the notebook state that calculates it.
+The presentation mirrors this progression with an official SEC screenshot, a published
+RAG architecture visual and editable teaching diagrams.
 
-## Failure lab
+## Maintained success case
 
-Use the query:
+Question:
 
-> Which division supplied most of the expansion from machine-learning infrastructure?
+> What drove NVIDIA revenue growth in fiscal 2026?
 
-The intended concept is NVIDIA Data Center, but the wording shares little or no useful
-vocabulary with the prepared passages. Scores collapse to zero or near zero and the
-stable identifier tie-break becomes visible.
+The fixed naive policy retrieves windows `NVDA-C152` and `NVDA-C160`. Together they contain
+the fiscal-year summary and the discussion of accelerated computing, AI, Blackwell,
+Data Center computing and networking growth.
 
-Ask students:
+The live model answer remains an observation. The deterministic retrieval check is the
+gate: both expected windows must enter the prompt.
 
-1. Did the model fail?
-2. Did top-k fail?
-3. Or did the representation fail before both?
+## Failure laboratory
 
-The correct diagnosis is a retrieval-representation failure. The model has not yet
-received the relevant passage.
+Question:
 
-## Checkpoint questions and answers
+> How large was Data Center revenue compared with total revenue in fiscal 2026?
 
-### 1. Why keep retrieval evaluation separate from answer evaluation?
+The filing contains the necessary table, but its flattened window ranks outside top-k.
+Ask students in order:
 
-Because a wrong answer can originate from missing evidence or from poor use of correct
-evidence. A single end-to-end score hides which component needs improvement.
+1. Does the evidence exist in the official document? **Yes.**
+2. Did naive parsing preserve the table relationship? **Only as flattened text.**
+3. Did the correct window enter top-k? **No.**
+4. Can changing the generation model recover unseen evidence? **No.**
 
-### 2. Why is TF-IDF still useful if embeddings come next?
+The correct diagnosis is a retrieval failure produced upstream of generation. Lesson 05
+will test better parsing and chunk boundaries; Lesson 06 will improve representation and
+ranking.
 
-It is fast, local, transparent and strong for exact terms, accounting language,
-product names and identifiers. It also provides a baseline that later methods must
-beat on a maintained question set.
+## Checkpoint questions
 
-### 3. What does increasing top-k trade off?
+### Why use RAG if the complete filing fits in the model context window?
 
-It can improve evidence coverage, but it consumes more context and may add irrelevant,
-conflicting or cross-company passages.
+Context capacity does not guarantee focus, traceability or efficient repeated use. RAG
+lets the application select and test the evidence boundary explicitly.
 
-### 4. Does a high cosine score prove the passage supports the answer?
+### Does overlap make character windows structure-aware?
 
-No. It measures vector similarity under the selected representation. Support and
-grounding require separate evidence checks.
+No. It reduces abrupt boundary loss but does not understand headings, tables, units or
+financial hierarchy.
 
-### 5. Why are source URLs included inside the context?
+### Is cosine similarity a confidence score?
 
-They preserve provenance through prompt construction and allow the final application
-to emit traceable citations. A URL alone does not prove that the answer used the source
-correctly.
+No. It measures alignment under the chosen representation. A high score does not prove
+that a passage supports the answer.
 
-### 6. Why compare no context, full context and RAG before tuning retrieval?
+### Where should debugging begin when an answer omits a fact?
 
-The comparison makes the engineering job explicit. No context tests the missing-
-evidence boundary, full context tests whether the complete bounded corpus is usable,
-and RAG tests whether selective evidence can preserve the answer with less context.
-Without these references, a retrieval score has no application baseline.
+Check whether the fact was parsed, whether a coherent chunk contains it, whether that
+chunk was retrieved, and only then inspect generation.
 
-## Challenge solution
-
-With `top_k=1`, the Data Center passage is selected but the total-revenue passage is
-lost. The answer cannot safely compare Data Center with the company total.
-
-With `top_k=4`, additional NVIDIA or Schneider passages enter the context. Evidence
-coverage rises, but so do noise and the risk of mixing companies or periods.
-
-A defensible decision is:
-
-> Use top-k=2 for this maintained question because the expected evidence set contains
-> exactly the total-revenue and Data Center passages; re-evaluate the policy when the
-> corpus or question set changes.
-
-## Transition to the next lessons
+## Transition to Lessons 05 and 06
 
 ```text
-Observed naive component          Improvement
+Observed Lesson 04 baseline       Next controlled improvement
 ──────────────────────────────    ─────────────────────────────────
-prepared evidence passages        parse SEC HTML and financial PDFs      Lesson 05
-arbitrary passage boundaries       structural and semantic chunking       Lesson 05
-metadata carried but not used      canonical blocks and filters           Lessons 05–06
-lexical TF-IDF only                embeddings and hybrid retrieval        Lesson 06
-simple top-k                       filtering and reranking                 Lesson 06
+flattened HTML text               canonical headings/tables/blocks     Lesson 05
+character windows                 structure-aware chunking              Lesson 05
+lexical TF-IDF only               embeddings + hybrid retrieval         Lesson 06
+simple global top-k               filters + fusion + reranking           Lesson 06
 ```
 
-Do not describe parsing and chunking as optional polish. They determine whether the
-retriever receives coherent financial evidence in the first place.
+Do not collapse these into “better RAG.” Each improvement changes a distinct, measurable
+stage.
+
+## Provider modes
+
+Offline execution uses `RecordedRagModel`. Live execution uses the shared provider gateway.
+The course OpenAI default is `gpt-5.6-luna`.
+
+```bash
+uv run python scripts/execute_notebooks.py \
+  notebooks/04_rag_from_scratch.ipynb --mode offline
+```
+
+```bash
+FINAI_MODEL_PROVIDER=openai FINAI_CHAT_MODEL=gpt-5.6-luna \
+uv run --extra ai python scripts/execute_notebooks.py \
+  notebooks/04_rag_from_scratch.ipynb --mode live --provider openai
+```
 
 ## Instructor notes
 
-- Say “prepared passage” rather than “chunk” until the limitation is explicit.
-- Ask learners to predict the top two passages before running the ranking cell.
-- Keep the score chart on screen while discussing top-k.
-- Do not attribute Schneider evidence to NVIDIA merely because both discuss Data
-  Center demand.
-- Do not present cosine similarity as probability or confidence.
-- If a live model omits citations, keep the failure: retrieval may have passed while
-  generation grounding failed.
-- End before lunch with the raw-document question: “Who created these passages, and
-  what might have been lost?” That question opens Lesson 05.
+- Ask students to predict the top two windows before displaying the ranking.
+- Say “window” rather than “good chunk.”
+- Keep the top-k line visible while explaining the model boundary.
+- Do not describe the live answer as proof that the retrieval policy is good.
+- Preserve any live grounding miss as an observation.
+- End with the question: “What document structure did our baseline destroy?”
 
 ## Sources
 
-- [NVIDIA fiscal 2026 Form 10-K](https://www.sec.gov/Archives/edgar/data/1045810/000104581026000021/nvda-20260125.htm)
-- [Schneider Electric 2025 full-year results](https://www.se.com/ww/en/assets/564/document/528237/release-fy-results-2025.pdf?p_File_Name=2025+FY+Results&p_enDocType=Financial+release)
+- [NVIDIA FY2026 Form 10-K](https://www.sec.gov/Archives/edgar/data/1045810/000104581026000021/nvda-20260125.htm)
+- [Retrieval-Augmented Generation for Knowledge-Intensive NLP Tasks](https://arxiv.org/abs/2005.11401)
 - [scikit-learn `TfidfVectorizer`](https://scikit-learn.org/stable/modules/generated/sklearn.feature_extraction.text.TfidfVectorizer.html)
 - [scikit-learn cosine similarity](https://scikit-learn.org/stable/modules/generated/sklearn.metrics.pairwise.cosine_similarity.html)
+- [OpenAI GPT-5.6 Luna](https://developers.openai.com/api/docs/models/gpt-5.6-luna)

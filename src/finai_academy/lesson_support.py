@@ -193,7 +193,19 @@ class RecordedRagModel:
     """Return one stable answer for the offline naive RAG lesson."""
 
     def invoke(self, messages: list[tuple[str, str]]) -> RecordedMessage:
-        del messages
+        supplied_evidence = "\n".join(message for _, message in messages)
+        if "NVDA-C152" in supplied_evidence:
+            return RecordedMessage(
+                content=(
+                    "NVIDIA's fiscal 2026 revenue growth was driven by the major "
+                    "platform shifts toward accelerated computing and AI [NVDA-C152]. "
+                    "Data Center computing growth reflected Blackwell demand, while "
+                    "networking growth reflected the NVLink ramp and Ethernet and "
+                    "InfiniBand platforms [NVDA-C160]. The retrieved windows do not "
+                    "establish valuation or a price target."
+                ),
+                response_metadata={"mode": "offline real-filing RAG fixture"},
+            )
         return RecordedMessage(
             content=(
                 "NVIDIA's Data Center business drove fiscal 2026 growth. "
@@ -384,7 +396,9 @@ def evaluate_grounding(text: str) -> GroundingResult:
     metrics_used = sum(any(token in normalized for token in group) for group in metric_groups)
     citations_used = sum(f"[f{index}]" in normalized for index in range(1, 5))
     without_citations = re.sub(r"\[(?:f[1-4](?:/f[1-4])*)\]", "", normalized)
-    numeric_tokens = set(re.findall(r"(?<![a-z])\d+(?:\.\d+)?", without_citations))
+    numeric_tokens = set(
+        re.findall(r"(?<![a-z0-9])\d+(?:\.\d+)?(?![a-z0-9])", without_citations)
+    )
     allowed_numeric_tokens = {
         "2026",
         "215.9",

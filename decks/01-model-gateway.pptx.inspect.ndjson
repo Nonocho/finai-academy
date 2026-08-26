@@ -1,0 +1,215 @@
+{"kind":"deck","id":"pr/3b0pqp","name":"Deck"}
+{"kind":"layout","layoutId":"/ppt/slideMasters/slideMaster1.xml","name":"Master","type":"master"}
+{"kind":"layout","layoutId":"/ppt/slideLayouts/slideLayout1.xml","name":"Title Slide","type":"title"}
+{"kind":"slide","id":"sl/y90nupkv","slide":1,"title":"FIRST FINANCE","textShapes":5}
+{"kind":"shape","id":"sh/sryl4zqx","slide":1,"bbox":[102,82,132,8]}
+{"kind":"textbox","id":"sh/547294r6","slide":1,"text":"FIRST FINANCE","textPreview":"FIRST FINANCE","textChars":13,"textLines":1,"bbox":[102,116,320,32]}
+{"kind":"textbox","id":"sh/k3yl0zql","slide":1,"text":"One interface for AI models","textPreview":"One interface for AI models","textChars":27,"textLines":1,"bbox":[102,252,980,105]}
+{"kind":"textbox","id":"sh/7qp4be9c","slide":1,"text":"Switch between local and hosted models without rewriting finance logic.","textPreview":"Switch between local and hosted models without rewriting finance logic.","textChars":71,"textLines":1,"bbox":[102,382,1120,58]}
+{"kind":"textbox","id":"sh/65g3298r","slide":1,"text":"SESSION 01  ·  09:30–10:00  ·  10 MIN CONCEPTS + 20 MIN NOTEBOOK","textPreview":"SESSION 01  ·  09:30–10:00  ·  10 MIN CONCEPTS + 20 MIN NOTEBOOK","textChars":64,"textLines":1,"bbox":[102,694,1000,34]}
+{"kind":"textbox","id":"sh/ts7md4r2","slide":1,"text":"First Finance - Arnaud Demes","textPreview":"First Finance - Arnaud Demes","textChars":28,"textLines":1,"bbox":[102,752,540,38]}
+{"kind":"notes","id":"nt/y90nupkv","slide":1,"text":"State the outcome: one measured application boundary supports local Ollama and hosted OpenAI models.\n\n[Sources]\n- https://developers.openai.com/api/docs/models\n- https://docs.ollama.com/api\n[/Sources]"}
+{"kind":"slide","id":"sl/hwbqtkby","slide":2,"title":"WHY A GATEWAY","textShapes":18}
+{"kind":"textbox","id":"sh/hcvy14ne","slide":2,"text":"WHY A GATEWAY","textPreview":"WHY A GATEWAY","textChars":13,"textLines":1,"bbox":[102,76,520,28]}
+{"kind":"textbox","id":"sh/9072xkry","slide":2,"text":"A gateway isolates every provider change","textPreview":"A gateway isolates every provider change","textChars":40,"textLines":1,"bbox":[102,124,1390,118]}
+{"kind":"textbox","id":"sh/ozy1ofad","slide":2,"text":"Choose a model","textPreview":"Choose a model","textChars":14,"textLines":1,"bbox":[112,332,250,40]}
+{"kind":"textbox","id":"sh/b29kza94","slide":2,"text":"provider · model · endpoint","textPreview":"provider · model · endpoint","textChars":27,"textLines":1,"bbox":[112,384,280,34]}
+{"kind":"textbox","id":"sh/a10jqpsj","slide":2,"text":"→","textPreview":"→","textChars":1,"textLines":1,"bbox":[396,344,90,60]}
+{"kind":"shape","id":"sh/x4r21kru","slide":2,"bbox":[500,290,390,190]}
+{"kind":"textbox","id":"sh/w3i1sfa9","slide":2,"text":"ONE INTERFACE","textPreview":"ONE INTERFACE","textChars":13,"textLines":1,"bbox":[548,330,294,38]}
+{"kind":"textbox","id":"sh/r65knqtk","slide":2,"text":"invoke(messages)","textPreview":"invoke(messages)","textChars":16,"textLines":1,"bbox":[548,390,294,46]}
+{"kind":"textbox","id":"sh/q5wjelsz","slide":2,"text":"→","textPreview":"→","textChars":1,"textLines":1,"bbox":[912,344,90,60]}
+{"kind":"textbox","id":"sh/ove9o7yd","slide":2,"text":"OLLAMA","textPreview":"OLLAMA","textChars":6,"textLines":1,"bbox":[1028,292,220,36]}
+{"kind":"textbox","id":"sh/9wnqhczy","slide":2,"text":"local · private","textPreview":"local · private","textChars":15,"textLines":1,"bbox":[1028,336,220,30]}
+{"kind":"shape","id":"sh/mtwrmxg7","slide":2,"bbox":[1028,390,250,2]}
+{"kind":"textbox","id":"sh/nu58f2hs","slide":2,"text":"OPENAI","textPreview":"OPENAI","textChars":6,"textLines":1,"bbox":[1028,420,220,36]}
+{"kind":"textbox","id":"sh/wjy9sry9","slide":2,"text":"hosted · metered","textPreview":"hosted · metered","textChars":16,"textLines":1,"bbox":[1028,464,240,30]}
+{"kind":"shape","id":"sh/xk7qlczu","slide":2,"bbox":[102,590,1396,2]}
+{"kind":"textbox","id":"sh/ahwrqhgj","slide":2,"text":"SAME RESPONSE FIELDS","textPreview":"SAME RESPONSE FIELDS","textChars":20,"textLines":1,"bbox":[112,634,260,32]}
+{"kind":"textbox","id":"sh/bip8jmho","slide":2,"text":"provider  ·  model  ·  response  ·  latency  ·  tokens","textPreview":"provider  ·  model  ·  response  ·  latency  ·  tokens","textChars":54,"textLines":1,"bbox":[404,625,850,48]}
+{"kind":"textbox","id":"sh/cnupgny5","slide":2,"text":"Switch providers in configuration; the notebook keeps one stable call.","textPreview":"Switch providers in configuration; the notebook keeps one stable call.","textChars":70,"textLines":1,"bbox":[404,704,920,38]}
+{"kind":"shape","id":"sh/do3q9szq","slide":2,"bbox":[90,830,1420,2]}
+{"kind":"shape","id":"sh/t8byxkn2","slide":2,"bbox":[90,830,840,3]}
+{"kind":"textbox","id":"sh/s72xofmh","slide":2,"text":"First Finance - Arnaud Demes","textPreview":"First Finance - Arnaud Demes","textChars":28,"textLines":1,"bbox":[102,856,420,24]}
+{"kind":"textbox","id":"sh/76twva5c","slide":2,"text":"ARCHITECTURE","textPreview":"ARCHITECTURE","textChars":12,"textLines":1,"bbox":[1310,856,160,24]}
+{"kind":"textbox","id":"sh/65kfmpor","slide":2,"text":"02","textPreview":"02","textChars":2,"textLines":1,"bbox":[1480,856,30,24]}
+{"kind":"notes","id":"nt/hwbqtkby","slide":2,"text":"Walk left to right. Configuration selects the provider adapter; application code consumes one normalized response record.\n\n[Sources]\n- https://developers.openai.com/api/docs/models\n- https://docs.ollama.com/api\n[/Sources]"}
+{"kind":"slide","id":"sl/ofy9wn61","slide":3,"title":"CHOOSING A MODEL","textShapes":11}
+{"kind":"textbox","id":"sh/x8nml0ra","slide":3,"text":"CHOOSING A MODEL","textPreview":"CHOOSING A MODEL","textChars":16,"textLines":1,"bbox":[102,76,520,28]}
+{"kind":"textbox","id":"sh/cza94vmx","slide":3,"text":"Choose models on quality, speed, latency and cost","textPreview":"Choose models on quality, speed, latency and cost","textChars":49,"textLines":1,"bbox":[102,124,1390,118]}
+{"kind":"textbox","id":"sh/d0jax03i","slide":3,"text":"Compare 4 signals","textPreview":"Compare 4 signals","textChars":17,"textLines":1,"bbox":[112,292,520,90]}
+{"kind":"textbox","id":"sh/298ryl4v","slide":3,"text":"quality · output speed · latency · price","textPreview":"quality · output speed · latency · price","textChars":40,"textLines":1,"bbox":[112,398,520,58]}
+{"kind":"shape","id":"sh/3ah8rqlg","slide":3,"bbox":[680,286,2,384]}
+{"kind":"textbox","id":"sh/obq90bml","slide":3,"text":"Use one gateway","textPreview":"Use one gateway","textChars":15,"textLines":1,"bbox":[112,492,520,62]}
+{"kind":"textbox","id":"sh/pcjqtg36","slide":3,"text":"Run every candidate through the same application interface.","textPreview":"Run every candidate through the same application interface.","textChars":59,"textLines":1,"bbox":[112,560,520,64]}
+{"kind":"textbox","id":"sh/m5cra54z","slide":3,"text":"Public benchmarks create the shortlist; your task picks the winner.","textPreview":"Public benchmarks create the shortlist; your task picks the winner.","textChars":67,"textLines":1,"bbox":[112,644,520,52]}
+{"kind":"shape","id":"sh/n6ls3alk","slide":3,"bbox":[112,720,520,20]}
+{"kind":"textbox","id":"sh/n2l4fq98","slide":3,"text":"Source: Artificial Analysis model comparison · accessed 25 Aug 2026","textPreview":"Source: Artificial Analysis model comparison · accessed 25 Aug 2026","textChars":67,"textLines":1,"bbox":[748,690,712,42]}
+{"kind":"shape","id":"sh/m1c3mlsn","slide":3,"bbox":[90,830,1420,2]}
+{"kind":"shape","id":"sh/943mhgre","slide":3,"bbox":[90,830,840,3]}
+{"kind":"textbox","id":"sh/83ulovat","slide":3,"text":"First Finance - Arnaud Demes","textPreview":"First Finance - Arnaud Demes","textChars":28,"textLines":1,"bbox":[102,856,420,24]}
+{"kind":"textbox","id":"sh/v6l4jq94","slide":3,"text":"BENCHMARK","textPreview":"BENCHMARK","textChars":9,"textLines":1,"bbox":[1310,856,160,24]}
+{"kind":"textbox","id":"sh/a5c3ql8z","slide":3,"text":"03","textPreview":"03","textChars":2,"textLines":1,"bbox":[1480,856,30,24]}
+{"kind":"image","id":"im/vmlojqd0","slide":3,"name":"","geometry":"roundRect","bbox":[762.67,286,682.67,384]}
+{"kind":"notes","id":"nt/ofy9wn61","slide":3,"text":"[Sources]\n- https://artificialanalysis.ai/models (accessed 2026-08-25)\n- https://developers.openai.com/api/docs/models/gpt-5.6-luna (accessed 2026-08-25)\n[/Sources]\n\nPublic benchmarks are a selection aid, not a substitute for task-specific evaluation."}
+{"kind":"slide","id":"sl/jyx0ra1s","slide":4,"title":"COST TREND","textShapes":7}
+{"kind":"textbox","id":"sh/a5kr2xg3","slide":4,"text":"COST TREND","textPreview":"COST TREND","textChars":10,"textLines":1,"bbox":[102,76,520,28]}
+{"kind":"textbox","id":"sh/1cj2d8b6","slide":4,"text":"Better AI models are becoming cheaper","textPreview":"Better AI models are becoming cheaper","textChars":37,"textLines":1,"bbox":[102,124,1390,78]}
+{"kind":"shape","id":"sh/0ba143al","slide":4,"bbox":[102,214,2,2]}
+{"kind":"textbox","id":"sh/rm1k7yt4","slide":4,"text":"The same spend buys more intelligence—and the frontier keeps moving.","textPreview":"The same spend buys more intelligence—and the frontier keeps moving.","textChars":68,"textLines":1,"bbox":[102,214,1390,44]}
+{"kind":"shape","id":"sh/ql8jytsj","slide":4,"bbox":[680,286,2,384]}
+{"kind":"shape","id":"sh/doj29oba","slide":4,"bbox":[102,258,2,2]}
+{"kind":"shape","id":"sh/sna103ap","slide":4,"bbox":[102,258,2,2]}
+{"kind":"shape","id":"sh/3ihk3et8","slide":4,"bbox":[102,258,2,2]}
+{"kind":"shape","id":"sh/ih8ju9sn","slide":4,"bbox":[112,720,520,20]}
+{"kind":"textbox","id":"sh/kbm987y5","slide":4,"text":"Source: Artificial Analysis State of AI · 2025 Year-End · p.16","textPreview":"Source: Artificial Analysis State of AI · 2025 Year-End · p.16","textChars":62,"textLines":1,"bbox":[102,795,1396,26]}
+{"kind":"shape","id":"sh/5cva1cfq","slide":4,"bbox":[90,830,1420,2]}
+{"kind":"shape","id":"sh/i94r6xgz","slide":4,"bbox":[90,830,840,3]}
+{"kind":"textbox","id":"sh/jadsz2xk","slide":4,"text":"First Finance - Arnaud Demes","textPreview":"First Finance - Arnaud Demes","textChars":28,"textLines":1,"bbox":[102,856,420,24]}
+{"kind":"textbox","id":"sh/w72947yt","slide":4,"text":"MARKET EVIDENCE","textPreview":"MARKET EVIDENCE","textChars":15,"textLines":1,"bbox":[1310,856,160,24]}
+{"kind":"textbox","id":"sh/x8vaxsfe","slide":4,"text":"04","textPreview":"04","textChars":2,"textLines":1,"bbox":[1480,856,30,24]}
+{"kind":"image","id":"im/sbm5cbix","slide":4,"name":"","geometry":"roundRect","bbox":[170,260,1260,520]}
+{"kind":"notes","id":"nt/jyx0ra1s","slide":4,"text":"[Sources]\n- https://artificialanalysis.ai/downloads/state-of-ai/2025/2025-Year-End-Artificial-Analysis-State-of-AI-Highlights-Report.pdf (page 16, accessed 2026-08-25)\n[/Sources]\n\nThe chart is Artificial Analysis's Intelligence vs. Cost to Run Intelligence Index (Pareto Frontiers). Use it to explain why a gateway should make model choice configurable and measurable. Public benchmarks define a shortlist; quality, latency, and cost still need validation on the learner's own task."}
+{"kind":"slide","id":"sl/i107q5of","slide":5,"title":"MESSAGE ROLES","textShapes":14}
+{"kind":"textbox","id":"sh/tcfel0vu","slide":5,"text":"MESSAGE ROLES","textPreview":"MESSAGE ROLES","textChars":13,"textLines":1,"bbox":[102,76,520,28]}
+{"kind":"textbox","id":"sh/dgbulwnm","slide":5,"text":"Separate stable rules from each user request","textPreview":"Separate stable rules from each user request","textChars":44,"textLines":1,"bbox":[102,124,1390,118]}
+{"kind":"textbox","id":"sh/cf2tcr61","slide":5,"text":"STABLE RULES","textPreview":"STABLE RULES","textChars":12,"textLines":1,"bbox":[112,302,220,36]}
+{"kind":"textbox","id":"sh/z2tcnm5s","slide":5,"text":"Role · boundaries · evidence rules","textPreview":"Role · boundaries · evidence rules","textChars":34,"textLines":1,"bbox":[112,352,430,72]}
+{"kind":"shape","id":"sh/yhkbe1o7","slide":5,"bbox":[112,454,430,2]}
+{"kind":"textbox","id":"sh/l4bupwny","slide":5,"text":"THIS REQUEST","textPreview":"THIS REQUEST","textChars":12,"textLines":1,"bbox":[112,492,220,36]}
+{"kind":"textbox","id":"sh/032tgr6d","slide":5,"text":"Question · company · period · evidence","textPreview":"Question · company · period · evidence","textChars":38,"textLines":1,"bbox":[112,542,430,72]}
+{"kind":"shape","id":"sh/n6dcr65o","slide":5,"bbox":[650,280,820,410]}
+{"kind":"textbox","id":"sh/m5kbi1oj","slide":5,"text":"messages = [","textPreview":"messages = [","textChars":12,"textLines":1,"bbox":[712,326,680,36]}
+{"kind":"textbox","id":"sh/w32dkbuh","slide":5,"text":"  (\"system\", stable_instructions),","textPreview":"(\"system\", stable_instructions),","textChars":34,"textLines":1,"bbox":[712,390,680,36]}
+{"kind":"textbox","id":"sh/x4vedgvm","slide":5,"text":"  (\"human\", question_and_evidence),","textPreview":"(\"human\", question_and_evidence),","textChars":35,"textLines":1,"bbox":[712,454,710,36]}
+{"kind":"textbox","id":"sh/ahkvi1cb","slide":5,"text":"]","textPreview":"]","textChars":1,"textLines":1,"bbox":[712,518,680,36]}
+{"kind":"textbox","id":"sh/v2twb6dw","slide":5,"text":"Clear roles make every call easier to test, version and trace.","textPreview":"Clear roles make every call easier to test, version and trace.","textChars":62,"textLines":1,"bbox":[712,605,660,36]}
+{"kind":"shape","id":"sh/k7mxovud","slide":5,"bbox":[90,830,1420,2]}
+{"kind":"shape","id":"sh/58vehgvy","slide":5,"bbox":[90,830,840,3]}
+{"kind":"textbox","id":"sh/i54fmlc7","slide":5,"text":"First Finance - Arnaud Demes","textPreview":"First Finance - Arnaud Demes","textChars":28,"textLines":1,"bbox":[102,856,420,24]}
+{"kind":"textbox","id":"sh/j6dwfqds","slide":5,"text":"MESSAGES","textPreview":"MESSAGES","textChars":8,"textLines":1,"bbox":[1310,856,160,24]}
+{"kind":"textbox","id":"sh/sb6xsvu9","slide":5,"text":"05","textPreview":"05","textChars":2,"textLines":1,"bbox":[1480,856,30,24]}
+{"kind":"notes","id":"nt/i107q5of","slide":5,"text":"Separate stable system instructions from the current question and evidence. These roles remain inspectable and versionable.\n\n[Sources]\n- https://developers.openai.com/api/docs/guides/prompt-engineering\n[/Sources]"}
+{"kind":"slide","id":"sl/x8f69ofe","slide":6,"title":"LIVE LUNA RESULT","textShapes":18}
+{"kind":"textbox","id":"sh/0fy5k3id","slide":6,"text":"LIVE LUNA RESULT","textPreview":"LIVE LUNA RESULT","textChars":16,"textLines":1,"bbox":[102,76,520,28]}
+{"kind":"textbox","id":"sh/yhg7epsj","slide":6,"text":"The live Luna call was fast—and fully grounded","textPreview":"The live Luna call was fast—and fully grounded","textChars":46,"textLines":1,"bbox":[102,124,1390,118]}
+{"kind":"textbox","id":"sh/zi98nu94","slide":6,"text":"gpt-5.6-luna","textPreview":"gpt-5.6-luna","textChars":12,"textLines":1,"bbox":[112,332,250,40]}
+{"kind":"textbox","id":"sh/87ipkzal","slide":6,"text":"OpenAI · course gateway","textPreview":"OpenAI · course gateway","textChars":23,"textLines":1,"bbox":[112,384,280,34]}
+{"kind":"textbox","id":"sh/98rqt4r6","slide":6,"text":"→","textPreview":"→","textChars":1,"textLines":1,"bbox":[396,344,90,60]}
+{"kind":"shape","id":"sh/ml07i9sv","slide":6,"bbox":[500,290,390,190]}
+{"kind":"textbox","id":"sh/7m98ru9g","slide":6,"text":"3,892 ms","textPreview":"3,892 ms","textChars":8,"textLines":1,"bbox":[548,330,294,38]}
+{"kind":"textbox","id":"sh/oryp8fah","slide":6,"text":"first-answer latency","textPreview":"first-answer latency","textChars":20,"textLines":1,"bbox":[548,390,294,46]}
+{"kind":"textbox","id":"sh/pc76hkr2","slide":6,"text":"→","textPreview":"→","textChars":1,"textLines":1,"bbox":[912,344,90,60]}
+{"kind":"textbox","id":"sh/h4bupgn6","slide":6,"text":"199 TOKENS","textPreview":"199 TOKENS","textChars":10,"textLines":1,"bbox":[1028,292,220,36]}
+{"kind":"textbox","id":"sh/w32twb6l","slide":6,"text":"32 input · 167 output","textPreview":"32 input · 167 output","textChars":21,"textLines":1,"bbox":[1028,336,220,30]}
+{"kind":"shape","id":"sh/v2tcn650","slide":6,"bbox":[1028,390,250,2]}
+{"kind":"textbox","id":"sh/u1kbu1ov","slide":6,"text":"3,729 ms","textPreview":"3,729 ms","textChars":8,"textLines":1,"bbox":[1028,420,220,36]}
+{"kind":"textbox","id":"sh/5svutgni","slide":6,"text":"grounded-answer latency","textPreview":"grounded-answer latency","textChars":23,"textLines":1,"bbox":[1028,464,240,30]}
+{"kind":"shape","id":"sh/47mt0b6x","slide":6,"bbox":[102,590,1396,2]}
+{"kind":"textbox","id":"sh/j6dcr65c","slide":6,"text":"GROUNDING","textPreview":"GROUNDING","textChars":9,"textLines":1,"bbox":[112,634,260,32]}
+{"kind":"textbox","id":"sh/i54bylor","slide":6,"text":"4/4 evidence checks passed","textPreview":"4/4 evidence checks passed","textChars":26,"textLines":1,"bbox":[404,625,850,48]}
+{"kind":"textbox","id":"sh/twfux0ne","slide":6,"text":"Observed 25 Aug 2026 · one run, not a general speed benchmark.","textPreview":"Observed 25 Aug 2026 · one run, not a general speed benchmark.","textChars":62,"textLines":1,"bbox":[404,704,920,38]}
+{"kind":"shape","id":"sh/svmt4v6t","slide":6,"bbox":[90,830,1420,2]}
+{"kind":"shape","id":"sh/cbe5g3ih","slide":6,"bbox":[90,830,840,3]}
+{"kind":"textbox","id":"sh/dcnm98zm","slide":6,"text":"First Finance - Arnaud Demes","textPreview":"First Finance - Arnaud Demes","textChars":28,"textLines":1,"bbox":[102,856,420,24]}
+{"kind":"textbox","id":"sh/qpwnet0b","slide":6,"text":"LIVE RUN","textPreview":"LIVE RUN","textChars":8,"textLines":1,"bbox":[1310,856,160,24]}
+{"kind":"textbox","id":"sh/bq547yhw","slide":6,"text":"06","textPreview":"06","textChars":2,"textLines":1,"bbox":[1480,856,30,24]}
+{"kind":"notes","id":"nt/x8f69ofe","slide":6,"text":"[Sources]\n- https://developers.openai.com/api/docs/models/gpt-5.6-luna (accessed 2026-08-25)\n[/Sources]\n\nObserved course run from notebooks/01_model_gateway.ipynb on 2026-08-25. First call: 3,892 ms, 32 input tokens, 167 output tokens. Grounded call: 3,729 ms. These values are a run receipt, not a benchmark claim."}
+{"kind":"slide","id":"sl/gnmp4jqx","slide":7,"title":"WHAT BREAKS","textShapes":17}
+{"kind":"textbox","id":"sh/jedkn654","slide":7,"text":"WHAT BREAKS","textPreview":"WHAT BREAKS","textChars":11,"textLines":1,"bbox":[102,76,520,28]}
+{"kind":"textbox","id":"sh/cb2tkvap","slide":7,"text":"A vague question produces unusable finance analysis","textPreview":"A vague question produces unusable finance analysis","textChars":51,"textLines":1,"bbox":[102,124,1390,118]}
+{"kind":"textbox","id":"sh/dcbud0ra","slide":7,"text":"“What is happening with AI demand?”","textPreview":"“What is happening with AI demand?”","textChars":35,"textLines":1,"bbox":[132,300,1240,72]}
+{"kind":"shape","id":"sh/ydkbm5sv","slide":7,"bbox":[260,415,1080,2]}
+{"kind":"textbox","id":"sh/zedcfa9g","slide":7,"text":"01","textPreview":"01","textChars":2,"textLines":1,"bbox":[118,488,52,34]}
+{"kind":"textbox","id":"sh/kzmdova1","slide":7,"text":"Company","textPreview":"Company","textChars":7,"textLines":1,"bbox":[118,540,238,46]}
+{"kind":"textbox","id":"sh/l0vuh0rm","slide":7,"text":"02","textPreview":"02","textChars":2,"textLines":1,"bbox":[406,488,52,34]}
+{"kind":"textbox","id":"sh/eh0ba1sr","slide":7,"text":"Period","textPreview":"Period","textChars":6,"textLines":1,"bbox":[406,540,238,46]}
+{"kind":"textbox","id":"sh/fi9c369c","slide":7,"text":"03","textPreview":"03","textChars":2,"textLines":1,"bbox":[694,488,52,34]}
+{"kind":"textbox","id":"sh/baxkjqlk","slide":7,"text":"Source","textPreview":"Source","textChars":6,"textLines":1,"bbox":[694,540,238,46]}
+{"kind":"textbox","id":"sh/a9ojq5kz","slide":7,"text":"04","textPreview":"04","textChars":2,"textLines":1,"bbox":[982,488,52,34]}
+{"kind":"textbox","id":"sh/xcz2l03q","slide":7,"text":"Evidence rule","textPreview":"Evidence rule","textChars":13,"textLines":1,"bbox":[982,540,238,46]}
+{"kind":"textbox","id":"sh/cbq1sv25","slide":7,"text":"05","textPreview":"05","textChars":2,"textLines":1,"bbox":[1270,488,52,34]}
+{"kind":"textbox","id":"sh/n6x0fqlo","slide":7,"text":"Output contract","textPreview":"Output contract","textChars":15,"textLines":1,"bbox":[1270,540,238,46]}
+{"kind":"textbox","id":"sh/25ojml43","slide":7,"text":"No model can reliably supply requirements the application never defined.","textPreview":"No model can reliably supply requirements the application never defined.","textChars":72,"textLines":1,"bbox":[300,682,1000,42]}
+{"kind":"shape","id":"sh/p8fih03e","slide":7,"bbox":[90,830,1420,2]}
+{"kind":"shape","id":"sh/o761ov2t","slide":7,"bbox":[90,830,840,3]}
+{"kind":"textbox","id":"sh/f2d0b6lc","slide":7,"text":"First Finance - Arnaud Demes","textPreview":"First Finance - Arnaud Demes","textChars":28,"textLines":1,"bbox":[102,856,420,24]}
+{"kind":"textbox","id":"sh/eh4jil4r","slide":7,"text":"FAILURE","textPreview":"FAILURE","textChars":7,"textLines":1,"bbox":[1310,856,160,24]}
+{"kind":"textbox","id":"sh/id4ju1oz","slide":7,"text":"07","textPreview":"07","textChars":2,"textLines":1,"bbox":[1480,856,30,24]}
+{"kind":"notes","id":"nt/gnmp4jqx","slide":7,"text":"Let the technically successful call fail as analysis. Ask students to name the five missing contract elements before revealing them.\n\n[Sources]\n- https://developers.openai.com/api/docs/guides/prompt-engineering\n[/Sources]"}
+{"kind":"slide","id":"sl/fu1gfa1s","slide":8,"title":"LESSON EVIDENCE","textShapes":12}
+{"kind":"textbox","id":"sh/ehgvihwr","slide":8,"text":"LESSON EVIDENCE","textPreview":"LESSON EVIDENCE","textChars":15,"textLines":1,"bbox":[102,76,520,28]}
+{"kind":"textbox","id":"sh/18byd4zy","slide":8,"text":"This lesson uses a small, visible SEC evidence set","textPreview":"This lesson uses a small, visible SEC evidence set","textChars":50,"textLines":1,"bbox":[102,124,1390,118]}
+{"kind":"textbox","id":"sh/g72x4zyd","slide":8,"text":"$215.9bn","textPreview":"$215.9bn","textChars":8,"textLines":1,"bbox":[1015,292,390,82]}
+{"kind":"textbox","id":"sh/ri9g7uhw","slide":8,"text":"Revenue · +65% year on year [F1]","textPreview":"Revenue · +65% year on year [F1]","textChars":32,"textLines":1,"bbox":[1015,382,430,48]}
+{"kind":"shape","id":"sh/6h0fypgb","slide":8,"bbox":[970,278,2,420]}
+{"kind":"textbox","id":"sh/tkby9kzm","slide":8,"text":"$193.7bn","textPreview":"$193.7bn","textChars":8,"textLines":1,"bbox":[1015,466,390,82]}
+{"kind":"textbox","id":"sh/sjix0zy1","slide":8,"text":"Data Center · +68% year on year [F2]","textPreview":"Data Center · +68% year on year [F2]","textChars":36,"textLines":1,"bbox":[1015,556,440,52]}
+{"kind":"textbox","id":"sh/je9g3ahk","slide":8,"text":"$16.0bn Gaming · +41% [F3]","textPreview":"$16.0bn Gaming · +41% [F3]","textChars":26,"textLines":1,"bbox":[1015,632,440,44]}
+{"kind":"textbox","id":"sh/id0fu50z","slide":8,"text":"H20-related charge: $4.5bn [F4]","textPreview":"H20-related charge: $4.5bn [F4]","textChars":31,"textLines":1,"bbox":[1015,690,440,48]}
+{"kind":"textbox","id":"sh/o7ydoret","slide":8,"text":"We curate four facts here; students learn document loading in Lesson 03.","textPreview":"We curate four facts here; students learn document loading in Lesson 03.","textChars":72,"textLines":1,"bbox":[102,682,840,70]}
+{"kind":"shape","id":"sh/98rehwve","slide":8,"bbox":[90,830,1420,2]}
+{"kind":"shape","id":"sh/m5gvmhwn","slide":8,"bbox":[90,830,840,3]}
+{"kind":"textbox","id":"sh/n6pwfmd8","slide":8,"text":"First Finance - Arnaud Demes","textPreview":"First Finance - Arnaud Demes","textChars":28,"textLines":1,"bbox":[102,856,420,24]}
+{"kind":"textbox","id":"sh/0jydkreh","slide":8,"text":"EVIDENCE","textPreview":"EVIDENCE","textChars":8,"textLines":1,"bbox":[1310,856,160,24]}
+{"kind":"textbox","id":"sh/1k7edwv2","slide":8,"text":"08","textPreview":"08","textChars":2,"textLines":1,"bbox":[1480,856,30,24]}
+{"kind":"image","id":"im/0rmpoj2t","slide":8,"name":"","geometry":"roundRect","bbox":[175.33,278,693.33,390]}
+{"kind":"notes","id":"nt/fu1gfa1s","slide":8,"text":"[Sources]\n- https://www.sec.gov/Archives/edgar/data/1045810/000104581026000021/nvda-20260125.htm (accessed 2026-08-25)\n[/Sources]\n\nThe notebook uses a manually curated evidence card derived from this filing. It does not download or parse the filing. Lesson 03 introduces document loading; later retrieval lessons automate evidence selection."}
+{"kind":"slide","id":"sl/udsvah03","slide":9,"title":"PASS CONDITIONS","textShapes":21}
+{"kind":"textbox","id":"sh/cf6h0fql","slide":9,"text":"PASS CONDITIONS","textPreview":"PASS CONDITIONS","textChars":15,"textLines":1,"bbox":[102,76,520,28]}
+{"kind":"textbox","id":"sh/1cfmhgne","slide":9,"text":"The notebook passes only when the answer is grounded","textPreview":"The notebook passes only when the answer is grounded","textChars":52,"textLines":1,"bbox":[102,124,1390,118]}
+{"kind":"textbox","id":"sh/0b65obm9","slide":9,"text":"01","textPreview":"01","textChars":2,"textLines":1,"bbox":[122,300,60,38]}
+{"kind":"textbox","id":"sh/nex4jq5k","slide":9,"text":"Company and reporting period","textPreview":"Company and reporting period","textChars":28,"textLines":1,"bbox":[225,296,620,48]}
+{"kind":"textbox","id":"sh/mdonql4z","slide":9,"text":"PASS","textPreview":"PASS","textChars":4,"textLines":1,"bbox":[900,300,110,34]}
+{"kind":"shape","id":"sh/9gzml0nq","slide":9,"bbox":[225,358,790,2]}
+{"kind":"textbox","id":"sh/ofq5svm5","slide":9,"text":"02","textPreview":"02","textChars":2,"textLines":1,"bbox":[122,388,60,38]}
+{"kind":"textbox","id":"sh/bih4na5w","slide":9,"text":"Two+ metrics; no new numbers","textPreview":"Two+ metrics; no new numbers","textChars":28,"textLines":1,"bbox":[225,384,620,48]}
+{"kind":"textbox","id":"sh/ah8nu54b","slide":9,"text":"PASS","textPreview":"PASS","textChars":4,"textLines":1,"bbox":[900,388,110,34]}
+{"kind":"shape","id":"sh/oza1gfyh","slide":9,"bbox":[225,446,790,2]}
+{"kind":"textbox","id":"sh/p0ji9kf2","slide":9,"text":"03","textPreview":"03","textChars":2,"textLines":1,"bbox":[122,476,60,38]}
+{"kind":"textbox","id":"sh/2xsjepgb","slide":9,"text":"At least two evidence citations","textPreview":"At least two evidence citations","textChars":31,"textLines":1,"bbox":[225,472,620,48]}
+{"kind":"textbox","id":"sh/3y107axw","slide":9,"text":"PASS","textPreview":"PASS","textChars":4,"textLines":1,"bbox":[900,476,110,34]}
+{"kind":"shape","id":"sh/cnu1kzyd","slide":9,"bbox":[225,534,790,2]}
+{"kind":"textbox","id":"sh/do3id4fy","slide":9,"text":"04","textPreview":"04","textChars":2,"textLines":1,"bbox":[122,564,60,38]}
+{"kind":"textbox","id":"sh/qlcjipgn","slide":9,"text":"One explicit limitation","textPreview":"One explicit limitation","textChars":23,"textLines":1,"bbox":[225,560,620,48]}
+{"kind":"textbox","id":"sh/bml0buxs","slide":9,"text":"PASS","textPreview":"PASS","textChars":4,"textLines":1,"bbox":[900,564,110,34]}
+{"kind":"shape","id":"sh/0ru1ozyp","slide":9,"bbox":[225,622,790,2]}
+{"kind":"shape","id":"sh/lsn2h4fa","slide":9,"bbox":[1110,306,350,340]}
+{"kind":"textbox","id":"sh/98ji147e","slide":9,"text":"LIVE RESULT","textPreview":"LIVE RESULT","textChars":11,"textLines":1,"bbox":[1160,360,250,32]}
+{"kind":"textbox","id":"sh/87a18zqt","slide":9,"text":"gpt-5.6-luna","textPreview":"gpt-5.6-luna","textChars":12,"textLines":1,"bbox":[1160,424,250,54]}
+{"kind":"textbox","id":"sh/76h0zup8","slide":9,"text":"4/4 grounding\nno invented numbers","textPreview":"4/4 grounding | no invented numbers","textChars":33,"textLines":2,"bbox":[1160,520,250,82]}
+{"kind":"textbox","id":"sh/ml8j6p8n","slide":9,"text":"Today: evidence checks. Later: document retrieval and stronger evaluation.","textPreview":"Today: evidence checks. Later: document retrieval and stronger evaluation.","textChars":74,"textLines":1,"bbox":[225,700,920,42]}
+{"kind":"shape","id":"sh/hcji5o7a","slide":9,"bbox":[90,830,1420,2]}
+{"kind":"shape","id":"sh/wba1cjqp","slide":9,"bbox":[90,830,840,3]}
+{"kind":"textbox","id":"sh/va103ep4","slide":9,"text":"First Finance - Arnaud Demes","textPreview":"First Finance - Arnaud Demes","textChars":28,"textLines":1,"bbox":[102,856,420,24]}
+{"kind":"textbox","id":"sh/u9sja98z","slide":9,"text":"NOTEBOOK","textPreview":"NOTEBOOK","textChars":8,"textLines":1,"bbox":[1310,856,160,24]}
+{"kind":"textbox","id":"sh/xgzitk76","slide":9,"text":"09","textPreview":"09","textChars":2,"textLines":1,"bbox":[1480,856,30,24]}
+{"kind":"notes","id":"nt/udsvah03","slide":9,"text":"The four checks are intentionally simple and inspectable: company/period, at least two metrics with no new numbers, at least two citations, and one explicit limitation. This is a Lesson 1 learning contract, not a production evaluation suite."}
+{"kind":"slide","id":"sl/m90b6t0r","slide":10,"title":"FIRST FINANCE","textShapes":11}
+{"kind":"shape","id":"sh/kzu5c32t","slide":10,"bbox":[102,82,132,8]}
+{"kind":"textbox","id":"sh/xc3mho32","slide":10,"text":"FIRST FINANCE","textPreview":"FIRST FINANCE","textChars":13,"textLines":1,"bbox":[102,116,320,32]}
+{"kind":"textbox","id":"sh/cbu58j2h","slide":10,"text":"Quick quiz","textPreview":"Quick quiz","textChars":10,"textLines":1,"bbox":[102,252,980,105]}
+{"kind":"textbox","id":"sh/zelojyl8","slide":10,"text":"Choose one answer for each question.","textPreview":"Choose one answer for each question.","textChars":36,"textLines":1,"bbox":[102,382,1120,58]}
+{"kind":"textbox","id":"sh/ydcnatkn","slide":10,"text":"LESSON 01  ·  3 QUESTIONS  ·  3 MINUTES","textPreview":"LESSON 01  ·  3 QUESTIONS  ·  3 MINUTES","textChars":39,"textLines":1,"bbox":[102,694,1000,34]}
+{"kind":"textbox","id":"sh/l036l83y","slide":10,"text":"First Finance - Arnaud Demes","textPreview":"First Finance - Arnaud Demes","textChars":28,"textLines":1,"bbox":[102,752,540,38]}
+{"kind":"textbox","id":"sh/725onyl4","slide":10,"name":"quiz-question-1","text":"1. Which component hides provider-specific details?","textPreview":"1. Which component hides provider-specific details?","textChars":51,"textLines":1,"bbox":[102,462,1396,30]}
+{"kind":"textbox","id":"sh/m1cnetkj","slide":10,"name":"quiz-options-1","text":"A  Prompt     |     B  Model gateway     |     C  Vector database","textPreview":"A  Prompt     |     B  Model gateway     |     C  Vector database","textChars":65,"textLines":1,"bbox":[132,494,1366,26]}
+{"kind":"textbox","id":"sh/s7yt4b21","slide":10,"name":"quiz-question-2","text":"2. What does streaming mainly change?","textPreview":"2. What does streaming mainly change?","textChars":37,"textLines":1,"bbox":[102,534,1396,30]}
+{"kind":"textbox","id":"sh/d87uxg3m","slide":10,"name":"quiz-options-2","text":"A  Delivery     |     B  Grounding     |     C  Factual quality","textPreview":"A  Delivery     |     B  Grounding     |     C  Factual quality","textChars":63,"textLines":1,"bbox":[132,566,1366,26]}
+{"kind":"textbox","id":"sh/q5gb21kb","slide":10,"name":"quiz-question-3","text":"3. What should the gateway record when token metadata is missing?","textPreview":"3. What should the gateway record when token metadata is missing?","textChars":65,"textLines":1,"bbox":[102,606,1396,30]}
+{"kind":"textbox","id":"sh/r6pcv6lw","slide":10,"name":"quiz-options-3","text":"A  Zero     |     B  None     |     C  An estimate","textPreview":"A  Zero     |     B  None     |     C  An estimate","textChars":50,"textLines":1,"bbox":[132,638,1366,26]}
+{"kind":"notes","id":"nt/m90b6t0r","slide":10,"text":"Instructor purpose: Check the three core decisions before the lesson closes.\nPlanned timing: 3 minutes.\nFacilitation: ask for one letter per question.\n[Sources]\n- chapters/01-model-gateway.md\n[/Sources]"}
+{"kind":"slide","id":"sl/jetc3ut0","slide":11,"title":"FIRST FINANCE","textShapes":11}
+{"kind":"shape","id":"sh/o7ih0r6h","slide":11,"bbox":[102,82,132,8]}
+{"kind":"textbox","id":"sh/xcryxg7y","slide":11,"text":"FIRST FINANCE","textPreview":"FIRST FINANCE","textChars":13,"textLines":1,"bbox":[102,116,320,32]}
+{"kind":"textbox","id":"sh/wbih4b6d","slide":11,"text":"Answers","textPreview":"Answers","textChars":7,"textLines":1,"bbox":[102,252,980,105]}
+{"kind":"textbox","id":"sh/n69grmpw","slide":11,"text":"Check the idea, not only the letter.","textPreview":"Check the idea, not only the letter.","textChars":36,"textLines":1,"bbox":[102,382,1120,58]}
+{"kind":"textbox","id":"sh/250zy18b","slide":11,"text":"LESSON 01  ·  CORRECTION","textPreview":"LESSON 01  ·  CORRECTION","textChars":24,"textLines":1,"bbox":[102,694,1000,34]}
+{"kind":"textbox","id":"sh/98rytw72","slide":11,"text":"First Finance - Arnaud Demes","textPreview":"First Finance - Arnaud Demes","textChars":28,"textLines":1,"bbox":[102,752,540,38]}
+{"kind":"textbox","id":"sh/72t03qp0","slide":11,"name":"quiz-answer-1","text":"1. B. Model gateway","textPreview":"1. B. Model gateway","textChars":19,"textLines":1,"bbox":[102,462,1396,30]}
+{"kind":"textbox","id":"sh/61kzalof","slide":11,"name":"quiz-explanation-1","text":"It keeps provider changes behind one stable application interface.","textPreview":"It keeps provider changes behind one stable application interface.","textChars":66,"textLines":1,"bbox":[132,494,1366,26]}
+{"kind":"textbox","id":"sh/ofqtgnyt","slide":11,"name":"quiz-answer-2","text":"2. A. Delivery","textPreview":"2. A. Delivery","textChars":14,"textLines":1,"bbox":[102,534,1396,30]}
+{"kind":"textbox","id":"sh/9gza9sze","slide":11,"name":"quiz-explanation-2","text":"Streaming changes when output appears, not whether the answer is grounded.","textPreview":"Streaming changes when output appears, not whether the answer is grounded.","textChars":74,"textLines":1,"bbox":[132,566,1366,26]}
+{"kind":"textbox","id":"sh/mdobedg3","slide":11,"name":"quiz-answer-3","text":"3. B. None","textPreview":"3. B. None","textChars":10,"textLines":1,"bbox":[102,606,1396,30]}
+{"kind":"textbox","id":"sh/nehs7iho","slide":11,"name":"quiz-explanation-3","text":"Missing metadata stays unknown instead of becoming an invented number.","textPreview":"Missing metadata stays unknown instead of becoming an invented number.","textChars":70,"textLines":1,"bbox":[132,638,1366,26]}
+{"kind":"notes","id":"nt/jetc3ut0","slide":11,"text":"Instructor purpose: Correct the quiz and restate the practical rule behind each answer.\nPlanned timing: 3 minutes.\nFacilitation: ask learners to explain each rule in their own words.\n[Sources]\n- chapters/01-model-gateway.md\n[/Sources]"}

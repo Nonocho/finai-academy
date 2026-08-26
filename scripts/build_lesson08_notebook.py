@@ -36,51 +36,28 @@ def build_notebook():
         _markdown(
             "lesson08-000",
             """
-            # 08 — Workflows versus agents
+            # 08 — Who chooses the next step?
 
             **First Finance - Arnaud Demes**  
             **Day 2 · 09:30–10:15 · 10 minutes concepts + 30 minutes notebook + 5 minutes debrief**
 
-            **Engineering question:** when is a deterministic workflow sufficient, and when must the next action depend on an intermediate observation?
-
-            This notebook uses NVIDIA (`NVDA`) and Schneider Electric (`SU.PA`) as educational examples. Market observations are versioned course snapshots, not live quotes or investment advice.
-            """,
-        ),
-        _markdown(
-            "lesson08-001",
-            """
             ## Learning objectives
 
             By the end, you can:
 
-            1. distinguish a function, workflow, bounded agent, and multi-agent system;
-            2. inspect typed tool requests and observations;
-            3. expose a dependency a one-pass workflow cannot resolve;
-            4. run a visible reason–act–observe–stop loop with `MAX_STEPS`;
-            5. compare trajectory, latency, and failure surface; and
-            6. choose the lowest useful autonomy for an analyst task.
+            1. distinguish a workflow from an agent by **who controls execution**;
+            2. build direct and deterministic two-step workflows with typed tools;
+            3. inspect a bounded model-directed loop;
+            4. compare both designs on the same task; and
+            5. use an agent only when model-directed control flow creates measurable value.
 
-            **Expected visible result:** the one-pass workflow succeeds on a direct price request, returns `unsupported_dependency` for a price-to-EUR request, and the bounded agent completes the same compound request by calling `get_market_price` before `convert_currency`.
-            """,
-        ),
-        _markdown(
-            "lesson08-002",
-            """
             ## Where this fits
 
-            Day 1 produced an evaluated financial RAG pipeline. Day 2 now adds controlled autonomy:
-
-            ```text
-            deterministic workflow → bounded agent → self-correction → MCP → planning → evaluation
-            ```
-
-            Lesson 08 keeps the loop in plain Python. Lesson 09 will introduce LangGraph only when explicit state and recovery routing earn their complexity.
-
-            Set `FINAI_LIVE_MODE=1` through the course executor to run the same lab with Ollama or OpenAI. The default offline fixture is only the deterministic test and classroom-recovery path.
+            Day 1 built an evaluated RAG pipeline. Lesson 08 adds controlled autonomy in plain Python. Lesson 09 adds explicit state and self-correction. Run with OpenAI or Ollama in live mode; the labelled offline fixture is the classroom recovery path. The market data below is a versioned course snapshot, not a live quote or investment advice.
             """,
         ),
         _code(
-            "lesson08-003",
+            "lesson08-001",
             """
             import json
             import os
@@ -92,12 +69,14 @@ def build_notebook():
 
             from finai_academy.agent_workflows import (
                 AgentDecision,
+                ModelAgentDecision,
+                ModelWorkflowDecision,
                 ToolRequest,
-                WorkflowPlan,
                 build_course_tool_registry,
                 load_course_market_snapshot,
                 run_bounded_agent,
                 run_one_pass_workflow,
+                run_price_to_currency_workflow,
             )
             from finai_academy.lesson_support import RecordedLesson08Model
             from finai_academy.providers import create_chat_model, provider_summary
@@ -106,503 +85,277 @@ def build_notebook():
             PROJECT_ROOT = Path.cwd().resolve()
             if PROJECT_ROOT.name == "notebooks":
                 PROJECT_ROOT = PROJECT_ROOT.parent
-
             LIVE_MODE = os.getenv("FINAI_LIVE_MODE", "0") == "1"
             settings = Settings.from_environment()
-            runtime_label = (
-                f"{settings.provider} · {settings.chat_model}"
-                if LIVE_MODE
-                else "offline fixture · deterministic course run"
+            runtime_label = f"{settings.provider} · {settings.chat_model}" if LIVE_MODE else "offline fixture"
+            snapshot = load_course_market_snapshot(
+                PROJECT_ROOT / "assets/course-data/market/lesson08_market_snapshot_v1.json"
             )
-            snapshot_path = (
-                PROJECT_ROOT
-                / "assets/course-data/market/lesson08_market_snapshot_v1.json"
-            )
-            snapshot = load_course_market_snapshot(snapshot_path)
             registry = build_course_tool_registry(snapshot)
+            MAX_STEPS = 4
             print(f"Runtime: {runtime_label}")
             print(f"Dataset: {snapshot['dataset_id']}")
             print(f"Tools: {', '.join(registry.names)}")
             """,
         ),
         _markdown(
+            "lesson08-002",
+            """
+            ## The distinction is control flow, not tool count
+
+            Anthropic defines workflows as systems where LLMs and tools follow predefined code paths, while agents dynamically direct their own process and tool use. LangGraph makes the same distinction: workflows can chain, branch, and loop; an agent uses the model to decide what to do next.
+
+            | Design | Who chooses the next action? | Best fit |
+            |---|---|---|
+            | Function | Python | One deterministic operation |
+            | Workflow | Python | Known sequence, branch, or loop |
+            | Agent | Model inside application limits | Path cannot be fully specified in advance |
+
+            **Critical correction:** a tool result may feed the next workflow step. That does not make the system an agent.
+            """,
+        ),
+        _code(
+            "lesson08-003",
+            """
+            fig, axes = plt.subplots(1, 2, figsize=(11, 4.2))
+            for ax in axes:
+                ax.axis("off")
+
+            for x, label in [(0.03, "Code"), (0.38, "Tool A"), (0.73, "Tool B")]:
+                axes[0].add_patch(FancyBboxPatch((x, .43), .23, .22, boxstyle="round,pad=.02", facecolor="#F4F7FF", edgecolor="#1F40CB", linewidth=2))
+                axes[0].text(x + .115, .54, label, ha="center", va="center", weight="bold")
+            for x in (.26, .61):
+                axes[0].add_patch(FancyArrowPatch((x, .54), (x + .11, .54), arrowstyle="-|>", mutation_scale=16, color="#00A2EB", linewidth=2))
+            axes[0].set_title("WORKFLOW · code owns the route", loc="left", weight="bold")
+
+            for x, y, label in [(0.08, .57, "Model\\nchooses"), (.62, .57, "Tool"), (.35, .12, "Finish / stop")]:
+                edge = "#F07D00" if "stop" in label else "#1F40CB"
+                axes[1].add_patch(FancyBboxPatch((x, y), .27, .20, boxstyle="round,pad=.02", facecolor="#F4F7FF", edgecolor=edge, linewidth=2))
+                axes[1].text(x + .135, y + .10, label, ha="center", va="center", weight="bold")
+            axes[1].add_patch(FancyArrowPatch((.35, .67), (.61, .67), arrowstyle="-|>", mutation_scale=16, color="#00A2EB", linewidth=2))
+            axes[1].add_patch(FancyArrowPatch((.75, .78), (.22, .78), connectionstyle="arc3,rad=.3", arrowstyle="-|>", mutation_scale=16, color="#00A2EB", linewidth=2))
+            axes[1].add_patch(FancyArrowPatch((.35, .58), (.47, .34), arrowstyle="-|>", mutation_scale=16, color="#F07D00", linewidth=2))
+            axes[1].set_title("AGENT · model owns the next choice", loc="left", weight="bold")
+            fig.suptitle("Same tools. Different controller.", x=.04, ha="left", fontsize=16, weight="bold")
+            plt.tight_layout()
+            plt.show()
+            """,
+        ),
+        _markdown(
             "lesson08-004",
             """
-            ### The autonomy spectrum is a design choice
+            ## Typed tools keep both designs grounded
 
-            Autonomy is not a maturity score. Moving right adds flexibility, but also latency, nondeterminism, testing work, and a larger failure surface.
+            `get_market_price(ticker)` returns price, currency, date, and source. `convert_currency(amount, from_currency, to_currency)` returns the calculation inputs, rate, date, and source. The model may request an action; only deterministic Python validates and executes it.
             """,
         ),
         _code(
             "lesson08-005",
             """
-            labels = ["Function", "Workflow", "Bounded agent", "Multi-agent"]
-            autonomy = [0.08, 0.32, 0.70, 0.94]
-            predictability = [0.96, 0.82, 0.48, 0.24]
-
-            fig, ax = plt.subplots(figsize=(10, 4.6))
-            ax.plot(autonomy, predictability, color="#1F40CB", linewidth=3)
-            for index, label in enumerate(labels):
-                ax.scatter(autonomy[index], predictability[index], s=180, color="#00A2EB", zorder=3)
-                ax.annotate(label, (autonomy[index], predictability[index]), xytext=(0, 14), textcoords="offset points", ha="center", fontsize=11, weight="bold")
-            ax.set(xlim=(0, 1), ylim=(0, 1.08), xlabel="Autonomy and dynamic choice →", ylabel="Predictability and fixed control →")
-            ax.set_title(f"Choose the lowest useful autonomy · {runtime_label}", loc="left", weight="bold")
-            ax.grid(alpha=0.2)
-            plt.tight_layout()
-            plt.show()
+            rows = [
+                {"instrument": ticker, "value": item["price"], "unit": item["currency"], "as_of": item["as_of"]}
+                for ticker, item in snapshot["prices"].items()
+            ]
+            rows.append({"instrument": "USD_EUR", "value": snapshot["fx"]["USD_EUR"]["rate"], "unit": "EUR per USD", "as_of": snapshot["fx"]["USD_EUR"]["as_of"]})
+            display(pd.DataFrame(rows))
             """,
         ),
         _markdown(
             "lesson08-006",
             """
-            ### Typed tools are application boundaries
+            ## 1 · Direct lookup: one-step workflow wins
 
-            Both architectures use the same tools:
-
-            - `get_market_price(ticker)` returns company, price, currency, date, and source;
-            - `convert_currency(amount, from_currency, to_currency)` returns the calculation inputs, rate, date, and source.
-
-            The model may request a tool. Only deterministic Python executes it and creates a market-data observation.
+            The route is known: parse the request, call one typed tool, format the observed value. An agent loop would add model calls without adding a useful decision.
             """,
         ),
         _code(
             "lesson08-007",
             """
-            snapshot_rows = [
-                {
-                    "instrument": ticker,
-                    "company": record["company"],
-                    "value": record["price"],
-                    "currency": record["currency"],
-                    "as_of": record["as_of"],
-                    "provenance": "checked-in Yahoo Finance snapshot",
-                }
-                for ticker, record in snapshot["prices"].items()
-            ]
-            snapshot_rows.append(
-                {
-                    "instrument": "USD_EUR",
-                    "company": "FX reference",
-                    "value": snapshot["fx"]["USD_EUR"]["rate"],
-                    "currency": "EUR per USD",
-                    "as_of": snapshot["fx"]["USD_EUR"]["as_of"],
-                    "provenance": "checked-in Yahoo Finance snapshot",
-                }
-            )
-            pd.DataFrame(snapshot_rows)
+            class LiveLesson08Model:
+                mode = "live model"
+
+                def __init__(self, chat_model):
+                    self.workflow_planner = chat_model.with_structured_output(ModelWorkflowDecision)
+                    self.agent_policy = chat_model.with_structured_output(ModelAgentDecision)
+
+                def plan_workflow(self, question):
+                    prompt = f'''Route this direct financial lookup. Select get_market_price for NVIDIA/NVDA.
+            Every schema field is required: use null for fields that do not apply. Never invent values.
+            Question: {question}'''
+                    return self.workflow_planner.invoke([("human", prompt)]).to_workflow_plan()
+
+                def decide_agent(self, question, trajectory):
+                    visible = [step.model_dump(mode="json") for step in trajectory]
+                    prompt = f'''Choose one next action for a bounded financial agent.
+            Tools: get_market_price(ticker); convert_currency(amount, from_currency, to_currency).
+            For price in EUR: observe price first, pass that exact price and currency to conversion, then finish.
+            Use only successful observations. Every schema field is required; use null when irrelevant.
+            Question: {question}\\nVisible trajectory: {json.dumps(visible)}'''
+                    return self.agent_policy.invoke([("human", prompt)]).to_agent_decision()
+
+            lesson_model = LiveLesson08Model(create_chat_model(settings)) if LIVE_MODE else RecordedLesson08Model()
+            print("Live provider:", provider_summary(settings)) if LIVE_MODE else print("Policy: offline fixture (deterministic classroom fallback)")
+
+            def write_price_answer(_question, observations):
+                item = observations[0].payload
+                return f"{item['company']}: {item['price']:.2f} {item['currency']} as of {item['as_of']} [{item['source']}]."
+
+            direct_question = "What is NVIDIA's latest available share price?"
+            workflow_direct = run_one_pass_workflow(direct_question, planner=lesson_model.plan_workflow, answer_writer=write_price_answer, registry=registry)
+            print(f"workflow_direct_status={workflow_direct.status}")
+            print(workflow_direct.answer)
+
+            fig, ax = plt.subplots(figsize=(10, 2.8)); ax.axis("off")
+            for x, label in [(0.04, "Question"), (.38, "get_market_price"), (.72, "Grounded answer")]:
+                ax.add_patch(FancyBboxPatch((x, .35), .24, .28, boxstyle="round,pad=.02", facecolor="#F4F7FF", edgecolor="#1F40CB", linewidth=2)); ax.text(x+.12, .49, label, ha="center", va="center", weight="bold")
+            for x in (.28, .62):
+                ax.add_patch(FancyArrowPatch((x, .49), (x+.09, .49), arrowstyle="-|>", mutation_scale=16, color="#00A2EB", linewidth=2))
+            ax.set_title("Known path: keep control in code", loc="left", weight="bold")
+            plt.show()
             """,
         ),
         _markdown(
             "lesson08-008",
             """
-            ### One-pass workflow
+            ## 2 · Price → FX: a two-step workflow still wins
 
-            The workflow chooses its route before it has any observation. This is appropriate for a stable direct lookup. A new dependency shape needs a new coded branch.
+            The second call depends on the first result, but the dependency is known before execution: `price → conversion`. Python passes the observed price and currency forward. This is a deterministic two-step workflow—not an agent.
             """,
         ),
         _code(
             "lesson08-009",
             """
-            fig, ax = plt.subplots(figsize=(10, 3.4))
-            ax.axis("off")
-            nodes = [(0.04, "Question"), (0.29, "Plan once"), (0.54, "One tool"), (0.79, "Final answer")]
-            for x, text in nodes:
-                box = FancyBboxPatch((x, 0.36), 0.17, 0.28, boxstyle="round,pad=0.02", facecolor="#F5F5F5", edgecolor="#1F40CB", linewidth=2)
-                ax.add_patch(box)
-                ax.text(x + 0.085, 0.50, text, ha="center", va="center", weight="bold")
-            for index in range(len(nodes) - 1):
-                left, right = nodes[index], nodes[index + 1]
-                ax.add_patch(FancyArrowPatch((left[0] + 0.17, 0.50), (right[0], 0.50), arrowstyle="-|>", mutation_scale=16, color="#00A2EB", linewidth=2))
-            ax.text(0.5, 0.12, "No edge returns from the observation to planning", ha="center", color="#F07D00", weight="bold")
-            ax.set_title(f"The workflow fixes its path before tool output · {runtime_label}", loc="left", weight="bold")
+            compound_question = "What is NVIDIA's latest available share price converted to euros?"
+
+            def write_conversion_answer(_question, observations):
+                price, conversion = (item.payload for item in observations)
+                return (f"{price['company']}: EUR {conversion['output_amount']:.2f}; "
+                        f"source price {price['price']:.2f} {price['currency']} as of {price['as_of']}; "
+                        f"FX {conversion['rate']:.4f} as of {conversion['rate_as_of']} [{conversion['source']}].")
+
+            workflow_compound = run_price_to_currency_workflow(compound_question, ticker="NVDA", target_currency="EUR", answer_writer=write_conversion_answer, registry=registry)
+            workflow_tools = [step.tool_name for step in workflow_compound.trajectory if step.phase == "tool"]
+            print(f"workflow_compound_status={workflow_compound.status}")
+            print("workflow_tool_order=" + " -> ".join(workflow_tools))
+            print(workflow_compound.answer)
+
+            fig, ax = plt.subplots(figsize=(11, 3)); ax.axis("off")
+            for x, label in [(0.02, "Code route"), (.27, "Price\\n180 USD"), (.52, "Pass observed\\n180 USD"), (.77, "FX\\n154.80 EUR")]:
+                ax.add_patch(FancyBboxPatch((x, .35), .19, .30, boxstyle="round,pad=.02", facecolor="#F4F7FF", edgecolor="#1F40CB", linewidth=2)); ax.text(x+.095, .50, label, ha="center", va="center", weight="bold")
+            for x in (.21, .46, .71):
+                ax.add_patch(FancyArrowPatch((x, .50), (x+.05, .50), arrowstyle="-|>", mutation_scale=16, color="#00A2EB", linewidth=2))
+            ax.set_title("Workflows can use tool results", loc="left", weight="bold")
+            ax.text(.5, .12, "The route is fixed; the data moves between steps.", ha="center", color="#1F40CB", weight="bold")
             plt.show()
             """,
         ),
-        _code(
+        _markdown(
             "lesson08-010",
             """
-            class LiveLesson08Model:
-                # Visible structured actions only; no hidden chain-of-thought is requested.
+            ## 3 · Bounded agent: the model chooses after each observation
 
-                mode = "live model"
+            The loop is useful when the next action cannot be fully specified in advance—for example, investigating a reconciliation exception where each observation changes which evidence should be checked next. Application code still owns schemas, tool execution, grounding checks, and `MAX_STEPS`.
 
-                def __init__(self, chat_model):
-                    self.chat_model = chat_model
-                    self.workflow_planner = chat_model.with_structured_output(WorkflowPlan)
-                    self.agent_policy = chat_model.with_structured_output(AgentDecision)
-
-                def plan_workflow(self, question):
-                    prompt = f'''You route a one-pass financial workflow.
-            It may execute at most one tool before a non-tool answer writer runs.
-            Valid tools:
-            - get_market_price(ticker)
-            - convert_currency(amount, from_currency, to_currency)
-            If a requested conversion amount depends on an unseen price result, return
-            route='unsupported_dependency'. Never invent the amount.
-            Question: {question}'''
-                    return self.workflow_planner.invoke([("human", prompt)])
-
-                def write_workflow_answer(self, question, observations):
-                    prompt = f'''Answer using only this typed tool observation.
-            Include value, currency, date and source. Do not add investment advice.
-            Question: {question}
-            Observation: {json.dumps([item.model_dump(mode='json') for item in observations])}'''
-                    response = self.chat_model.invoke([("human", prompt)])
-                    return response.content if isinstance(response.content, str) else str(response.content)
-
-                def decide_agent(self, question, trajectory):
-                    remaining = MAX_STEPS - sum(step.phase == "plan" for step in trajectory)
-                    visible_trace = [step.model_dump(mode="json") for step in trajectory]
-                    prompt = f'''Return only the next typed action for a bounded financial agent.
-            Valid tools:
-            - get_market_price(ticker)
-            - convert_currency(amount, from_currency, to_currency)
-            Use only values from successful observations. For a price converted to EUR:
-            first call get_market_price; then pass its observed price and currency to
-            convert_currency; then finish with value, rate, dates and sources.
-            Remaining model steps: {remaining}
-            Question: {question}
-            Visible trajectory: {json.dumps(visible_trace)}'''
-                    return self.agent_policy.invoke([("human", prompt)])
-
-
-            MAX_STEPS = 4
-            if LIVE_MODE:
-                chat_model = create_chat_model(settings)
-                lesson_model = LiveLesson08Model(chat_model)
-                print("Live provider:", provider_summary(settings))
-            else:
-                lesson_model = RecordedLesson08Model()
-                print("Policy: offline fixture (labelled deterministic fallback)")
+            Here we deliberately run an agent on the same fixed price-to-EUR task. It should succeed, but success alone does not justify its extra model decisions.
             """,
         ),
         _code(
             "lesson08-011",
             """
-            direct_question = "What is NVIDIA's latest available share price?"
-            workflow_direct = run_one_pass_workflow(
-                direct_question,
-                planner=lesson_model.plan_workflow,
-                answer_writer=lesson_model.write_workflow_answer,
-                registry=registry,
-            )
-            print(f"workflow_direct_status={workflow_direct.status}")
-            print(workflow_direct.answer)
+            agent_result = run_bounded_agent(compound_question, policy=lesson_model.decide_agent, registry=registry, max_steps=MAX_STEPS)
+            agent_tools = [step.tool_name for step in agent_result.trajectory if step.phase == "tool"]
+            print(f"agent_status={agent_result.status}")
+            print("agent_tool_order=" + " -> ".join(agent_tools))
+            print(agent_result.answer)
+
+            fig, ax = plt.subplots(figsize=(9, 4)); ax.axis("off")
+            for x, y, label in [(0.05, .57, "Visible state"), (.39, .57, "Model choice"), (.73, .57, "Typed tool"), (.39, .12, f"Finish or\\nMAX_STEPS={MAX_STEPS}")]:
+                edge = "#F07D00" if "Finish" in label else "#1F40CB"
+                ax.add_patch(FancyBboxPatch((x, y), .22, .20, boxstyle="round,pad=.02", facecolor="#F4F7FF", edgecolor=edge, linewidth=2)); ax.text(x+.11, y+.10, label, ha="center", va="center", weight="bold")
+            ax.add_patch(FancyArrowPatch((.27,.67),(.38,.67),arrowstyle="-|>",mutation_scale=16,color="#00A2EB",linewidth=2))
+            ax.add_patch(FancyArrowPatch((.61,.67),(.72,.67),arrowstyle="-|>",mutation_scale=16,color="#00A2EB",linewidth=2))
+            ax.add_patch(FancyArrowPatch((.84,.79),(.16,.79),connectionstyle="arc3,rad=.28",arrowstyle="-|>",mutation_scale=16,color="#00A2EB",linewidth=2))
+            ax.add_patch(FancyArrowPatch((.50,.56),(.50,.34),arrowstyle="-|>",mutation_scale=16,color="#F07D00",linewidth=2))
+            ax.set_title("An agent is a model-directed loop inside code-owned limits", loc="left", weight="bold")
+            plt.show()
             """,
         ),
         _markdown(
             "lesson08-012",
             """
-            ## Failure lab
+            ## Same result, different control cost
 
-            Ask for NVIDIA's price in euros. The conversion amount does not exist until the price tool returns. The one-pass workflow must expose `unsupported_dependency`; a fabricated EUR value would be a grounding failure.
-
-            A developer could add an explicit two-step conversion branch. The lesson does **not** claim workflows cannot chain operations. It shows that each new dependency needs another predefined route.
+            For this fixed task, both designs use the same two tools. The workflow requires no model decision inside the route; the agent repeatedly asks the model what to do next. Prefer the simpler architecture unless measured task quality improves.
             """,
         ),
         _code(
             "lesson08-013",
             """
-            compound_question = "What is NVIDIA's latest available share price converted to euros?"
-            workflow_dependency = run_one_pass_workflow(
-                compound_question,
-                planner=lesson_model.plan_workflow,
-                answer_writer=lesson_model.write_workflow_answer,
-                registry=registry,
-            )
-            print(f"workflow_dependency_status={workflow_dependency.status}")
-            print(workflow_dependency.trajectory[0].summary)
-
-            fig, ax = plt.subplots(figsize=(10, 3.4))
-            ax.axis("off")
-            ax.add_patch(FancyBboxPatch((0.05, 0.38), 0.24, 0.26, boxstyle="round,pad=0.02", facecolor="#F5F5F5", edgecolor="#1F40CB", linewidth=2))
-            ax.text(0.17, 0.51, "Need NVDA price", ha="center", va="center", weight="bold")
-            ax.add_patch(FancyArrowPatch((0.29, 0.51), (0.44, 0.51), arrowstyle="-|>", mutation_scale=16, color="#00A2EB", linewidth=2))
-            ax.add_patch(FancyBboxPatch((0.44, 0.38), 0.22, 0.26, boxstyle="round,pad=0.02", facecolor="#FFF2E5", edgecolor="#F07D00", linewidth=2))
-            ax.text(0.55, 0.51, "Amount unknown", ha="center", va="center", weight="bold")
-            ax.add_patch(FancyArrowPatch((0.66, 0.51), (0.79, 0.51), arrowstyle="-|>", mutation_scale=16, color="#F07D00", linewidth=2))
-            ax.text(0.87, 0.51, "STOP", ha="center", va="center", color="#F07D00", fontsize=16, weight="bold")
-            ax.text(0.5, 0.17, workflow_dependency.status, ha="center", color="#F07D00", weight="bold")
-            ax.set_title(f"Expose the dependency; never invent the conversion input · {runtime_label}", loc="left", weight="bold")
-            plt.show()
+            comparison = pd.DataFrame([
+                {"architecture": "deterministic workflow", "tool calls": len(workflow_tools), "model route decisions": 0, "status": workflow_compound.status},
+                {"architecture": "bounded agent", "tool calls": len(agent_tools), "model route decisions": sum(step.phase == "plan" for step in agent_result.trajectory), "status": agent_result.status},
+            ])
+            display(comparison)
+            fig, ax = plt.subplots(figsize=(8.5, 4))
+            comparison.set_index("architecture")[["tool calls", "model route decisions"]].plot(kind="bar", ax=ax, color=["#00A2EB", "#F07D00"])
+            ax.set_title("The agent adds decisions but no value on a fixed route", loc="left", weight="bold")
+            ax.set(xlabel="", ylabel="Count"); ax.tick_params(axis="x", rotation=0); ax.legend(frameon=False)
+            plt.tight_layout(); plt.show()
+            print("preferred_architecture=workflow")
             """,
         ),
         _markdown(
             "lesson08-014",
             """
-            ### Bounded agent loop
+            ## Failure lab
 
-            The agent may choose another tool after observing the previous result. Application code still owns validation, execution, trace recording, and the stop budget.
+            A model-selected conversion is rejected unless its amount and source currency exactly match a successful price observation. A policy that keeps requesting tools is stopped by `MAX_STEPS`. These are application guarantees, not prompt suggestions.
 
-            ```text
-            visible state → typed action → validated tool → typed observation → visible state
-                                  ↘ finish or MAX_STEPS stop ↗
-            ```
+            ## Verification
+
+            The checks below prove: direct and two-step workflows complete; both pass the same observed value between tools; the agent completes in the correct order; and the step budget stops a looping policy.
+
+            ## Challenge
+
+            Add a predefined branch for Schneider Electric. Then propose one genuinely open-ended finance investigation and name the measurable quality gain that would justify model-directed control flow.
+
+            ## Capstone integration
+
+            Reuse the typed requests, observations, normalized trace, and hard stop in the Financial Analyst Copilot. Lesson 09 keeps these contracts and adds explicit recovery state.
+
+            ## Recap
+
+            - Workflows can chain, branch, and loop using tool results.
+            - Agents differ because the model chooses the next action.
+            - Known routes belong in deterministic code.
+            - Use an agent only when model-directed control flow creates measurable value.
             """,
         ),
         _code(
             "lesson08-015",
             """
-            fig, ax = plt.subplots(figsize=(9, 5))
-            ax.axis("off")
-            positions = {
-                "Visible state": (0.08, 0.63),
-                "Typed action": (0.39, 0.63),
-                "Tool observation": (0.70, 0.63),
-                "Finish / guardrail": (0.39, 0.18),
-            }
-            for label, (x, y) in positions.items():
-                edge = "#F07D00" if "guardrail" in label else "#1F40CB"
-                face = "#FFF2E5" if "guardrail" in label else "#F5F5F5"
-                ax.add_patch(FancyBboxPatch((x, y), 0.22, 0.18, boxstyle="round,pad=0.02", facecolor=face, edgecolor=edge, linewidth=2))
-                ax.text(x + 0.11, y + 0.09, label, ha="center", va="center", weight="bold")
-            forward_arrows = [
-                ((0.30, 0.72), (0.39, 0.72)),
-                ((0.61, 0.72), (0.70, 0.72)),
-                ((0.50, 0.63), (0.50, 0.36)),
-            ]
-            for start, end in forward_arrows:
-                ax.add_patch(FancyArrowPatch(start, end, arrowstyle="-|>", mutation_scale=16, color="#00A2EB", linewidth=2))
-            ax.add_patch(
-                FancyArrowPatch(
-                    (0.81, 0.83),
-                    (0.19, 0.83),
-                    arrowstyle="-|>",
-                    mutation_scale=16,
-                    color="#00A2EB",
-                    linewidth=2,
-                    connectionstyle="arc3,rad=0.30",
-                )
-            )
-            ax.text(0.50, 0.08, f"Hard boundary: MAX_STEPS={MAX_STEPS}", ha="center", color="#F07D00", weight="bold")
-            ax.set_title(f"Autonomy stays inside an inspectable budget · {runtime_label}", loc="left", weight="bold")
-            plt.show()
-            """,
-        ),
-        _code(
-            "lesson08-016",
-            """
-            agent_result = run_bounded_agent(
-                compound_question,
-                policy=lesson_model.decide_agent,
-                registry=registry,
-                max_steps=MAX_STEPS,
-            )
-            agent_tool_order = [
-                step.tool_name for step in agent_result.trajectory if step.phase == "tool"
-            ]
-            print(f"agent_status={agent_result.status}")
-            print("agent_tool_order=" + " -> ".join(agent_tool_order))
-            print(agent_result.answer)
-            """,
-        ),
-        _code(
-            "lesson08-017",
-            """
-            trace_rows = []
-            for architecture, result in [
-                ("one-pass workflow", workflow_dependency),
-                ("bounded agent", agent_result),
-            ]:
-                for step in result.trajectory:
-                    trace_rows.append(
-                        {
-                            "architecture": architecture,
-                            "event": step.index,
-                            "phase": step.phase,
-                            "tool": step.tool_name or "—",
-                            "status": step.observation.status if step.observation else result.status,
-                            "summary": step.summary,
-                        }
-                    )
-            trace_frame = pd.DataFrame(trace_rows)
-            display(trace_frame)
-
-            phase_colors = {"plan": "#1F40CB", "tool": "#00A2EB", "finish": "#2E8B57", "guardrail": "#F07D00"}
-            fig, ax = plt.subplots(figsize=(11, 4.5))
-            y_positions = {"one-pass workflow": 1, "bounded agent": 0}
-            for _, row in trace_frame.iterrows():
-                y = y_positions[row["architecture"]]
-                ax.scatter(row["event"], y, s=240, color=phase_colors[row["phase"]], zorder=3)
-                label = row["tool"] if row["tool"] != "—" else row["phase"]
-                ax.annotate(
-                    label,
-                    (row["event"], y),
-                    xytext=(0, 20 if y else -28),
-                    textcoords="offset points",
-                    ha="center",
-                    va="bottom" if y else "top",
-                    fontsize=8.5,
-                    rotation=0 if y else 18,
-                )
-            ax.set_yticks([0, 1], ["bounded agent", "one-pass workflow"])
-            ax.set_ylim(-0.45, 1.45)
-            ax.set_xticks(range(1, int(trace_frame["event"].max()) + 1))
-            ax.set_xlabel("Recorded event order")
-            ax.set_title(f"The trajectory shows why the agent succeeds · {runtime_label}", loc="left", weight="bold")
-            ax.grid(axis="x", alpha=0.2)
-            plt.tight_layout()
-            plt.show()
-            """,
-        ),
-        _code(
-            "lesson08-018",
-            """
-            comparison = pd.DataFrame(
-                [
-                    {
-                        "architecture": "one-pass workflow",
-                        "status": workflow_dependency.status,
-                        "tool_calls": sum(step.phase == "tool" for step in workflow_dependency.trajectory),
-                        "events": len(workflow_dependency.trajectory),
-                        "latency_ms": round(workflow_dependency.latency_ms, 2),
-                        "grounded_compound_answer": bool(workflow_dependency.answer),
-                    },
-                    {
-                        "architecture": "bounded agent",
-                        "status": agent_result.status,
-                        "tool_calls": sum(step.phase == "tool" for step in agent_result.trajectory),
-                        "events": len(agent_result.trajectory),
-                        "latency_ms": round(agent_result.latency_ms, 2),
-                        "grounded_compound_answer": agent_result.status == "completed",
-                    },
-                ]
-            )
-            comparison
-            """,
-        ),
-        _markdown(
-            "lesson08-019",
-            """
-            ### Failure lab — a budget is behavior, not configuration decoration
-
-            A policy that always asks for another lookup must stop. This controlled failure proves that the application, not the model, owns termination.
-            """,
-        ),
-        _code(
-            "lesson08-020",
-            """
             def looping_policy(_question, _trajectory):
-                return AgentDecision(
-                    action="tool",
-                    request=ToolRequest(
-                        name="get_market_price", arguments={"ticker": "NVDA"}
-                    ),
-                )
+                return AgentDecision(action="tool", request=ToolRequest(name="get_market_price", arguments={"ticker": "NVDA"}))
 
-            budget_result = run_bounded_agent(
-                "Repeat the lookup indefinitely.",
-                policy=looping_policy,
-                registry=registry,
-                max_steps=2,
-            )
-            budget_counts = pd.Series(
-                [step.phase for step in budget_result.trajectory]
-            ).value_counts()
-            fig, ax = plt.subplots(figsize=(8, 3.8))
-            budget_counts.reindex(["plan", "tool", "guardrail"], fill_value=0).plot(
-                kind="bar", ax=ax, color=["#1F40CB", "#00A2EB", "#F07D00"]
-            )
-            ax.set_title(f"The application stops the loop · {budget_result.status}", loc="left", weight="bold")
-            ax.set(xlabel="Recorded phase", ylabel="Event count")
-            ax.tick_params(axis="x", rotation=0)
-            plt.tight_layout()
-            plt.show()
-            print(budget_result.trajectory[-1].summary)
-            """,
-        ),
-        _markdown(
-            "lesson08-021",
-            """
-            ## Verification
+            budget_result = run_bounded_agent("Repeat forever", policy=looping_policy, registry=registry, max_steps=2)
+            counts = pd.Series([step.phase for step in budget_result.trajectory]).value_counts().reindex(["plan", "tool", "guardrail"], fill_value=0)
+            fig, ax = plt.subplots(figsize=(7.5, 3.5)); counts.plot(kind="bar", ax=ax, color=["#1F40CB", "#00A2EB", "#F07D00"])
+            ax.set_title("Code—not the model—owns termination", loc="left", weight="bold"); ax.set(xlabel="Recorded event", ylabel="Count"); ax.tick_params(axis="x", rotation=0)
+            plt.tight_layout(); plt.show()
 
-            A successful lesson run must prove architecture behavior, not merely display a plausible sentence:
-
-            - direct workflow lookup completes;
-            - compound workflow stops at `unsupported_dependency`;
-            - agent calls price before conversion;
-            - conversion inputs equal observed price metadata;
-            - loop guardrail stops at `MAX_STEPS`; and
-            - all numeric observations retain date, currency, and source.
-            """,
-        ),
-        _code(
-            "lesson08-022",
-            """
             assert workflow_direct.status == "completed"
-            assert workflow_dependency.status == "unsupported_dependency"
-            assert workflow_dependency.answer is None
+            assert workflow_compound.status == "completed"
+            assert workflow_tools == ["get_market_price", "convert_currency"]
             assert agent_result.status == "completed"
-            assert agent_tool_order == ["get_market_price", "convert_currency"]
-            price_observation = next(
-                step.observation
-                for step in agent_result.trajectory
-                if step.tool_name == "get_market_price"
-            )
-            conversion_observation = next(
-                step.observation
-                for step in agent_result.trajectory
-                if step.tool_name == "convert_currency"
-            )
-            assert price_observation is not None and price_observation.status == "ok"
-            assert conversion_observation is not None and conversion_observation.status == "ok"
-            assert conversion_observation.payload["input_amount"] == price_observation.payload["price"]
+            assert agent_tools == ["get_market_price", "convert_currency"]
+            workflow_price = workflow_compound.trajectory[1].observation
+            workflow_fx = workflow_compound.trajectory[2].observation
+            assert workflow_price is not None and workflow_fx is not None
+            assert workflow_fx.payload["input_amount"] == workflow_price.payload["price"]
             assert budget_result.status == "step_budget_exhausted"
             assert budget_result.trajectory[-1].phase == "guardrail"
+            print(budget_result.trajectory[-1].summary)
             print("LESSON_08_PASS")
-            """,
-        ),
-        _markdown(
-            "lesson08-023",
-            """
-            ### Knowledge check
-
-            1. Why is the one-pass workflow safer than inventing the missing EUR amount?
-            2. When would adding a deterministic conversion branch be better than retaining the agent?
-            3. Which component validates and executes a tool request?
-            4. What evidence proves the converted answer is grounded?
-            5. What does `MAX_STEPS` protect against?
-
-            Answers: expose unsupported dependencies; prefer a workflow for stable known routes; Python owns execution; require successful price and conversion observations; prevent unbounded latency, cost, and looping.
-            """,
-        ),
-        _markdown(
-            "lesson08-024",
-            """
-            ## Challenge
-
-            Choose one bounded change:
-
-            1. add a deterministic two-step currency-conversion branch and compare it with the agent; or
-            2. add `calculate_return` and make the agent compare one maintained NVIDIA or Schneider Electric period.
-
-            Record which implementation is easier to test and whether the added autonomy earns its latency and failure surface.
-            """,
-        ),
-        _markdown(
-            "lesson08-025",
-            """
-            ## Capstone integration
-
-            Lesson 08 contributes three reusable pieces to the Financial Analyst Copilot:
-
-            - typed tool requests and observations;
-            - one normalized trajectory record; and
-            - a minimal bounded agent loop.
-
-            Lesson 09 keeps these contracts, adds LangGraph state, feeds structured tool errors back to the model, and demonstrates controlled self-correction.
-            """,
-        ),
-        _markdown(
-            "lesson08-026",
-            """
-            ## Recap
-
-            - Workflows are preferred when routes and dependencies are known and stable.
-            - Agents earn their complexity when observations determine an open-ended next action.
-            - Tool execution remains deterministic and typed.
-            - A professional agent is bounded, inspectable, and grounded in observations.
-            - When an agent pattern stabilizes, consider replacing it with a workflow.
             """,
         ),
     ]

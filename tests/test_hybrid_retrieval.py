@@ -8,6 +8,7 @@ import pytest
 
 import finai_academy.retrieval as retrieval_module
 from finai_academy.hybrid_retrieval import (
+    BM25Index,
     DenseIndex,
     DeterministicTeachingEmbeddings,
     IndexVersionError,
@@ -225,6 +226,50 @@ def test_keyword_retrieval_preserves_an_exact_financial_figure(corpus):
 
     assert hits[0].passage.company == "Schneider Electric"
     assert "18.7%" in hits[0].passage.text
+
+
+def test_bm25_retrieval_preserves_an_exact_financial_figure(corpus):
+    """Removing numeric lexical matching must make this financial query fail."""
+
+    hits = BM25Index(corpus).search("18.7% margin", top_k=1)
+
+    assert hits[0].passage.company == "Schneider Electric"
+    assert "18.7%" in hits[0].passage.text
+    assert hits[0].score > 0
+
+
+def test_bm25_length_normalization_prefers_the_focused_passage(corpus):
+    """Removing BM25 length normalization must let a padded passage tie or win."""
+
+    focused = replace(
+        corpus[0],
+        passage_id="FOCUSED",
+        text="revenue margin",
+    )
+    padded = replace(
+        corpus[1],
+        passage_id="PADDED",
+        text="revenue margin " + "background " * 80,
+    )
+
+    hits = BM25Index((padded, focused)).search("revenue margin", top_k=2)
+
+    assert [hit.passage.passage_id for hit in hits] == ["FOCUSED", "PADDED"]
+    assert hits[0].score > hits[1].score
+
+
+def test_bm25_applies_metadata_eligibility_before_ranking(corpus):
+    """Removing the eligibility boundary must leak another company's evidence."""
+
+    hits = BM25Index(corpus).search(
+        "revenue growth margin",
+        top_k=10,
+        filters=RetrievalFilters(company="NVIDIA", period="FY2026"),
+    )
+
+    assert hits
+    assert {hit.passage.company for hit in hits} == {"NVIDIA"}
+    assert {hit.passage.period for hit in hits} == {"FY2026"}
 
 
 @pytest.mark.parametrize(

@@ -15,9 +15,9 @@ from finai_academy.evaluation import (
     summarize_evaluations,
 )
 from finai_academy.hybrid_retrieval import (
+    BM25Index,
     DenseIndex,
     DeterministicTeachingEmbeddings,
-    KeywordIndex,
     RetrievalFilters,
 )
 from finai_academy.retrieval_pipeline import retrieve_evidence
@@ -27,7 +27,7 @@ def _retrieve(corpus, question: str, filters: RetrievalFilters, *, final_k: int 
     embeddings = DeterministicTeachingEmbeddings()
     return retrieve_evidence(
         question,
-        keyword_index=KeywordIndex(corpus),
+        keyword_index=BM25Index(corpus),
         dense_index=DenseIndex(
             corpus,
             embeddings,
@@ -142,6 +142,34 @@ def test_evaluation_recognizes_correct_abstention(corpus):
     assert result.reciprocal_rank == 1.0
     assert result.citation_correctness == 1.0
     assert result.grounded_fact_coverage == 1.0
+    assert result.abstention_correctness == 1.0
+    assert result.failure_stage == "none"
+
+
+def test_evaluation_scores_explicit_answer_abstention_when_retrieval_returns_passages(corpus):
+    """Unsupported questions may retrieve plausible context and still require refusal."""
+
+    filters = RetrievalFilters(company="NVIDIA", period="FY2026")
+    retrieval = _retrieve(corpus, "What fair value should investors assign?", filters)
+    case = EvaluationCase(
+        case_id="unsupported-valuation",
+        question="What fair value should investors assign?",
+        filters=filters,
+        expected_evidence_ids=(),
+        expected_facts=(),
+        requires_abstention=True,
+        tags=("negative",),
+    )
+
+    assert retrieval.reranked_hits
+    result = evaluate_case(
+        case,
+        retrieval,
+        "The provided evidence does not establish fair value.",
+        abstained=True,
+    )
+
+    assert result.retrieval_recall_at_k == 1.0
     assert result.abstention_correctness == 1.0
     assert result.failure_stage == "none"
 

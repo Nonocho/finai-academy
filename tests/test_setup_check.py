@@ -39,7 +39,7 @@ def test_offline_setup_check_is_ready_without_external_services() -> None:
 
 def test_requested_openai_provider_is_not_ready_without_a_key() -> None:
     environment = os.environ.copy()
-    environment.pop("OPENAI_API_KEY", None)
+    environment["OPENAI_API_KEY"] = ""
 
     result = run_setup_check("--provider", "openai", environment=environment)
 

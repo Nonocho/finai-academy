@@ -877,6 +877,108 @@ def build_notebook():
             """,
         ),
     ]
+
+    original = {cell.id: cell for cell in notebook.cells}
+
+    def combined_code(cell_id: str, *source_ids: str):
+        return _code(
+            cell_id,
+            "\n\n".join(original[source_id].source for source_id in source_ids),
+        )
+
+    alignment_without_plot = original["lesson12-009"].source.split("\nfig, ax =", 1)[0]
+    diagnosis_without_plot = original["lesson12-021"].source.split("\nfig, ax =", 1)[0]
+
+    notebook.cells = [
+        _markdown(
+            "lesson12-000",
+            f"""
+            {original['lesson12-000'].source}
+
+            {original['lesson12-001'].source}
+
+            The practical sequence is **define the exam -> verify one reference -> compare configurations -> diagnose one trace -> decide release**.
+            """,
+        ),
+        combined_code("lesson12-001", "lesson12-002", "lesson12-003"),
+        _markdown(
+            "lesson12-002",
+            """
+            ## 1. Define the exam before scoring the agent
+
+            A versioned case states the expected calls, dependencies, evidence, final status, and budget. The exact dataset hash prevents an apparently fair comparison from using different exams.
+            """,
+        ),
+        combined_code("lesson12-003", "lesson12-005", "lesson12-004"),
+        _markdown(
+            "lesson12-004",
+            """
+            ## 2. Verify one real reference before trusting fixtures
+
+            Run the Lesson 11 mission once and compare only its public, serializable signature with `reference_completed`.
+
+            **Learner decision:** Which public fields prove that the path and cited answer match without exposing hidden reasoning?
+            """,
+        ),
+        combined_code("lesson12-005", "lesson12-006", "lesson12-007"),
+        combined_code("lesson12-006", "lesson12-008"),
+        _code(
+            "lesson12-007",
+            "\n\n".join(
+                (
+                    alignment_without_plot,
+                    original["lesson12-010"].source,
+                    original["lesson12-011"].source,
+                    original["lesson12-012"].source,
+                )
+            ),
+        ),
+        _markdown(
+            "lesson12-008",
+            """
+            ## 3. Compare configurations without hiding failed cases
+
+            Score the answer and trajectory separately, then persist one MLflow run per configuration and one root trace per case.
+
+            **Learner decision:** Which configuration is safer, and which case blocks release even if its aggregate mean looks acceptable?
+            """,
+        ),
+        combined_code("lesson12-009", "lesson12-013", "lesson12-014"),
+        combined_code("lesson12-010", "lesson12-015", "lesson12-016"),
+        combined_code("lesson12-011", "lesson12-017"),
+        combined_code("lesson12-012", "lesson12-018"),
+        combined_code("lesson12-013", "lesson12-019"),
+        _markdown(
+            "lesson12-014",
+            """
+            ## 4. Open one failed trace and assign ownership
+
+            Aggregates identify that something changed. A trace identifies where it changed: plan, tool boundary, replan, evidence gate, report, dataset, or judge.
+
+            **Learner decision:** Which case blocks release? Who owns the earliest public failure, and what evidence in the trace proves it?
+            """,
+        ),
+        combined_code("lesson12-015", "lesson12-020"),
+        _code(
+            "lesson12-016",
+            "\n\n".join(
+                (
+                    diagnosis_without_plot,
+                    original["lesson12-022"].source,
+                    original["lesson12-023"].source,
+                )
+            ),
+        ),
+        combined_code("lesson12-017", "lesson12-024"),
+        _markdown(
+            "lesson12-018",
+            f"""
+            {original['lesson12-025'].source}
+
+            {original['lesson12-026'].source}
+            """,
+        ),
+    ]
     return notebook
 
 

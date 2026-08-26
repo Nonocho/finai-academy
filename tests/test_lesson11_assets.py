@@ -86,7 +86,7 @@ def test_lesson11_notebook_is_output_free_and_contains_the_teaching_contract() -
         if cell.cell_type == "code"
     )
     assert len({cell.id for cell in notebook.cells}) == len(notebook.cells)
-    assert 24 <= len(notebook.cells) <= 28
+    assert 16 <= len(notebook.cells) <= 20
     assert nbformat.writes(_build_notebook()) == nbformat.writes(notebook)
 
     for heading in (
@@ -113,8 +113,7 @@ def test_lesson11_notebook_is_output_free_and_contains_the_teaching_contract() -
         "offline fixture · deterministic planner and replanner · real local MCP execution",
     ):
         assert marker in source
-    assert "async def run_lesson11(*, live_mode: bool)" in source
-    briefing_cell = next(cell for cell in notebook.cells if cell.id == "lesson11-022")
+    briefing_cell = next(cell for cell in notebook.cells if "CITED FACTS" in cell.source)
     for marker in (
         "fact.claim",
         "fact.provenance_kind",
@@ -127,6 +126,23 @@ def test_lesson11_notebook_is_output_free_and_contains_the_teaching_contract() -
     ):
         assert marker in briefing_cell.source
     assert "len(result.briefing" not in briefing_cell.source
+
+
+def test_lesson11_notebook_approves_the_plan_before_executing_the_mission() -> None:
+    """Catch a regression to running the complete mission before learners see its plan."""
+
+    notebook = _build_notebook()
+    sources = [cell.source for cell in notebook.cells]
+    plan_index = next(
+        index for index, source in enumerate(sources) if "Plan approved before execution" in source
+    )
+    execution_index = next(
+        index for index, source in enumerate(sources) if "result = await run_plan_execute" in source
+    )
+
+    assert plan_index < execution_index
+    assert "result = await run_lesson11" not in "\n".join(sources)
+    assert sum("plt.subplots" in source for source in sources) <= 3
 
 
 def test_lesson11_notebook_executes_offline_with_visual_evidence(tmp_path: Path) -> None:
@@ -151,12 +167,14 @@ def test_lesson11_notebook_executes_offline_with_visual_evidence(tmp_path: Path)
     assert result.returncode == 0, result.stderr
     executed = nbformat.read(output_dir / NOTEBOOK.name, as_version=4)
     text = _stream_text(executed)
-    briefing_text = _cell_output_text(executed, "lesson11-022")
-    assert _png_output_count(executed) >= 6
+    briefing_text = _cell_output_text(executed, "lesson11-013")
+    assert _png_output_count(executed) >= 3
     assert "Real MCP server:" in text
     assert "offline fixture · deterministic planner and replanner · real local MCP execution" in text
     assert "Plan revisions: 1" in text
     assert "Evidence gate passed: True" in text
+    assert "Plan approved before execution: True" in text
+    assert "Learner decision: replan the unfinished tail" in text
     for marker in (
         "CITED FACTS",
         "Kind: metric",
@@ -207,7 +225,7 @@ def test_lesson11_chapter_defines_the_complete_instructor_route() -> None:
         "same-tool recovery",
         "strategy revision",
         "lesson11-000",
-        "lesson11-027",
+        "lesson11-017",
         "1, 2, 3, 5, and 6",
         "initial and final plans",
         "capability names and arguments",
@@ -305,13 +323,12 @@ def test_lesson11_deck_has_the_complete_sourced_concept_route() -> None:
     assert "—" not in visible_text
     for marker in (
         "Plan-and-Execute Financial Analyst",
-        "REACT",
         "PLAN",
-        "EXECUTE",
         "REPLAN",
-        "REPORT",
+        "APPROVED PLAN",
         "HOST POLICY",
         "MCP DISCOVERY",
+        "TYPED FAILURE",
         "unsupported_metric",
         "EVIDENCE GATE",
         "LESSON 12",
@@ -321,41 +338,54 @@ def test_lesson11_deck_has_the_complete_sourced_concept_route() -> None:
     assert notes_text.count("[/Sources]") == 11
     assert notes_text.count("chapters/11-plan-and-execute-analyst.md") == 11
 
+    for marker in (
+        "One mission, several evidence gaps",
+        "The plan is visible before any tool runs",
+        "One failed metric changes the remaining strategy",
+        "Every claim must point back to evidence",
+    ):
+        assert marker in visible_text
 
-def test_lesson11_deck_shares_central_host_state_across_four_roles() -> None:
-    """Catch a linear fifth STATE role or loss of the four graph roles."""
+    assert "https://www.anthropic.com/engineering/building-effective-agents" in notes_text
+    assert "https://openai.github.io/openai-agents-python/visualization/" in notes_text
+
+
+def test_lesson11_deck_contains_real_visual_evidence() -> None:
+    """Catch a return to a shapes-only deck with no sourced or run-derived imagery."""
+
+    with zipfile.ZipFile(DECK) as archive:
+        media = [
+            name
+            for name in archive.namelist()
+            if name.startswith("ppt/media/")
+            and name.lower().endswith((".png", ".jpg", ".jpeg", ".webp"))
+        ]
+
+    assert len(media) >= 4
+
+
+def test_lesson11_deck_makes_mcp_discovery_and_host_filters_visible() -> None:
+    """Catch loss of the concrete catalog-to-permission teaching backbone."""
 
     with zipfile.ZipFile(DECK) as archive:
         slide = ElementTree.fromstring(archive.read("ppt/slides/slide5.xml"))
-        presentation = ElementTree.fromstring(archive.read("ppt/presentation.xml"))
 
     shapes = slide.findall(f".//{{{PRESENTATION_NS}}}sp")
-    shape_texts = {_shape_text(shape): shape for shape in shapes if _shape_text(shape)}
-    visible_text = " ".join(shape_texts).casefold()
+    visible_text = " ".join(_shape_text(shape) for shape in shapes).casefold()
 
-    for role in ("PLANNER", "EXECUTOR", "REPLANNER", "REPORT WRITER"):
-        assert role.casefold() in visible_text
-    assert "STATE" not in shape_texts
-    assert "host owned" not in visible_text
-
-    host_state = shape_texts["HOST STATE"]
-    transform = host_state.find(
-        f"./{{{PRESENTATION_NS}}}spPr/{{{DRAWING_NS}}}xfrm"
-    )
-    assert transform is not None
-    offset = transform.find(f"{{{DRAWING_NS}}}off")
-    extent = transform.find(f"{{{DRAWING_NS}}}ext")
-    assert offset is not None and extent is not None
-
-    slide_size = presentation.find(f"{{{PRESENTATION_NS}}}sldSz")
-    assert slide_size is not None
-    slide_width = int(slide_size.attrib["cx"])
-    host_state_center = int(offset.attrib["x"]) + int(extent.attrib["cx"]) / 2
-    assert slide_width * 0.4 <= host_state_center <= slide_width * 0.6
+    for marker in (
+        "discovered",
+        "allowlisted",
+        "arguments validated",
+        "get_company_metric",
+        "search_financial_documents",
+        "host policy turns them into permission",
+    ):
+        assert marker.casefold() in visible_text
 
 
-def test_lesson11_evaluation_slides_cite_direct_primary_sources() -> None:
-    """Catch generic inspiration links replacing slide-specific evaluation sources."""
+def test_lesson11_evidence_slides_cite_the_run_and_primary_report() -> None:
+    """Catch generic inspiration links replacing run-derived and primary evidence."""
 
     with zipfile.ZipFile(DECK) as archive:
         notes = {
@@ -368,7 +398,7 @@ def test_lesson11_evaluation_slides_cite_direct_primary_sources() -> None:
             for slide in (8, 9)
         }
 
-    assert "https://docs.langchain.com/langsmith/evaluation-concepts" in notes[8]
-    assert "https://docs.langchain.com/langsmith/evaluate-complex-agent" in notes[9]
-    assert "MLOps-Basics" not in notes[8]
-    assert "MLOps-Basics" not in notes[9]
+    assert "notebooks/11_plan_and_execute_analyst.ipynb" in notes[8]
+    assert "assets/lesson-11/evidence-gate.png" in notes[8]
+    assert "assets/lesson-05/schneider-fy2025-results.pdf" in notes[9]
+    assert "assets/course-data/mcp/lesson10_evidence_catalog_v1.json" in notes[9]

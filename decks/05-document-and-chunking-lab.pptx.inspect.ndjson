@@ -1,0 +1,229 @@
+{"kind":"deck","id":"pr/w403qt","name":"Deck"}
+{"kind":"layout","layoutId":"/ppt/slideMasters/slideMaster1.xml","name":"Master","type":"master"}
+{"kind":"layout","layoutId":"/ppt/slideLayouts/slideLayout1.xml","name":"Title Slide","type":"title"}
+{"kind":"slide","id":"sl/y90nupkv","slide":1,"title":"FIRST FINANCE","textShapes":5}
+{"kind":"shape","id":"sh/sryl4zqx","slide":1,"bbox":[102,82,132,8]}
+{"kind":"textbox","id":"sh/547294r6","slide":1,"text":"FIRST FINANCE","textPreview":"FIRST FINANCE","textChars":13,"textLines":1,"bbox":[102,112,300,44]}
+{"kind":"textbox","id":"sh/k3yl0zql","slide":1,"text":"Financial Documents and Chunking","textPreview":"Financial Documents and Chunking","textChars":32,"textLines":1,"bbox":[102,248,1396,94]}
+{"kind":"textbox","id":"sh/7qp4be9c","slide":1,"text":"Preserve financial structure before retrieval begins","textPreview":"Preserve financial structure before retrieval begins","textChars":52,"textLines":1,"bbox":[102,374,1180,54]}
+{"kind":"textbox","id":"sh/65g3298r","slide":1,"text":"SESSION 05  ·  13:30–15:00  ·  20 MIN CONCEPTS + 70 MIN NOTEBOOK","textPreview":"SESSION 05  ·  13:30–15:00  ·  20 MIN CONCEPTS + 70 MIN NOTEBOOK","textChars":64,"textLines":1,"bbox":[102,680,1000,42]}
+{"kind":"textbox","id":"sh/ts7md4r2","slide":1,"text":"First Finance - Arnaud Demes","textPreview":"First Finance - Arnaud Demes","textChars":28,"textLines":1,"bbox":[102,742,500,40]}
+{"kind":"notes","id":"nt/y90nupkv","slide":1,"text":"Resume with the hidden assumption from Lesson 04: the passages had already been prepared.\nThis session builds the missing document-engineering layer.\n\n[Sources]\n- Course-owned diagram and copy.\n[/Sources]"}
+{"kind":"slide","id":"sl/hwbqtkby","slide":2,"title":"REAL DOCUMENT","textShapes":14}
+{"kind":"textbox","id":"sh/fypcfqdg","slide":2,"text":"REAL DOCUMENT","textPreview":"REAL DOCUMENT","textChars":13,"textLines":1,"bbox":[102,70,500,36]}
+{"kind":"textbox","id":"sh/9072xkry","slide":2,"text":"A financial table can look obvious—and still extract ambiguously","textPreview":"A financial table can look obvious—and still extract ambiguously","textChars":64,"textLines":1,"bbox":[102,124,1396,82]}
+{"kind":"textbox","id":"sh/ozy1ofad","slide":2,"text":"OFFICIAL TABLE","textPreview":"OFFICIAL TABLE","textChars":14,"textLines":1,"bbox":[108,244,260,32]}
+{"kind":"shape","id":"sh/b29kza94","slide":2,"name":"visual-table","bbox":[108,292,610,356]}
+{"kind":"textbox","id":"sh/4zmxwzmp","slide":2,"text":"DEFAULT PDFPLUMBER OUTPUT","textPreview":"DEFAULT PDFPLUMBER OUTPUT","textChars":25,"textLines":1,"bbox":[832,244,310,32]}
+{"kind":"shape","id":"sh/mlgvq147","slide":2,"name":"linear-extraction","bbox":[832,292,650,356]}
+{"kind":"textbox","id":"sh/nmpcj6ls","slide":2,"text":"DEFAULT: 9 rows × 15 columns","textPreview":"DEFAULT: 9 rows × 15 columns","textChars":28,"textLines":1,"bbox":[868,324,570,48]}
+{"kind":"textbox","id":"sh/onydsbmd","slide":2,"text":"Header: Key figures | ∅ | ∅ | 2024 FY | …","textPreview":"Header: Key figures | ∅ | ∅ | 2024 FY | …","textChars":41,"textLines":1,"bbox":[868,388,570,48]}
+{"kind":"textbox","id":"sh/9o7ulg3y","slide":2,"text":"Revenue: ∅ | 38,153 | ∅ | 40,152 | …","textPreview":"Revenue: ∅ | 38,153 | ∅ | 40,152 | …","textChars":36,"textLines":1,"bbox":[868,452,570,48]}
+{"kind":"textbox","id":"sh/a9gvulkj","slide":2,"text":"Result: visually plausible, structurally ambiguous","textPreview":"Result: visually plausible, structurally ambiguous","textChars":50,"textLines":1,"bbox":[868,516,570,48]}
+{"kind":"shape","id":"sh/ba9cn6l4","slide":2,"bbox":[866,584,566,42]}
+{"kind":"textbox","id":"sh/wbidwb29","slide":2,"text":"Geometry is detected; schema still needs validation.","textPreview":"Geometry is detected; schema still needs validation.","textChars":52,"textLines":1,"bbox":[884,590,530,30]}
+{"kind":"shape","id":"sh/g365crmd","slide":2,"bbox":[718,470,114,0]}
+{"kind":"textbox","id":"sh/id0vylkf","slide":2,"text":"A table is evidence only after headers, rows, units and provenance pass.","textPreview":"A table is evidence only after headers, rows, units and provenance pass.","textChars":72,"textLines":1,"bbox":[286,708,1030,44]}
+{"kind":"shape","id":"sh/je9crql0","slide":2,"bbox":[90,829,1420,3]}
+{"kind":"shape","id":"sh/ru5cbqd4","slide":2,"bbox":[90,829,840,4]}
+{"kind":"textbox","id":"sh/69wbilcj","slide":2,"text":"First Finance - Arnaud Demes","textPreview":"First Finance - Arnaud Demes","textChars":28,"textLines":1,"bbox":[102,846,390,34]}
+{"kind":"textbox","id":"sh/tw7ud0va","slide":2,"text":"DOCUMENT","textPreview":"DOCUMENT","textChars":8,"textLines":1,"bbox":[1280,846,190,34]}
+{"kind":"textbox","id":"sh/svedkvup","slide":2,"text":"02","textPreview":"02","textChars":2,"textLines":1,"bbox":[1484,846,28,34]}
+{"kind":"textbox","id":"sh/kjq5o7ux","slide":2,"text":"Official Schneider Electric FY2025 results · page 1","textPreview":"Official Schneider Electric FY2025 results · page 1","textChars":51,"textLines":1,"bbox":[132,588,566,28]}
+{"kind":"image","id":"im/m5knip8r","slide":2,"name":"","bbox":[122,357.41,582,171.18]}
+{"kind":"notes","id":"nt/hwbqtkby","slide":2,"text":"Use the real Schneider Electric FY2025 table to show that visual clarity is not the same as machine-readable structure.\nThe default pdfplumber detector identifies geometry, but the returned 9 × 15 matrix contains blank separator cells and ambiguous headers. The learning objective is to validate the schema before trusting extracted numbers.\n[Sources]\n- https://www.se.com/ww/en/assets/564/document/528237/release-fy-results-2025.pdf (official Schneider Electric FY2025 results; table image on slide)\n- https://github.com/jsvine/pdfplumber (official pdfplumber documentation; extraction behavior described on slide)\n[/Sources]"}
+{"kind":"slide","id":"sl/ofy9wn61","slide":3,"title":"TABLE QUALITY GATE","textShapes":17}
+{"kind":"textbox","id":"sh/czmhc7id","slide":3,"text":"TABLE QUALITY GATE","textPreview":"TABLE QUALITY GATE","textChars":18,"textLines":1,"bbox":[102,70,500,36]}
+{"kind":"textbox","id":"sh/cza94vmx","slide":3,"text":"Table detection is not evidence until the schema passes","textPreview":"Table detection is not evidence until the schema passes","textChars":55,"textLines":1,"bbox":[102,124,1396,82]}
+{"kind":"shape","id":"sh/d0jax03i","slide":3,"name":"ingestion-1","bbox":[104,324,236,238]}
+{"kind":"textbox","id":"sh/298ryl4v","slide":3,"text":"01","textPreview":"01","textChars":2,"textLines":1,"bbox":[124,346,54,30]}
+{"kind":"textbox","id":"sh/3ah8rqlg","slide":3,"text":"Default extraction","textPreview":"Default extraction","textChars":18,"textLines":1,"bbox":[116,394,212,72]}
+{"kind":"textbox","id":"sh/obq90bml","slide":3,"text":"lines · coordinates","textPreview":"lines · coordinates","textChars":19,"textLines":1,"bbox":[124,484,196,54]}
+{"kind":"shape","id":"sh/a5c3ql8z","slide":3,"name":"ingestion-4","bbox":[992,324,236,238]}
+{"kind":"textbox","id":"sh/x8nml0ra","slide":3,"text":"03","textPreview":"03","textChars":2,"textLines":1,"bbox":[1012,346,54,30]}
+{"kind":"textbox","id":"sh/w7ulsvqp","slide":3,"text":"Validate schema","textPreview":"Validate schema","textChars":15,"textLines":1,"bbox":[1004,394,212,72]}
+{"kind":"textbox","id":"sh/ja54na9g","slide":3,"text":"headers · row widths · units","textPreview":"headers · row widths · units","textChars":28,"textLines":1,"bbox":[1012,484,196,54]}
+{"kind":"shape","id":"sh/i9w3u58v","slide":3,"name":"ingestion-5","bbox":[1288,324,236,238]}
+{"kind":"textbox","id":"sh/e10f2twf","slide":3,"text":"04","textPreview":"04","textChars":2,"textLines":1,"bbox":[1308,346,54,30]}
+{"kind":"textbox","id":"sh/f29gbyx0","slide":3,"text":"Optional parser","textPreview":"Optional parser","textChars":15,"textLines":1,"bbox":[1300,394,212,72]}
+{"kind":"textbox","id":"sh/03ix43e5","slide":3,"text":"Docling · OCR · VLM","textPreview":"Docling · OCR · VLM","textChars":19,"textLines":1,"bbox":[1308,484,196,54]}
+{"kind":"shape","id":"sh/fixw7q58","slide":3,"bbox":[1228,443,60,0]}
+{"kind":"textbox","id":"sh/tgry9ofu","slide":3,"text":"Pass → create DocumentBlock. Fail → tune pdfplumber or escalate.","textPreview":"Pass → create DocumentBlock. Fail → tune pdfplumber or escalate.","textChars":64,"textLines":1,"bbox":[250,652,1100,48]}
+{"kind":"textbox","id":"sh/a9kfadwn","slide":3,"text":"Baseline runs everywhere","textPreview":"Baseline runs everywhere","textChars":24,"textLines":1,"bbox":[198,718,470,34]}
+{"kind":"textbox","id":"sh/batgjixs","slide":3,"text":"Docling remains optional","textPreview":"Docling remains optional","textChars":24,"textLines":1,"bbox":[924,718,500,34]}
+{"kind":"shape","id":"sh/l4fi9cza","slide":3,"bbox":[90,829,1420,3]}
+{"kind":"shape","id":"sh/k3m1g7yp","slide":3,"bbox":[90,829,840,4]}
+{"kind":"textbox","id":"sh/z2d07mh4","slide":3,"text":"First Finance - Arnaud Demes","textPreview":"First Finance - Arnaud Demes","textChars":28,"textLines":1,"bbox":[102,846,390,34]}
+{"kind":"textbox","id":"sh/y14jehgj","slide":3,"text":"QUALITY GATE","textPreview":"QUALITY GATE","textChars":12,"textLines":1,"bbox":[1280,846,190,34]}
+{"kind":"textbox","id":"sh/x0vi5czy","slide":3,"text":"03","textPreview":"03","textChars":2,"textLines":1,"bbox":[1484,846,28,34]}
+{"kind":"shape","id":"sh/32tgbahc","slide":3,"bbox":[340,437,60,14]}
+{"kind":"shape","id":"sh/21kf250r","slide":3,"bbox":[932,437,60,14]}
+{"kind":"image","id":"im/bq14vm1k","slide":3,"name":"","geometry":"roundRect","bbox":[400,364.76,532,156.47]}
+{"kind":"notes","id":"nt/ofy9wn61","slide":3,"text":"The red and blue overlay is generated by pdfplumber's tablefinder debug view on the same official Schneider Electric table used on slide 2.\nTeach the baseline first: inspect geometry, validate headers/row widths/units, and only then create a DocumentBlock. If the quality gate fails, tune pdfplumber settings or escalate to an optional heavier parser such as Docling, OCR, or a vision-language model.\n[Sources]\n- https://github.com/jsvine/pdfplumber (official pdfplumber documentation; tablefinder debug overlay)\n- https://github.com/docling-project/docling/blob/main/docs/getting_started/installation.md (official Docling installation guide; optional escalation path)\n[/Sources]"}
+{"kind":"slide","id":"sl/jyx0ra1s","slide":4,"title":"PARSING QUALITY","textShapes":6}
+{"kind":"textbox","id":"sh/mtcfypkn","slide":4,"text":"PARSING QUALITY","textPreview":"PARSING QUALITY","textChars":15,"textLines":1,"bbox":[102,70,500,36]}
+{"kind":"textbox","id":"sh/1cj2d8b6","slide":4,"text":"Good parsing preserves relationships; bad parsing leaves a text dump","textPreview":"Good parsing preserves relationships; bad parsing leaves a text dump","textChars":68,"textLines":1,"bbox":[102,124,1396,82]}
+{"kind":"textbox","id":"sh/knex8j21","slide":4,"text":"Trust the parse only when rows, units, page and source IDs survive together.","textPreview":"Trust the parse only when rows, units, page and source IDs survive together.","textChars":76,"textLines":1,"bbox":[246,704,1108,46]}
+{"kind":"shape","id":"sh/5ony1oj6","slide":4,"bbox":[90,829,1420,3]}
+{"kind":"shape","id":"sh/axcf29kj","slide":4,"bbox":[90,829,840,4]}
+{"kind":"textbox","id":"sh/vy5gbe14","slide":4,"text":"First Finance - Arnaud Demes","textPreview":"First Finance - Arnaud Demes","textChars":28,"textLines":1,"bbox":[102,846,390,34]}
+{"kind":"textbox","id":"sh/wzex4z2p","slide":4,"text":"PROVENANCE","textPreview":"PROVENANCE","textChars":10,"textLines":1,"bbox":[1280,846,190,34]}
+{"kind":"textbox","id":"sh/xknyx4ja","slide":4,"text":"04","textPreview":"04","textChars":2,"textLines":1,"bbox":[1484,846,28,34]}
+{"kind":"image","id":"im/wvut43ml","slide":4,"name":"","geometry":"rect","alt":"Executed Lesson 05 notebook figure comparing linear PDF extraction with a canonical table block","bbox":[102,238,1396,446]}
+{"kind":"notes","id":"nt/jyx0ra1s","slide":4,"text":"This is the executed Figure 3 from the Lesson 05 notebook. The left side shows the linear text returned from the PDF teaching extract; the right side shows the normalized table block with row/column relationships and provenance.\nAsk learners to identify what becomes machine-checkable on the right: headers, rows, units, page, source ID and block ID.\n[Sources]\n- notebooks/05_document_and_chunking_lab.ipynb (executed offline Figure 3)\n- https://www.se.com/ww/en/assets/564/document/528237/release-fy-results-2025.pdf (official Schneider Electric FY2025 results underlying the teaching extract)\n[/Sources]"}
+{"kind":"slide","id":"sl/i107q5of","slide":5,"title":"CHUNK INTEGRITY","textShapes":6}
+{"kind":"textbox","id":"sh/ji5kf2ho","slide":5,"text":"CHUNK INTEGRITY","textPreview":"CHUNK INTEGRITY","textChars":15,"textLines":1,"bbox":[102,70,500,36]}
+{"kind":"textbox","id":"sh/dgbulwnm","slide":5,"text":"A number is unsafe when its row or header is missing","textPreview":"A number is unsafe when its row or header is missing","textChars":52,"textLines":1,"bbox":[102,124,1396,82]}
+{"kind":"shape","id":"sh/5o7mhcju","slide":5,"bbox":[108,718,1382,64]}
+{"kind":"textbox","id":"sh/kny587i9","slide":5,"text":"A chunk may retrieve the right number and still destroy the financial relationship.","textPreview":"A chunk may retrieve the right number and still destroy the financial relationship.","textChars":83,"textLines":1,"bbox":[144,728,1310,42]}
+{"kind":"shape","id":"sh/atcjidg7","slide":5,"bbox":[90,829,1420,3]}
+{"kind":"shape","id":"sh/vu5kbihc","slide":5,"bbox":[90,829,840,4]}
+{"kind":"textbox","id":"sh/wve1knyx","slide":5,"text":"First Finance - Arnaud Demes","textPreview":"First Finance - Arnaud Demes","textChars":28,"textLines":1,"bbox":[102,846,390,34]}
+{"kind":"textbox","id":"sh/xwn2dszi","slide":5,"text":"BOUNDARIES","textPreview":"BOUNDARIES","textChars":10,"textLines":1,"bbox":[1280,846,190,34]}
+{"kind":"textbox","id":"sh/ihw3mxg3","slide":5,"text":"05","textPreview":"05","textChars":2,"textLines":1,"bbox":[1484,846,28,34]}
+{"kind":"image","id":"im/rix0bu9s","slide":5,"name":"","geometry":"rect","alt":"Executed Lesson 05 notebook figure comparing a broken fixed-window chunk with an atomic structure-aware table chunk","bbox":[102,236,1396,456]}
+{"kind":"notes","id":"nt/i107q5of","slide":5,"text":"This is the executed Figure 11 from the Lesson 05 notebook. The fixed 90-character window cuts the word Gaming and separates the final cells; the structure-aware strategy keeps the complete table atomic.\nThe point is diagnostic: retrieval can still find USD 16.0 billion, but the selected fragment no longer proves that the value belongs to Gaming or that 41% is its year-on-year growth.\n[Sources]\n- notebooks/05_document_and_chunking_lab.ipynb (executed offline Figure 11)\n- https://www.sec.gov/Archives/edgar/data/1045810/000104581026000029/nvda-20260125.htm (official NVIDIA fiscal 2026 Form 10-K underlying the teaching extract)\n[/Sources]"}
+{"kind":"slide","id":"sl/x8f69ofe","slide":6,"title":"SEMANTIC + CONTEXTUAL","textShapes":20}
+{"kind":"textbox","id":"sh/netcjqxo","slide":6,"text":"SEMANTIC + CONTEXTUAL","textPreview":"SEMANTIC + CONTEXTUAL","textChars":21,"textLines":1,"bbox":[102,70,500,36]}
+{"kind":"textbox","id":"sh/yhg7epsj","slide":6,"text":"Embedding boundaries, hierarchy and context solve different failures","textPreview":"Embedding boundaries, hierarchy and context solve different failures","textChars":68,"textLines":1,"bbox":[102,124,1396,82]}
+{"kind":"textbox","id":"sh/zi98nu94","slide":6,"text":"EMBEDDING BOUNDARY","textPreview":"EMBEDDING BOUNDARY","textChars":18,"textLines":1,"bbox":[108,256,300,30]}
+{"kind":"shape","id":"sh/87ipkzal","slide":6,"bbox":[132,360,108,4.33]}
+{"kind":"shape","id":"sh/98rqt4r6","slide":6,"bbox":[240,326,108,6.22]}
+{"kind":"shape","id":"sh/ml07i9sv","slide":6,"bbox":[348,326,108,6.67]}
+{"kind":"shape","id":"sh/7m98ru9g","slide":6,"bbox":[122,350,20,20]}
+{"kind":"shape","id":"sh/oryp8fah","slide":6,"bbox":[230,428,20,20]}
+{"kind":"shape","id":"sh/pc76hkr2","slide":6,"bbox":[338,316,20,20]}
+{"kind":"shape","id":"sh/h4bupgn6","slide":6,"bbox":[446,436,20,20]}
+{"kind":"shape","id":"sh/w32twb6l","slide":6,"bbox":[120,418,374,3]}
+{"kind":"textbox","id":"sh/v2tcn650","slide":6,"text":"model + threshold → boundary","textPreview":"model + threshold → boundary","textChars":28,"textLines":1,"bbox":[184,466,280,34]}
+{"kind":"textbox","id":"sh/u1kbu1ov","slide":6,"text":"PARENT–CHILD","textPreview":"PARENT–CHILD","textChars":12,"textLines":1,"bbox":[610,256,260,30]}
+{"kind":"shape","id":"sh/5svutgni","slide":6,"name":"parent-section","bbox":[658,316,286,74]}
+{"kind":"textbox","id":"sh/47mt0b6x","slide":6,"text":"PARENT SECTION","textPreview":"PARENT SECTION","textChars":14,"textLines":1,"bbox":[682,330,238,46]}
+{"kind":"shape","id":"sh/j6dcr65c","slide":6,"name":"child-0","bbox":[608,470,128,76]}
+{"kind":"textbox","id":"sh/i54bylor","slide":6,"text":"CHILD 1","textPreview":"CHILD 1","textChars":7,"textLines":1,"bbox":[618,486,108,42]}
+{"kind":"shape","id":"sh/twfux0ne","slide":6,"name":"child-1","bbox":[762,470,128,76]}
+{"kind":"textbox","id":"sh/svmt4v6t","slide":6,"text":"CHILD 2","textPreview":"CHILD 2","textChars":7,"textLines":1,"bbox":[772,486,108,42]}
+{"kind":"shape","id":"sh/cbe5g3ih","slide":6,"name":"child-2","bbox":[916,470,128,76]}
+{"kind":"textbox","id":"sh/dcnm98zm","slide":6,"text":"CHILD 3","textPreview":"CHILD 3","textChars":7,"textLines":1,"bbox":[926,486,108,42]}
+{"kind":"shape","id":"sh/xcvuxgfu","slide":6,"bbox":[672,390,129,80]}
+{"kind":"shape","id":"sh/wbmtobe9","slide":6,"bbox":[801,390,25,80]}
+{"kind":"shape","id":"sh/vadcv6xo","slide":6,"bbox":[801,390,179,80]}
+{"kind":"textbox","id":"sh/lg76d8zy","slide":6,"text":"retrieve small · expand verified parent","textPreview":"retrieve small · expand verified parent","textChars":39,"textLines":1,"bbox":[620,580,424,34]}
+{"kind":"textbox","id":"sh/ydgnit07","slide":6,"text":"RAW + GENERATED CONTEXT","textPreview":"RAW + GENERATED CONTEXT","textChars":23,"textLines":1,"bbox":[1126,256,360,30]}
+{"kind":"shape","id":"sh/zep4byhs","slide":6,"name":"context-prefix","bbox":[1126,316,358,94]}
+{"kind":"textbox","id":"sh/gju58ji9","slide":6,"text":"RAW EVIDENCE","textPreview":"RAW EVIDENCE","textChars":12,"textLines":1,"bbox":[1148,332,314,30]}
+{"kind":"textbox","id":"sh/1k3mhozu","slide":6,"text":"NVIDIA FY2026 · stable source text","textPreview":"NVIDIA FY2026 · stable source text","textChars":34,"textLines":1,"bbox":[1148,366,314,28]}
+{"kind":"shape","id":"sh/jet8nm1c","slide":6,"name":"proposition","bbox":[1126,456,358,122]}
+{"kind":"textbox","id":"sh/idk7ehkr","slide":6,"text":"GENERATED CONTEXT","textPreview":"GENERATED CONTEXT","textChars":17,"textLines":1,"bbox":[1150,470,310,28]}
+{"kind":"textbox","id":"sh/50bqpcj2","slide":6,"text":"Fiscal 2026 revenue context\n+ raw evidence at retrieval","textPreview":"Fiscal 2026 revenue context | + raw evidence at retrieval","textChars":55,"textLines":2,"bbox":[1150,504,310,54]}
+{"kind":"textbox","id":"sh/4f2pgr2h","slide":6,"text":"offline: 1.37× tokens · latency · retrieval gain","textPreview":"offline: 1.37× tokens · latency · retrieval gain","textChars":48,"textLines":1,"bbox":[1126,606,358,42]}
+{"kind":"shape","id":"sh/va98j210","slide":6,"bbox":[238,704,1124,66]}
+{"kind":"textbox","id":"sh/u907axkf","slide":6,"text":"Generated context augments raw_text; preserve IDs, pages and provenance.","textPreview":"Generated context augments raw_text; preserve IDs, pages and provenance.","textChars":72,"textLines":1,"bbox":[270,716,1060,42]}
+{"kind":"shape","id":"sh/hcrqlcj6","slide":6,"bbox":[90,829,1420,3]}
+{"kind":"shape","id":"sh/wbipc72l","slide":6,"bbox":[90,829,840,4]}
+{"kind":"textbox","id":"sh/7698f214","slide":6,"text":"First Finance - Arnaud Demes","textPreview":"First Finance - Arnaud Demes","textChars":28,"textLines":1,"bbox":[102,846,390,34]}
+{"kind":"textbox","id":"sh/m5076xkj","slide":6,"text":"STRATEGIES","textPreview":"STRATEGIES","textChars":10,"textLines":1,"bbox":[1280,846,190,34]}
+{"kind":"textbox","id":"sh/2dkbalg3","slide":6,"text":"06","textPreview":"06","textChars":2,"textLines":1,"bbox":[1484,846,28,34]}
+{"kind":"notes","id":"nt/x8f69ofe","slide":6,"text":"Separate three decisions. Embedding model plus threshold creates semantic boundaries. Parent-child links separate matching from reading. Contextual enrichment is one bounded JSON transformation, not agentic chunking; generated context augments immutable raw_text. The 1.37x token ratio is the deterministic Notebook 05 offline measurement.\n\n[Sources]\n- https://platform.openai.com/docs/guides/embeddings\n- https://docs.ollama.com/capabilities/embeddings\n- Course Notebook 05 offline execution, contextual-chunks-v1\n[/Sources]"}
+{"kind":"slide","id":"sl/gnmp4jqx","slide":7,"title":"FAILURE LAB","textShapes":29}
+{"kind":"textbox","id":"sh/8jupo3ad","slide":7,"text":"FAILURE LAB","textPreview":"FAILURE LAB","textChars":11,"textLines":1,"bbox":[102,70,500,36]}
+{"kind":"textbox","id":"sh/cb2tkvap","slide":7,"text":"A retrievable number can still be analytically unsafe","textPreview":"A retrievable number can still be analytically unsafe","textChars":53,"textLines":1,"bbox":[102,124,1396,82]}
+{"kind":"textbox","id":"sh/dcbud0ra","slide":7,"text":"FIXED WINDOWS","textPreview":"FIXED WINDOWS","textChars":13,"textLines":1,"bbox":[108,246,280,30]}
+{"kind":"shape","id":"sh/ydkbm5sv","slide":7,"name":"fixed-one","bbox":[108,294,560,116]}
+{"kind":"textbox","id":"sh/zedcfa9g","slide":7,"text":"F1  Business | Revenue | Growth\nData Center | USD 193.7bn | 68%\nGaming | USD 16.0","textPreview":"F1  Business | Revenue | Growth | Data Center | USD 193.7bn | 68% | Gaming | USD 16.0","textChars":81,"textLines":3,"bbox":[134,310,508,84]}
+{"kind":"shape","id":"sh/kzmdova1","slide":7,"name":"fixed-two","bbox":[108,454,300,76]}
+{"kind":"textbox","id":"sh/l0vuh0rm","slide":7,"text":"F2  bn | 41%","textPreview":"F2  bn | 41%","textChars":12,"textLines":1,"bbox":[134,468,250,46]}
+{"kind":"textbox","id":"sh/eh0ba1sr","slide":7,"text":"Boundary separates Gaming value from its complete row","textPreview":"Boundary separates Gaming value from its complete row","textChars":53,"textLines":1,"bbox":[108,554,560,44]}
+{"kind":"textbox","id":"sh/fi9c369c","slide":7,"text":"STRUCTURE-AWARE","textPreview":"STRUCTURE-AWARE","textChars":15,"textLines":1,"bbox":[770,246,300,30]}
+{"kind":"shape","id":"sh/baxkjqlk","slide":7,"bbox":[770,294,226,64]}
+{"kind":"textbox","id":"sh/a9ojq5kz","slide":7,"text":"Business","textPreview":"Business","textChars":8,"textLines":1,"bbox":[782,305,202,42]}
+{"kind":"shape","id":"sh/xcz2l03q","slide":7,"bbox":[1002,294,206,64]}
+{"kind":"textbox","id":"sh/cbq1sv25","slide":7,"text":"Revenue","textPreview":"Revenue","textChars":7,"textLines":1,"bbox":[1014,305,182,42]}
+{"kind":"shape","id":"sh/n6x0fqlo","slide":7,"bbox":[1214,294,270,64]}
+{"kind":"textbox","id":"sh/25ojml43","slide":7,"text":"Year-on-year growth","textPreview":"Year-on-year growth","textChars":19,"textLines":1,"bbox":[1226,305,246,42]}
+{"kind":"shape","id":"sh/p8fih03e","slide":7,"bbox":[770,362,226,70]}
+{"kind":"textbox","id":"sh/o761ov2t","slide":7,"text":"Data Center","textPreview":"Data Center","textChars":11,"textLines":1,"bbox":[782,374,202,44]}
+{"kind":"shape","id":"sh/f2d0b6lc","slide":7,"bbox":[1002,362,206,70]}
+{"kind":"textbox","id":"sh/eh4jil4r","slide":7,"text":"USD 193.7bn","textPreview":"USD 193.7bn","textChars":11,"textLines":1,"bbox":[1014,374,182,44]}
+{"kind":"shape","id":"sh/id4ju1oz","slide":7,"bbox":[1214,362,270,70]}
+{"kind":"textbox","id":"sh/jedkn654","slide":7,"text":"68%","textPreview":"68%","textChars":3,"textLines":1,"bbox":[1226,374,246,44]}
+{"kind":"shape","id":"sh/4fm1wb6p","slide":7,"bbox":[770,438,226,70]}
+{"kind":"textbox","id":"sh/50v2pgna","slide":7,"text":"Gaming","textPreview":"Gaming","textChars":6,"textLines":1,"bbox":[782,450,202,44]}
+{"kind":"shape","id":"sh/q143ylov","slide":7,"bbox":[1002,438,206,70]}
+{"kind":"textbox","id":"sh/r2dkrq5g","slide":7,"text":"USD 16.0bn","textPreview":"USD 16.0bn","textChars":10,"textLines":1,"bbox":[1014,450,182,44]}
+{"kind":"shape","id":"sh/s3ml0v61","slide":7,"bbox":[1214,438,270,70]}
+{"kind":"textbox","id":"sh/d4f2t0nm","slide":7,"text":"41%","textPreview":"41%","textChars":3,"textLines":1,"bbox":[1226,450,246,44]}
+{"kind":"textbox","id":"sh/e5o32lor","slide":7,"text":"One chunk · complete row/column relationship","textPreview":"One chunk · complete row/column relationship","textChars":44,"textLines":1,"bbox":[770,538,714,42]}
+{"kind":"shape","id":"sh/f6xkvq5c","slide":7,"bbox":[730,248,3,356]}
+{"kind":"textbox","id":"sh/p0zmlk7u","slide":7,"text":"MEASURED ON THE NOTEBOOK FIXTURES","textPreview":"MEASURED ON THE NOTEBOOK FIXTURES","textChars":33,"textLines":1,"bbox":[108,646,450,30]}
+{"kind":"textbox","id":"sh/ozq5szq9","slide":7,"text":"Fixed table integrity","textPreview":"Fixed table integrity","textChars":21,"textLines":1,"bbox":[108,686,280,30]}
+{"kind":"textbox","id":"sh/nyh4jupo","slide":7,"text":"0%","textPreview":"0%","textChars":2,"textLines":1,"bbox":[108,720,280,48]}
+{"kind":"textbox","id":"sh/2x8nqp83","slide":7,"text":"Structured table integrity","textPreview":"Structured table integrity","textChars":26,"textLines":1,"bbox":[456,686,280,30]}
+{"kind":"textbox","id":"sh/x4j6p47q","slide":7,"text":"100%","textPreview":"100%","textChars":4,"textLines":1,"bbox":[456,720,280,48]}
+{"kind":"textbox","id":"sh/c3a5wzq5","slide":7,"text":"Fixed retrieval@2","textPreview":"Fixed retrieval@2","textChars":17,"textLines":1,"bbox":[804,686,280,30]}
+{"kind":"textbox","id":"sh/b2h4nupk","slide":7,"text":"75%","textPreview":"75%","textChars":3,"textLines":1,"bbox":[804,720,280,48]}
+{"kind":"textbox","id":"sh/a18nup8z","slide":7,"text":"Structured retrieval@2","textPreview":"Structured retrieval@2","textChars":22,"textLines":1,"bbox":[1152,686,280,30]}
+{"kind":"textbox","id":"sh/lsj6t47m","slide":7,"text":"100%","textPreview":"100%","textChars":4,"textLines":1,"bbox":[1152,720,280,48]}
+{"kind":"shape","id":"sh/kra50jqh","slide":7,"bbox":[90,829,1420,3]}
+{"kind":"shape","id":"sh/wneps3ap","slide":7,"bbox":[90,829,840,4]}
+{"kind":"textbox","id":"sh/honq18ru","slide":7,"text":"First Finance - Arnaud Demes","textPreview":"First Finance - Arnaud Demes","textChars":28,"textLines":1,"bbox":[102,846,390,34]}
+{"kind":"textbox","id":"sh/ulc7qdsj","slide":7,"text":"FAILURE","textPreview":"FAILURE","textChars":7,"textLines":1,"bbox":[1280,846,190,34]}
+{"kind":"textbox","id":"sh/vm58zi94","slide":7,"text":"07","textPreview":"07","textChars":2,"textLines":1,"bbox":[1484,846,28,34]}
+{"kind":"notes","id":"nt/gnmp4jqx","slide":7,"text":"The parser recovered the table correctly; the fixed chunker broke the relationship.\nDo not change the model or retriever before repairing the evidence unit.\nThe metrics are generated by Notebook 05 over four maintained fixture questions.\n\n[Sources]\n- https://www.sec.gov/Archives/edgar/data/1045810/000104581026000021/nvda-20260125.htm\n[/Sources]"}
+{"kind":"slide","id":"sl/fu1gfa1s","slide":8,"title":"STRATEGY DECISION","textShapes":18}
+{"kind":"textbox","id":"sh/x4ne1wni","slide":8,"text":"STRATEGY DECISION","textPreview":"STRATEGY DECISION","textChars":17,"textLines":1,"bbox":[102,70,500,36]}
+{"kind":"textbox","id":"sh/18byd4zy","slide":8,"text":"Escalate chunking complexity only when evaluation justifies it","textPreview":"Escalate chunking complexity only when evaluation justifies it","textChars":62,"textLines":1,"bbox":[102,124,1396,82]}
+{"kind":"shape","id":"sh/g72x4zyd","slide":8,"name":"decision-source","bbox":[108,314,286,164]}
+{"kind":"textbox","id":"sh/ri9g7uhw","slide":8,"text":"STRUCTURE-AWARE","textPreview":"STRUCTURE-AWARE","textChars":15,"textLines":1,"bbox":[136,334,230,34]}
+{"kind":"textbox","id":"sh/6h0fypgb","slide":8,"text":"tables + headings intact\ndefault for filings","textPreview":"tables + headings intact | default for filings","textChars":44,"textLines":2,"bbox":[136,384,230,68]}
+{"kind":"shape","id":"sh/tkby9kzm","slide":8,"name":"decision-child","bbox":[542,300,342,192]}
+{"kind":"textbox","id":"sh/sjix0zy1","slide":8,"text":"SEMANTIC + HIERARCHICAL","textPreview":"SEMANTIC + HIERARCHICAL","textChars":23,"textLines":1,"bbox":[574,322,278,30]}
+{"kind":"textbox","id":"sh/je9g3ahk","slide":8,"text":"embedding boundary\n+ verified parent","textPreview":"embedding boundary | + verified parent","textChars":36,"textLines":2,"bbox":[574,366,278,76]}
+{"kind":"textbox","id":"sh/id0fu50z","slide":8,"text":"when matching is weak","textPreview":"when matching is weak","textChars":21,"textLines":1,"bbox":[574,448,278,28]}
+{"kind":"shape","id":"sh/o7ydoret","slide":8,"name":"decision-parent","bbox":[1032,314,372,164]}
+{"kind":"textbox","id":"sh/98rehwve","slide":8,"text":"LLM CONTEXTUAL","textPreview":"LLM CONTEXTUAL","textChars":14,"textLines":1,"bbox":[1064,334,308,34]}
+{"kind":"textbox","id":"sh/m5gvmhwn","slide":8,"text":"generated context\n+ immutable raw_text","textPreview":"generated context | + immutable raw_text","textChars":38,"textLines":2,"bbox":[1064,382,308,72]}
+{"kind":"shape","id":"sh/byx0vitc","slide":8,"bbox":[394,396,148,0]}
+{"kind":"shape","id":"sh/axojmdcr","slide":8,"bbox":[884,396,148,0]}
+{"kind":"shape","id":"sh/1k7edwv2","slide":8,"bbox":[168,574,1264,118]}
+{"kind":"textbox","id":"sh/ehgvihwr","slide":8,"text":"NON-NEGOTIABLE","textPreview":"NON-NEGOTIABLE","textChars":14,"textLines":1,"bbox":[204,592,260,30]}
+{"kind":"textbox","id":"sh/zipwbmdc","slide":8,"text":"table integrity · provenance · stable IDs","textPreview":"table integrity · provenance · stable IDs","textChars":41,"textLines":1,"bbox":[204,626,520,42]}
+{"kind":"shape","id":"sh/kfixwbe1","slide":8,"bbox":[786,592,3,78]}
+{"kind":"textbox","id":"sh/lgbepgvm","slide":8,"text":"MEASURE BEFORE ADDING","textPreview":"MEASURE BEFORE ADDING","textChars":21,"textLines":1,"bbox":[826,592,330,30]}
+{"kind":"textbox","id":"sh/tw7e9gnq","slide":8,"text":"tokens · latency · recall · transformation risk","textPreview":"tokens · latency · recall · transformation risk","textChars":47,"textLines":1,"bbox":[826,626,540,42]}
+{"kind":"textbox","id":"sh/svydgb65","slide":8,"text":"NEXT · LESSON 06","textPreview":"NEXT · LESSON 06","textChars":16,"textLines":1,"bbox":[108,744,160,34]}
+{"kind":"textbox","id":"sh/7u5w765k","slide":8,"text":"Keep the chunks; improve candidate retrieval with embeddings, filters, fusion and reranking.","textPreview":"Keep the chunks; improve candidate retrieval with embeddings, filters, fusion and reranking.","textChars":92,"textLines":1,"bbox":[284,734,1198,50]}
+{"kind":"shape","id":"sh/6twve1oz","slide":8,"bbox":[90,829,1420,3]}
+{"kind":"shape","id":"sh/5sne5wne","slide":8,"bbox":[90,829,840,4]}
+{"kind":"textbox","id":"sh/kredcr6t","slide":8,"text":"First Finance - Arnaud Demes","textPreview":"First Finance - Arnaud Demes","textChars":28,"textLines":1,"bbox":[102,846,390,34]}
+{"kind":"textbox","id":"sh/jq5w365o","slide":8,"text":"DECISION","textPreview":"DECISION","textChars":8,"textLines":1,"bbox":[1280,846,190,34]}
+{"kind":"textbox","id":"sh/i5wva1o3","slide":8,"text":"08","textPreview":"08","textChars":2,"textLines":1,"bbox":[1484,846,28,34]}
+{"kind":"notes","id":"nt/fu1gfa1s","slide":8,"text":"Use structure-aware chunks as the filing baseline. Add semantic boundaries or hierarchy when matching is weak; add LLM contextual enrichment only when passages remain ambiguous and measured retrieval improves enough to justify tokens, latency and transformation risk.\n\n[Sources]\n- Course-owned decision matrix\n- Course Notebook 05 offline execution\n[/Sources]"}
+{"kind":"slide","id":"sl/udsvah03","slide":9,"title":"FIRST FINANCE","textShapes":11}
+{"kind":"shape","id":"sh/ofq5svm5","slide":9,"bbox":[102,82,132,8]}
+{"kind":"textbox","id":"sh/1cfmhgne","slide":9,"text":"FIRST FINANCE","textPreview":"FIRST FINANCE","textChars":13,"textLines":1,"bbox":[102,112,300,44]}
+{"kind":"textbox","id":"sh/0b65obm9","slide":9,"text":"Quick quiz","textPreview":"Quick quiz","textChars":10,"textLines":1,"bbox":[102,248,1396,94]}
+{"kind":"textbox","id":"sh/nex4jq5k","slide":9,"text":"Choose one answer for each question.","textPreview":"Choose one answer for each question.","textChars":36,"textLines":1,"bbox":[102,374,1180,54]}
+{"kind":"textbox","id":"sh/mdonql4z","slide":9,"text":"LESSON 05  ·  3 QUESTIONS  ·  3 MINUTES","textPreview":"LESSON 05  ·  3 QUESTIONS  ·  3 MINUTES","textChars":39,"textLines":1,"bbox":[102,680,1000,42]}
+{"kind":"textbox","id":"sh/9gzml0nq","slide":9,"text":"First Finance - Arnaud Demes","textPreview":"First Finance - Arnaud Demes","textChars":28,"textLines":1,"bbox":[102,742,500,40]}
+{"kind":"textbox","id":"sh/bih4na5w","slide":9,"name":"quiz-question-1","text":"1. What should be checked before choosing chunks?","textPreview":"1. What should be checked before choosing chunks?","textChars":49,"textLines":1,"bbox":[102,462,1396,30]}
+{"kind":"textbox","id":"sh/ah8nu54b","slide":9,"name":"quiz-options-1","text":"A  Extraction quality     |     B  Agent retries     |     C  Model price","textPreview":"A  Extraction quality     |     B  Agent retries     |     C  Model price","textChars":73,"textLines":1,"bbox":[132,494,1366,26]}
+{"kind":"textbox","id":"sh/oza1gfyh","slide":9,"name":"quiz-question-2","text":"2. What must survive every document transformation?","textPreview":"2. What must survive every document transformation?","textChars":51,"textLines":1,"bbox":[102,534,1396,30]}
+{"kind":"textbox","id":"sh/p0ji9kf2","slide":9,"name":"quiz-options-2","text":"A  Provenance     |     B  Font colour     |     C  Chat history","textPreview":"A  Provenance     |     B  Font colour     |     C  Chat history","textChars":64,"textLines":1,"bbox":[132,566,1366,26]}
+{"kind":"textbox","id":"sh/2xsjepgb","slide":9,"name":"quiz-question-3","text":"3. What do hierarchical chunks separate?","textPreview":"3. What do hierarchical chunks separate?","textChars":40,"textLines":1,"bbox":[102,606,1396,30]}
+{"kind":"textbox","id":"sh/3y107axw","slide":9,"name":"quiz-options-3","text":"A  Retrieval and reading context     |     B  Users and roles     |     C  Models and APIs","textPreview":"A  Retrieval and reading context     |     B  Users and roles     |     C  Models and APIs","textChars":90,"textLines":1,"bbox":[132,638,1366,26]}
+{"kind":"notes","id":"nt/udsvah03","slide":9,"text":"Instructor purpose: Check the three core decisions before the lesson closes.\nPlanned timing: 3 minutes.\nFacilitation: ask for one letter per question.\n[Sources]\n- chapters/05-document-and-chunking-lab.md\n[/Sources]"}
+{"kind":"slide","id":"sl/m90b6t0r","slide":10,"title":"FIRST FINANCE","textShapes":11}
+{"kind":"shape","id":"sh/kzu5c32t","slide":10,"bbox":[102,82,132,8]}
+{"kind":"textbox","id":"sh/xc3mho32","slide":10,"text":"FIRST FINANCE","textPreview":"FIRST FINANCE","textChars":13,"textLines":1,"bbox":[102,112,300,44]}
+{"kind":"textbox","id":"sh/cbu58j2h","slide":10,"text":"Answers","textPreview":"Answers","textChars":7,"textLines":1,"bbox":[102,248,1396,94]}
+{"kind":"textbox","id":"sh/zelojyl8","slide":10,"text":"Check the idea, not only the letter.","textPreview":"Check the idea, not only the letter.","textChars":36,"textLines":1,"bbox":[102,374,1180,54]}
+{"kind":"textbox","id":"sh/ydcnatkn","slide":10,"text":"LESSON 05  ·  CORRECTION","textPreview":"LESSON 05  ·  CORRECTION","textChars":24,"textLines":1,"bbox":[102,680,1000,42]}
+{"kind":"textbox","id":"sh/l036l83y","slide":10,"text":"First Finance - Arnaud Demes","textPreview":"First Finance - Arnaud Demes","textChars":28,"textLines":1,"bbox":[102,742,500,40]}
+{"kind":"textbox","id":"sh/725onyl4","slide":10,"name":"quiz-answer-1","text":"1. A. Extraction quality","textPreview":"1. A. Extraction quality","textChars":24,"textLines":1,"bbox":[102,462,1396,30]}
+{"kind":"textbox","id":"sh/m1cnetkj","slide":10,"name":"quiz-explanation-1","text":"Bad reading order or lost tables cannot be repaired by better chunk sizes.","textPreview":"Bad reading order or lost tables cannot be repaired by better chunk sizes.","textChars":74,"textLines":1,"bbox":[132,494,1366,26]}
+{"kind":"textbox","id":"sh/s7yt4b21","slide":10,"name":"quiz-answer-2","text":"2. A. Provenance","textPreview":"2. A. Provenance","textChars":16,"textLines":1,"bbox":[102,534,1396,30]}
+{"kind":"textbox","id":"sh/d87uxg3m","slide":10,"name":"quiz-explanation-2","text":"Stable IDs, pages and sources keep evidence traceable.","textPreview":"Stable IDs, pages and sources keep evidence traceable.","textChars":54,"textLines":1,"bbox":[132,566,1366,26]}
+{"kind":"textbox","id":"sh/q5gb21kb","slide":10,"name":"quiz-answer-3","text":"3. A. Retrieval and reading context","textPreview":"3. A. Retrieval and reading context","textChars":35,"textLines":1,"bbox":[102,606,1396,30]}
+{"kind":"textbox","id":"sh/r6pcv6lw","slide":10,"name":"quiz-explanation-3","text":"Small children retrieve precisely while parents restore context.","textPreview":"Small children retrieve precisely while parents restore context.","textChars":64,"textLines":1,"bbox":[132,638,1366,26]}
+{"kind":"notes","id":"nt/m90b6t0r","slide":10,"text":"Instructor purpose: Correct the quiz and restate the practical rule behind each answer.\nPlanned timing: 3 minutes.\nFacilitation: ask learners to explain each rule in their own words.\n[Sources]\n- chapters/05-document-and-chunking-lab.md\n[/Sources]"}

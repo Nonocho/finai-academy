@@ -6,9 +6,9 @@ import mlflow
 
 from finai_academy.evaluation import EvaluationCase
 from finai_academy.hybrid_retrieval import (
+    BM25Index,
     DenseIndex,
     DeterministicTeachingEmbeddings,
-    KeywordIndex,
     RetrievalFilters,
 )
 from finai_academy.mlflow_evaluation import (
@@ -19,7 +19,7 @@ from finai_academy.mlflow_evaluation import (
 from finai_academy.retrieval_pipeline import retrieve_evidence
 
 
-def _configuration(configuration_id: str, *, keyword_weight: float = 1.0):
+def _configuration(configuration_id: str, *, bm25_weight: float = 1.0):
     return EvaluationConfiguration(
         configuration_id=configuration_id,
         dataset_version="rag-cases-v1",
@@ -30,7 +30,7 @@ def _configuration(configuration_id: str, *, keyword_weight: float = 1.0):
         prompt_version="answer-with-citations-v1",
         candidate_k=4,
         final_k=2,
-        rrf_weights={"keyword": keyword_weight, "dense": 1.0},
+        rrf_weights={"bm25": bm25_weight, "dense": 1.0},
     )
 
 
@@ -59,7 +59,7 @@ def _cases():
 
 def _predictor(corpus, configuration: EvaluationConfiguration):
     embeddings = DeterministicTeachingEmbeddings()
-    keyword_index = KeywordIndex(corpus)
+    bm25_index = BM25Index(corpus)
     dense_index = DenseIndex(
         corpus,
         embeddings,
@@ -71,12 +71,12 @@ def _predictor(corpus, configuration: EvaluationConfiguration):
     def predict(case, observer):
         retrieval = retrieve_evidence(
             case.question,
-            keyword_index=keyword_index,
+            keyword_index=bm25_index,
             dense_index=dense_index,
             filters=case.filters,
             candidate_k=configuration.candidate_k,
             final_k=configuration.final_k,
-            weights=configuration.rrf_weights,
+            weights=configuration.retrieval_weights,
             observer=observer,
         )
         with observer.span("context", inputs={"final_k": configuration.final_k}):
@@ -87,7 +87,12 @@ def _predictor(corpus, configuration: EvaluationConfiguration):
                 if case.case_id == "nvda-fact"
                 else "The provided evidence does not establish fair value."
             )
-        return EvaluationPrediction(retrieval=retrieval, answer=answer, contexts=contexts)
+        return EvaluationPrediction(
+            retrieval=retrieval,
+            answer=answer,
+            contexts=contexts,
+            abstained=False,
+        )
 
     return predict
 
@@ -124,13 +129,13 @@ def test_mlflow_run_logs_complete_reproducibility_metadata(tmp_path, corpus):
         for trace in traces
         for span in trace.data.spans
     }
-    assert {"eligibility", "keyword", "dense", "fusion", "rerank"} <= span_names
+    assert {"eligibility", "bm25", "dense", "fusion", "rerank"} <= span_names
     assert {"context", "generation"} <= span_names
 
 
 def test_mlflow_comparison_keeps_cases_aligned_and_classifies_failure(tmp_path, corpus):
     baseline = _configuration("baseline")
-    weighted = _configuration("keyword-weight-3", keyword_weight=3.0)
+    weighted = _configuration("bm25-weight-3", bm25_weight=3.0)
     cases = _cases()
 
     summaries = [
@@ -161,3 +166,10 @@ def test_mlflow_comparison_keeps_cases_aligned_and_classifies_failure(tmp_path, 
         "retrieval_recall_at_k",
         "citation_correctness",
     }
+
+
+def test_configuration_exposes_internal_retrieval_weights_without_leaking_old_labels():
+    configuration = _configuration("bm25-baseline", bm25_weight=2.5)
+
+    assert dict(configuration.rrf_weights) == {"bm25": 2.5, "dense": 1.0}
+    assert configuration.retrieval_weights == {"keyword": 2.5, "dense": 1.0}

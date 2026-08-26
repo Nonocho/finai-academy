@@ -13,9 +13,9 @@ Students should leave with one operational distinction:
 - prompt engineering defines the behaviour and output contract;
 - context engineering defines the information made available to the model.
 
-They build the simplest document-grounded path first: place one bounded NVIDIA
-document pack in the prompt, keep it stable across questions, budget the complete
-request, and stop when the document no longer fits safely.
+They build the simplest document-grounded path first: verify NVIDIA's complete
+FY2026 Form 10-K, derive one bounded official context pack, keep that pack stable
+across questions, and choose the route before generation.
 
 They also leave with a vocabulary boundary that prevents common architecture errors:
 
@@ -36,8 +36,9 @@ not appear by default. A complete-document path is often sufficient for a short,
 bounded source and gives students a clean baseline against which later retrieval can
 be evaluated.
 
-The lesson ends with a controlled failure. A synthetic neutral appendix pushes the
-same evidence pack beyond the application budget. The application chooses RAG before
+The lesson ends with a real constraint rather than synthetic filler. The bounded
+official context pack fits the teaching window and routes to CAG; the complete
+official filing does not and routes to RAG. The application makes both choices before
 calling the model rather than truncating silently.
 
 That choice is returned as a typed `ContextDecision`: route, component token
@@ -77,8 +78,9 @@ or placed where a model uses it less reliably. The notebook separates two claims
 - the budget gate is deterministic and tested;
 - attention degradation is empirical and must be measured on representative questions.
 
-The synthetic stress document visibly positions the real NVIDIA evidence in the middle,
-but the chart does not invent a model-accuracy score.
+The deck uses the published “Lost in the Middle” result to separate prompt fit from
+evidence use. The notebook does not invent a model-accuracy score; it treats
+long-context usefulness as an empirical evaluation question.
 
 ### 4. CAG and RAG solve different document shapes
 
@@ -88,38 +90,37 @@ source updates are frequent, or full-context latency and cost are no longer acce
 
 ## Notebook flow
 
-1. Load a curated teaching extract from NVIDIA's fiscal 2026 Form 10-K.
-2. Visualize the estimated token contribution of each source section.
-3. Allocate an 8,192-token teaching window across instructions, document, question and output.
-4. Inspect the resulting `ContextDecision`, including its route and reason.
-5. Build two prompts with the same exact document prefix.
-6. Run both through Ollama or OpenAI using the shared model boundary.
-7. Inspect actual latency and any provider metadata without inferring a cache hit.
-8. Validate the first answer against transparent grounding checks.
-9. Place the evidence in the middle of a longer synthetic document.
-10. Visualize the position and the CAG/RAG boundary, then record the reason.
+1. Verify the downloaded Form 10-K against its manifest checksum and accession.
+2. Derive a bounded context pack from two maintained official filing anchors.
+3. Compare the complete filing and bounded pack on a logarithmic token chart.
+4. Allocate an 8,192-token teaching window across instructions, evidence, question and output.
+5. Inspect two explicit `ContextDecision` objects: pack → CAG, filing → RAG.
+6. Build two prompts with the same exact evidence prefix and changing questions.
+7. Run both through Ollama or OpenAI using the shared model boundary.
+8. Inspect latency and cache telemetry without inferring a cache hit.
+9. Validate the first answer against transparent grounding checks.
+10. Record the real-document CAG/RAG boundary for the capstone.
 
 ## Guided notebook pacing
 
 | Time | Activity | Expected evidence |
 |---:|---|---|
 | 0–5 min | Name Context, Cache, Memory, Grounding and RAG | five-row distinction table |
-| 5–10 min | Load the NVIDIA pack and estimate tokens | section token figure |
-| 10–15 min | Allocate the context window | complete component budget |
-| 15–19 min | Inspect `ContextDecision` | `route='cag'` and a fit reason |
-| 19–24 min | Ask two stable-prefix questions | measured calls, no invented cache claim |
-| 24–27 min | Run grounding checks | explicit evidence checklist |
-| 27–30 min | Stress the document and route to RAG | `Decision: RAG required` plus reason |
+| 5–10 min | Verify the SEC filing and build the pack | accession, checksum and size |
+| 10–14 min | Compare filing vs pack | logarithmic token figure |
+| 14–18 min | Inspect both `ContextDecision` routes | pack → CAG; filing → RAG |
+| 18–23 min | Ask two stable-prefix questions | measured calls, no invented cache claim |
+| 23–27 min | Run grounding checks | explicit evidence checklist |
+| 27–30 min | Record the architecture boundary | reasoned route in application state |
 
 ## Visual teaching contract
 
-The notebook produces five executable figures:
+The notebook produces four executable figures:
 
-- tokens by filing section;
+- complete filing versus bounded pack;
 - complete context-window allocation;
 - observed latency for two repeated-prefix calls;
-- evidence position inside the stress document;
-- the point at which the application switches from CAG to RAG.
+- the real-document CAG/RAG decision boundary.
 
 The slide deck mirrors these mechanisms with editable explanatory diagrams. Students
 should be able to connect each slide diagram to a notebook cell that calculates or
@@ -151,7 +152,8 @@ document path must be rejected and routed to RAG or a larger verified context wi
 
 - Do not present the four-characters-per-token estimate as a tokenizer.
 - Ask students to predict the route before running each decision cell.
-- Emphasize that the synthetic appendix contains no financial evidence.
+- Emphasize that the route depends on the artifact actually sent: the bounded pack
+  and the complete filing legitimately produce different decisions.
 - If a live provider omits a citation, use the failure to reinforce the difference
   between prompt fit and groundedness.
 - Keep the maintained live question explicit: use only F1/F2, require bracketed

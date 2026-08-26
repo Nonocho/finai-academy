@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import math
 
+from finai_academy import agent_workflows
 from finai_academy.agent_workflows import (
     AgentDecision,
     OrchestrationResult,
@@ -152,6 +153,56 @@ def test_one_pass_workflow_exposes_an_unsupported_dependency_without_fabrication
     assert "unseen price" in result.trajectory[0].summary
 
 
+def test_fixed_price_to_currency_workflow_passes_observed_price_to_conversion() -> None:
+    """A known dependency belongs in deterministic code, not an agent loop."""
+
+    registry = build_course_tool_registry(SNAPSHOT)
+
+    result = agent_workflows.run_price_to_currency_workflow(
+        "What is NVIDIA's share price converted to euros?",
+        ticker="NVDA",
+        target_currency="EUR",
+        answer_writer=lambda _question, observations: (
+            f"NVIDIA: EUR {observations[-1].payload['output_amount']:.2f}."
+        ),
+        registry=registry,
+    )
+
+    tool_steps = [step for step in result.trajectory if step.phase == "tool"]
+    assert result.status == "completed"
+    assert result.answer == "NVIDIA: EUR 154.80."
+    assert [step.tool_name for step in tool_steps] == [
+        "get_market_price",
+        "convert_currency",
+    ]
+    assert tool_steps[1].request is not None
+    assert tool_steps[1].request.arguments["amount"] == 180.0
+
+
+def test_openai_facing_decision_schemas_are_closed_and_require_every_field() -> None:
+    """Strict Structured Outputs must not expose an arbitrary arguments object."""
+
+    def assert_closed_objects(schema: dict) -> None:
+        if schema.get("type") == "object":
+            assert schema.get("additionalProperties") is False
+            assert set(schema.get("required", [])) == set(schema.get("properties", {}))
+        for value in schema.values():
+            if isinstance(value, dict):
+                assert_closed_objects(value)
+            elif isinstance(value, list):
+                for item in value:
+                    if isinstance(item, dict):
+                        assert_closed_objects(item)
+
+    for model in (
+        agent_workflows.ModelWorkflowDecision,
+        agent_workflows.ModelAgentDecision,
+    ):
+        schema = model.model_json_schema()
+        assert_closed_objects(schema)
+        assert "arguments" not in str(schema)
+
+
 def test_bounded_agent_calls_price_before_currency_conversion() -> None:
     registry = build_course_tool_registry(SNAPSHOT)
 
@@ -234,6 +285,46 @@ def test_bounded_agent_rejects_an_ungrounded_converted_answer() -> None:
     assert result.answer is None
     assert result.trajectory[-1].phase == "guardrail"
     assert "price and conversion observations" in result.trajectory[-1].summary
+
+
+def test_bounded_agent_rejects_conversion_amount_that_differs_from_observed_price() -> None:
+    registry = build_course_tool_registry(SNAPSHOT)
+
+    def policy(_question, trajectory):
+        tool_steps = [step for step in trajectory if step.phase == "tool"]
+        if not tool_steps:
+            return AgentDecision(
+                action="tool",
+                request=ToolRequest(
+                    name="get_market_price",
+                    arguments={"ticker": "NVDA"},
+                ),
+            )
+        if len(tool_steps) == 1:
+            return AgentDecision(
+                action="tool",
+                request=ToolRequest(
+                    name="convert_currency",
+                    arguments={
+                        "amount": 999.0,
+                        "from_currency": "USD",
+                        "to_currency": "EUR",
+                    },
+                ),
+            )
+        return AgentDecision(action="finish", answer="NVIDIA: EUR 859.14.")
+
+    result = run_bounded_agent(
+        "What is NVIDIA's share price converted to euros?",
+        policy=policy,
+        registry=registry,
+        max_steps=4,
+    )
+
+    assert result.status == "error"
+    assert result.answer is None
+    assert result.trajectory[-1].phase == "guardrail"
+    assert "must equal the observed price" in result.trajectory[-1].summary
 
 
 def test_tool_error_is_retained_as_an_agent_observation() -> None:

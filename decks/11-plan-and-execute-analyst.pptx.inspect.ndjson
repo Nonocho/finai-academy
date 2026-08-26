@@ -1,0 +1,223 @@
+{"kind":"deck","id":"pr/5p01i8","name":"Deck"}
+{"kind":"layout","layoutId":"/ppt/slideMasters/slideMaster1.xml","name":"Master","type":"master"}
+{"kind":"layout","layoutId":"/ppt/slideLayouts/slideLayout1.xml","name":"Title Slide","type":"title"}
+{"kind":"slide","id":"sl/y90nupkv","slide":1,"title":"FIRST FINANCE","textShapes":5}
+{"kind":"shape","id":"sh/sryl4zqx","slide":1,"bbox":[102,82,132,8]}
+{"kind":"textbox","id":"sh/547294r6","slide":1,"text":"FIRST FINANCE","textPreview":"FIRST FINANCE","textChars":13,"textLines":1,"bbox":[102,112,300,44]}
+{"kind":"textbox","id":"sh/k3yl0zql","slide":1,"text":"Plan-and-Execute Financial Analyst","textPreview":"Plan-and-Execute Financial Analyst","textChars":34,"textLines":1,"bbox":[102,248,1396,94]}
+{"kind":"textbox","id":"sh/7qp4be9c","slide":1,"text":"Approve the strategy before the first tool call","textPreview":"Approve the strategy before the first tool call","textChars":47,"textLines":1,"bbox":[102,374,1180,54]}
+{"kind":"textbox","id":"sh/65g3298r","slide":1,"text":"NVIDIA + SCHNEIDER ELECTRIC  ·  PLAN  ·  EXECUTE  ·  VERIFY","textPreview":"NVIDIA + SCHNEIDER ELECTRIC  ·  PLAN  ·  EXECUTE  ·  VERIFY","textChars":59,"textLines":1,"bbox":[102,680,1000,42]}
+{"kind":"textbox","id":"sh/ts7md4r2","slide":1,"text":"First Finance - Arnaud Demes","textPreview":"First Finance - Arnaud Demes","textChars":28,"textLines":1,"bbox":[102,742,500,40]}
+{"kind":"notes","id":"nt/y90nupkv","slide":1,"text":"[Sources]\nchapters/11-plan-and-execute-analyst.md\nhttps://www.anthropic.com/engineering/building-effective-agents\n[/Sources]"}
+{"kind":"slide","id":"sl/hwbqtkby","slide":2,"title":"WHY PLAN","textShapes":12}
+{"kind":"textbox","id":"sh/ba9cn6l4","slide":2,"text":"WHY PLAN","textPreview":"WHY PLAN","textChars":8,"textLines":1,"bbox":[102,70,500,36]}
+{"kind":"textbox","id":"sh/9072xkry","slide":2,"text":"One mission, several evidence gaps","textPreview":"One mission, several evidence gaps","textChars":34,"textLines":1,"bbox":[102,124,1396,82]}
+{"kind":"shape","id":"sh/p0vy54na","slide":2,"bbox":[108,718,1382,64]}
+{"kind":"textbox","id":"sh/4zmxwzmp","slide":2,"text":"Planning earns its cost when the evidence path is uncertain.","textPreview":"Planning earns its cost when the evidence path is uncertain.","textChars":60,"textLines":1,"bbox":[144,728,1310,42]}
+{"kind":"shape","id":"sh/mlgvq147","slide":2,"bbox":[90,829,1420,3]}
+{"kind":"shape","id":"sh/nmpcj6ls","slide":2,"bbox":[90,829,840,4]}
+{"kind":"textbox","id":"sh/onydsbmd","slide":2,"text":"First Finance - Arnaud Demes","textPreview":"First Finance - Arnaud Demes","textChars":28,"textLines":1,"bbox":[102,846,390,34]}
+{"kind":"textbox","id":"sh/9o7ulg3y","slide":2,"text":"MISSION","textPreview":"MISSION","textChars":7,"textLines":1,"bbox":[1280,846,190,34]}
+{"kind":"textbox","id":"sh/a9gvulkj","slide":2,"text":"02","textPreview":"02","textChars":2,"textLines":1,"bbox":[1484,846,28,34]}
+{"kind":"textbox","id":"sh/wbidwb29","slide":2,"text":"MISSION","textPreview":"MISSION","textChars":7,"textLines":1,"bbox":[112,260,250,34]}
+{"kind":"textbox","id":"sh/xcrupg3u","slide":2,"text":"Compare two companies with valuation and operating evidence.","textPreview":"Compare two companies with valuation and operating evidence.","textChars":60,"textLines":1,"bbox":[112,302,500,100]}
+{"kind":"shape","id":"sh/id0vylkf","slide":2,"bbox":[112,436,28,28]}
+{"kind":"textbox","id":"sh/je9crql0","slide":2,"text":"Valuation metric for both companies","textPreview":"Valuation metric for both companies","textChars":35,"textLines":1,"bbox":[158,420,450,54]}
+{"kind":"shape","id":"sh/ru5cbqd4","slide":2,"bbox":[112,508,28,28]}
+{"kind":"textbox","id":"sh/69wbilcj","slide":2,"text":"Operating evidence from documents","textPreview":"Operating evidence from documents","textChars":33,"textLines":1,"bbox":[158,492,450,54]}
+{"kind":"shape","id":"sh/tw7ud0va","slide":2,"bbox":[112,580,28,28]}
+{"kind":"textbox","id":"sh/svedkvup","slide":2,"text":"A source for every factual claim","textPreview":"A source for every factual claim","textChars":32,"textLines":1,"bbox":[158,564,450,54]}
+{"kind":"textbox","id":"sh/exgvmlcv","slide":2,"text":"The plan coordinates several evidence needs before the loop begins.","textPreview":"The plan coordinates several evidence needs before the loop begins.","textChars":67,"textLines":1,"bbox":[740,620,650,44]}
+{"kind":"image","id":"im/0jmt47a9","slide":2,"name":"","alt":"Anthropic autonomous-agent action and feedback loop","bbox":[660,250,820,390]}
+{"kind":"notes","id":"nt/hwbqtkby","slide":2,"text":"[Sources]\nchapters/11-plan-and-execute-analyst.md\nhttps://www.anthropic.com/engineering/building-effective-agents\nassets/lesson-11/anthropic-autonomous-agent.png\n[/Sources]"}
+{"kind":"slide","id":"sl/ofy9wn61","slide":3,"title":"HOST POLICY","textShapes":17}
+{"kind":"textbox","id":"sh/a9kfadwn","slide":3,"text":"HOST POLICY","textPreview":"HOST POLICY","textChars":11,"textLines":1,"bbox":[102,70,500,36]}
+{"kind":"textbox","id":"sh/cza94vmx","slide":3,"text":"A graph shows connections, not authorization","textPreview":"A graph shows connections, not authorization","textChars":44,"textLines":1,"bbox":[102,124,1396,82]}
+{"kind":"textbox","id":"sh/f29gbyx0","slide":3,"text":"BOUNDARY","textPreview":"BOUNDARY","textChars":8,"textLines":1,"bbox":[108,744,160,34]}
+{"kind":"textbox","id":"sh/03ix43e5","slide":3,"text":"The model proposes a path. The host decides whether it may run.","textPreview":"The model proposes a path. The host decides whether it may run.","textChars":63,"textLines":1,"bbox":[284,734,1198,50]}
+{"kind":"shape","id":"sh/14ryd8fq","slide":3,"bbox":[90,829,1420,3]}
+{"kind":"shape","id":"sh/6d0fytg3","slide":3,"bbox":[90,829,840,4]}
+{"kind":"textbox","id":"sh/re9g7yxo","slide":3,"text":"First Finance - Arnaud Demes","textPreview":"First Finance - Arnaud Demes","textChars":28,"textLines":1,"bbox":[102,846,390,34]}
+{"kind":"textbox","id":"sh/sfix03y9","slide":3,"text":"CONTROL","textPreview":"CONTROL","textChars":7,"textLines":1,"bbox":[1280,846,190,34]}
+{"kind":"textbox","id":"sh/tgry9ofu","slide":3,"text":"03","textPreview":"03","textChars":2,"textLines":1,"bbox":[1484,846,28,34]}
+{"kind":"shape","id":"sh/batgjixs","slide":3,"bbox":[108,258,760,410]}
+{"kind":"textbox","id":"sh/k3m1g7yp","slide":3,"text":"Example agent graph","textPreview":"Example agent graph","textChars":19,"textLines":1,"bbox":[140,620,680,34]}
+{"kind":"textbox","id":"sh/y14jehgj","slide":3,"text":"HOST POLICY","textPreview":"HOST POLICY","textChars":11,"textLines":1,"bbox":[980,292,460,38]}
+{"kind":"shape","id":"sh/x0vi5czy","slide":3,"bbox":[980,350,44,44]}
+{"kind":"textbox","id":"sh/czmhc7id","slide":3,"text":"1","textPreview":"1","textChars":1,"textLines":1,"bbox":[980,355,44,30]}
+{"kind":"textbox","id":"sh/byd032h8","slide":3,"text":"Validate the typed plan","textPreview":"Validate the typed plan","textChars":23,"textLines":1,"bbox":[1042,348,388,60]}
+{"kind":"shape","id":"sh/ax4zax0n","slide":3,"bbox":[980,436,44,44]}
+{"kind":"textbox","id":"sh/hwzihwzi","slide":3,"text":"2","textPreview":"2","textChars":1,"textLines":1,"bbox":[980,441,44,30]}
+{"kind":"textbox","id":"sh/wv61obyx","slide":3,"text":"Enforce a six-step budget","textPreview":"Enforce a six-step budget","textChars":25,"textLines":1,"bbox":[1042,434,388,60]}
+{"kind":"shape","id":"sh/4nuhs7uh","slide":3,"bbox":[980,522,44,44]}
+{"kind":"textbox","id":"sh/po3ilcvm","slide":3,"text":"3","textPreview":"3","textChars":1,"textLines":1,"bbox":[980,527,44,30]}
+{"kind":"textbox","id":"sh/21szqxcb","slide":3,"text":"Permit read-only MCP tools","textPreview":"Permit read-only MCP tools","textChars":26,"textLines":1,"bbox":[1042,520,388,60]}
+{"kind":"shape","id":"sh/32l0j2dw","slide":3,"bbox":[980,608,44,44]}
+{"kind":"textbox","id":"sh/cruhwrud","slide":3,"text":"4","textPreview":"4","textChars":1,"textLines":1,"bbox":[980,613,44,30]}
+{"kind":"textbox","id":"sh/ds3ipcvy","slide":3,"text":"Gate the final evidence","textPreview":"Gate the final evidence","textChars":23,"textLines":1,"bbox":[1042,606,388,60]}
+{"kind":"image","id":"im/ihgryp0r","slide":3,"name":"","alt":"Official OpenAI Agents SDK graph visualization","bbox":[130,280,715,350]}
+{"kind":"image","id":"im/4jyt0zix","slide":3,"name":"","alt":"Host-policy panel","bbox":[930,258,560,410]}
+{"kind":"notes","id":"nt/ofy9wn61","slide":3,"text":"[Sources]\nchapters/11-plan-and-execute-analyst.md\nhttps://openai.github.io/openai-agents-python/visualization/\nassets/lesson-11/openai-agent-graph.png\n[/Sources]"}
+{"kind":"slide","id":"sl/jyx0ra1s","slide":4,"title":"APPROVED PLAN","textShapes":13}
+{"kind":"textbox","id":"sh/vy5gbe14","slide":4,"text":"APPROVED PLAN","textPreview":"APPROVED PLAN","textChars":13,"textLines":1,"bbox":[102,70,500,36]}
+{"kind":"textbox","id":"sh/1cj2d8b6","slide":4,"text":"The plan is visible before any tool runs","textPreview":"The plan is visible before any tool runs","textChars":40,"textLines":1,"bbox":[102,124,1396,82]}
+{"kind":"shape","id":"sh/tsrqlc7u","slide":4,"bbox":[108,718,1382,64]}
+{"kind":"textbox","id":"sh/sri9s7q9","slide":4,"text":"Approval happens before attempt 1.","textPreview":"Approval happens before attempt 1.","textChars":34,"textLines":1,"bbox":[144,728,1310,42]}
+{"kind":"shape","id":"sh/ilwf69kv","slide":4,"bbox":[90,829,1420,3]}
+{"kind":"shape","id":"sh/jm5gze1g","slide":4,"bbox":[90,829,840,4]}
+{"kind":"textbox","id":"sh/knex8j21","slide":4,"text":"First Finance - Arnaud Demes","textPreview":"First Finance - Arnaud Demes","textChars":28,"textLines":1,"bbox":[102,846,390,34]}
+{"kind":"textbox","id":"sh/5ony1oj6","slide":4,"text":"PLAN","textPreview":"PLAN","textChars":4,"textLines":1,"bbox":[1280,846,190,34]}
+{"kind":"textbox","id":"sh/axcf29kj","slide":4,"text":"04","textPreview":"04","textChars":2,"textLines":1,"bbox":[1484,846,28,34]}
+{"kind":"shape","id":"sh/wzex4z2p","slide":4,"bbox":[108,250,1030,430]}
+{"kind":"textbox","id":"sh/nulw7u18","slide":4,"text":"APPROVE ONLY IF","textPreview":"APPROVE ONLY IF","textChars":15,"textLines":1,"bbox":[1222,292,240,60]}
+{"kind":"shape","id":"sh/fm5c3q54","slide":4,"bbox":[1220,370,44,44]}
+{"kind":"textbox","id":"sh/elwba54j","slide":4,"text":"1","textPreview":"1","textChars":1,"textLines":1,"bbox":[1220,375,44,30]}
+{"kind":"textbox","id":"sh/18nu50nu","slide":4,"text":"Schema valid","textPreview":"Schema valid","textChars":12,"textLines":1,"bbox":[1282,368,178,60]}
+{"kind":"shape","id":"sh/0netcvm9","slide":4,"bbox":[1220,456,44,44]}
+{"kind":"textbox","id":"sh/rilczq5s","slide":4,"text":"2","textPreview":"2","textChars":1,"textLines":1,"bbox":[1220,461,44,30]}
+{"kind":"textbox","id":"sh/qhcb6l47","slide":4,"text":"Tool permitted","textPreview":"Tool permitted","textChars":14,"textLines":1,"bbox":[1282,454,178,60]}
+{"kind":"shape","id":"sh/dknu10ny","slide":4,"bbox":[1220,542,44,44]}
+{"kind":"textbox","id":"sh/sjut8vmd","slide":4,"text":"3","textPreview":"3","textChars":1,"textLines":1,"bbox":[1220,547,44,30]}
+{"kind":"textbox","id":"sh/3elcv65w","slide":4,"text":"Budget respected","textPreview":"Budget respected","textChars":16,"textLines":1,"bbox":[1282,540,178,60]}
+{"kind":"image","id":"im/upwbex4j","slide":4,"name":"","alt":"Actual Lesson 11 approved plan rendered by the notebook","bbox":[126,270,995,390]}
+{"kind":"image","id":"im/xw3ax8nq","slide":4,"name":"","alt":"Plan-approval panel","bbox":[1190,260,300,400]}
+{"kind":"notes","id":"nt/jyx0ra1s","slide":4,"text":"[Sources]\nchapters/11-plan-and-execute-analyst.md\nnotebooks/11_plan_and_execute_analyst.ipynb\nassets/lesson-11/approved-plan.png\n[/Sources]"}
+{"kind":"slide","id":"sl/i107q5of","slide":5,"title":"MCP DISCOVERY","textShapes":19}
+{"kind":"textbox","id":"sh/ji5kf2ho","slide":5,"text":"MCP DISCOVERY","textPreview":"MCP DISCOVERY","textChars":13,"textLines":1,"bbox":[102,70,500,36]}
+{"kind":"textbox","id":"sh/dgbulwnm","slide":5,"text":"MCP discovery narrows the agent's choices","textPreview":"MCP discovery narrows the agent's choices","textChars":41,"textLines":1,"bbox":[102,124,1396,82]}
+{"kind":"textbox","id":"sh/2h0ni107","slide":5,"text":"Discovery offers capabilities. Host policy turns them into permission.","textPreview":"Discovery offers capabilities. Host policy turns them into permission.","textChars":70,"textLines":1,"bbox":[250,652,1100,48]}
+{"kind":"textbox","id":"sh/5o7mhcju","slide":5,"text":"runtime offer","textPreview":"runtime offer","textChars":13,"textLines":1,"bbox":[198,718,470,34]}
+{"kind":"textbox","id":"sh/kny587i9","slide":5,"text":"host decision","textPreview":"host decision","textChars":13,"textLines":1,"bbox":[924,718,500,34]}
+{"kind":"shape","id":"sh/atcjidg7","slide":5,"bbox":[90,829,1420,3]}
+{"kind":"shape","id":"sh/vu5kbihc","slide":5,"bbox":[90,829,840,4]}
+{"kind":"textbox","id":"sh/wve1knyx","slide":5,"text":"First Finance - Arnaud Demes","textPreview":"First Finance - Arnaud Demes","textChars":28,"textLines":1,"bbox":[102,846,390,34]}
+{"kind":"textbox","id":"sh/xwn2dszi","slide":5,"text":"MCP","textPreview":"MCP","textChars":3,"textLines":1,"bbox":[1280,846,190,34]}
+{"kind":"textbox","id":"sh/ihw3mxg3","slide":5,"text":"05","textPreview":"05","textChars":2,"textLines":1,"bbox":[1484,846,28,34]}
+{"kind":"textbox","id":"sh/kjelony9","slide":5,"text":"DISCOVERED","textPreview":"DISCOVERED","textChars":10,"textLines":1,"bbox":[112,250,260,40]}
+{"kind":"textbox","id":"sh/5kn2hszu","slide":5,"text":"→","textPreview":"→","textChars":1,"textLines":1,"bbox":[342,246,60,44]}
+{"kind":"textbox","id":"sh/e1sjatgz","slide":5,"text":"ALLOWLISTED","textPreview":"ALLOWLISTED","textChars":11,"textLines":1,"bbox":[410,250,260,40]}
+{"kind":"textbox","id":"sh/zmlk3yhk","slide":5,"text":"→","textPreview":"→","textChars":1,"textLines":1,"bbox":[650,246,60,44]}
+{"kind":"textbox","id":"sh/fid07u98","slide":5,"text":"ARGUMENTS VALIDATED","textPreview":"ARGUMENTS VALIDATED","textChars":19,"textLines":1,"bbox":[720,250,360,40]}
+{"kind":"shape","id":"sh/ehkzepsn","slide":5,"bbox":[112,300,610,270]}
+{"kind":"shape","id":"sh/1kvi94re","slide":5,"bbox":[112,300,610,10]}
+{"kind":"textbox","id":"sh/gjmhgzqt","slide":5,"text":"get_company_metric","textPreview":"get_company_metric","textChars":18,"textLines":1,"bbox":[146,336,542,48]}
+{"kind":"textbox","id":"sh/3md0bu94","slide":5,"text":"ticker: str  ·  metric: str","textPreview":"ticker: str  ·  metric: str","textChars":27,"textLines":1,"bbox":[146,406,542,62]}
+{"kind":"textbox","id":"sh/2l4zip8j","slide":5,"text":"Returns value, date and source","textPreview":"Returns value, date and source","textChars":30,"textLines":1,"bbox":[146,492,542,48]}
+{"kind":"shape","id":"sh/povid4ra","slide":5,"bbox":[870,300,610,270]}
+{"kind":"shape","id":"sh/onmhkzqp","slide":5,"bbox":[870,300,610,10]}
+{"kind":"textbox","id":"sh/bqx0fe9g","slide":5,"text":"search_financial_documents","textPreview":"search_financial_documents","textChars":26,"textLines":1,"bbox":[904,336,542,48]}
+{"kind":"textbox","id":"sh/qp4jm98v","slide":5,"text":"company: str  ·  query: str  ·  top_k","textPreview":"company: str  ·  query: str  ·  top_k","textChars":37,"textLines":1,"bbox":[904,406,542,62]}
+{"kind":"textbox","id":"sh/8f6hcj6t","slide":5,"text":"Returns evidence IDs and source references","textPreview":"Returns evidence IDs and source references","textChars":42,"textLines":1,"bbox":[904,492,542,48]}
+{"kind":"notes","id":"nt/i107q5of","slide":5,"text":"[Sources]\nchapters/11-plan-and-execute-analyst.md\nhttps://modelcontextprotocol.io/specification/2025-06-18/server/tools\nsrc/finai_academy/planning_mcp_executor.py\n[/Sources]"}
+{"kind":"slide","id":"sl/x8f69ofe","slide":6,"title":"TYPED FAILURE","textShapes":13}
+{"kind":"textbox","id":"sh/u907axkf","slide":6,"text":"TYPED FAILURE","textPreview":"TYPED FAILURE","textChars":13,"textLines":1,"bbox":[102,70,500,36]}
+{"kind":"textbox","id":"sh/yhg7epsj","slide":6,"text":"A typed failure becomes part of the trace","textPreview":"A typed failure becomes part of the trace","textChars":41,"textLines":1,"bbox":[102,124,1396,82]}
+{"kind":"textbox","id":"sh/zep4byhs","slide":6,"text":"The failure remains visible, so the strategy change is auditable.","textPreview":"The failure remains visible, so the strategy change is auditable.","textChars":65,"textLines":1,"bbox":[250,652,1100,48]}
+{"kind":"textbox","id":"sh/gju58ji9","slide":6,"text":"retryable: false","textPreview":"retryable: false","textChars":16,"textLines":1,"bbox":[198,718,470,34]}
+{"kind":"textbox","id":"sh/1k3mhozu","slide":6,"text":"one replan maximum","textPreview":"one replan maximum","textChars":18,"textLines":1,"bbox":[924,718,500,34]}
+{"kind":"shape","id":"sh/jet8nm1c","slide":6,"bbox":[90,829,1420,3]}
+{"kind":"shape","id":"sh/idk7ehkr","slide":6,"bbox":[90,829,840,4]}
+{"kind":"textbox","id":"sh/50bqpcj2","slide":6,"text":"First Finance - Arnaud Demes","textPreview":"First Finance - Arnaud Demes","textChars":28,"textLines":1,"bbox":[102,846,390,34]}
+{"kind":"textbox","id":"sh/4f2pgr2h","slide":6,"text":"TRACE","textPreview":"TRACE","textChars":5,"textLines":1,"bbox":[1280,846,190,34]}
+{"kind":"textbox","id":"sh/va98j210","slide":6,"text":"06","textPreview":"06","textChars":2,"textLines":1,"bbox":[1484,846,28,34]}
+{"kind":"textbox","id":"sh/wbipc72l","slide":6,"text":"ATTEMPT 3","textPreview":"ATTEMPT 3","textChars":9,"textLines":1,"bbox":[150,300,220,34]}
+{"kind":"textbox","id":"sh/7698f214","slide":6,"text":"get_company_metric","textPreview":"get_company_metric","textChars":18,"textLines":1,"bbox":[150,342,650,42]}
+{"kind":"textbox","id":"sh/m5076xkj","slide":6,"text":"ticker        NVDA\nmetric        Revenue\nstatus        error\nerror_code    unsupported_metric\nretryable     false","textPreview":"ticker        NVDA | metric        Revenue | status        error | error_code    unsupported_metric | retryable     false","textChars":113,"textLines":5,"bbox":[150,404,650,170]}
+{"kind":"textbox","id":"sh/netcjqxo","slide":6,"text":"RETAIN","textPreview":"RETAIN","textChars":6,"textLines":1,"bbox":[992,376,216,62]}
+{"kind":"textbox","id":"sh/of2tcvy9","slide":6,"text":"Do not hide it\nDo not retry it unchanged\nDo not rewrite history","textPreview":"Do not hide it | Do not retry it unchanged | Do not rewrite history","textChars":63,"textLines":3,"bbox":[1270,330,250,170]}
+{"kind":"image","id":"im/yh0n6x87","slide":6,"name":"","alt":"Typed-failure payload panel","bbox":[112,270,760,340]}
+{"kind":"image","id":"im/10n2lone","slide":6,"name":"","alt":"Retain-failure marker","bbox":[970,286,260,260]}
+{"kind":"notes","id":"nt/x8f69ofe","slide":6,"text":"[Sources]\nchapters/11-plan-and-execute-analyst.md\nnotebooks/11_plan_and_execute_analyst.ipynb\nsrc/finai_academy/plan_execute_graph.py\n[/Sources]"}
+{"kind":"slide","id":"sl/gnmp4jqx","slide":7,"title":"TAIL REVISION","textShapes":9}
+{"kind":"textbox","id":"sh/c3a5wzq5","slide":7,"text":"TAIL REVISION","textPreview":"TAIL REVISION","textChars":13,"textLines":1,"bbox":[102,70,500,36]}
+{"kind":"textbox","id":"sh/cb2tkvap","slide":7,"text":"One failed metric changes the remaining strategy","textPreview":"One failed metric changes the remaining strategy","textChars":48,"textLines":1,"bbox":[102,124,1396,82]}
+{"kind":"shape","id":"sh/e5o32lor","slide":7,"bbox":[108,718,1382,64]}
+{"kind":"textbox","id":"sh/f6xkvq5c","slide":7,"text":"Steps 1-2 stay. Step 3 remains. Step 4 is superseded. Steps 5-6 replace the tail.","textPreview":"Steps 1-2 stay. Step 3 remains. Step 4 is superseded. Steps 5-6 replace the tail.","textChars":81,"textLines":1,"bbox":[144,728,1310,42]}
+{"kind":"shape","id":"sh/p0zmlk7u","slide":7,"bbox":[90,829,1420,3]}
+{"kind":"shape","id":"sh/ozq5szq9","slide":7,"bbox":[90,829,840,4]}
+{"kind":"textbox","id":"sh/nyh4jupo","slide":7,"text":"First Finance - Arnaud Demes","textPreview":"First Finance - Arnaud Demes","textChars":28,"textLines":1,"bbox":[102,846,390,34]}
+{"kind":"textbox","id":"sh/2x8nqp83","slide":7,"text":"REPLAN","textPreview":"REPLAN","textChars":6,"textLines":1,"bbox":[1280,846,190,34]}
+{"kind":"textbox","id":"sh/x4j6p47q","slide":7,"text":"07","textPreview":"07","textChars":2,"textLines":1,"bbox":[1484,846,28,34]}
+{"kind":"shape","id":"sh/b2h4nupk","slide":7,"bbox":[108,250,1382,430]}
+{"kind":"textbox","id":"sh/lsj6t47m","slide":7,"text":"KEEP","textPreview":"KEEP","textChars":4,"textLines":1,"bbox":[140,620,290,34]}
+{"kind":"textbox","id":"sh/kra50jqh","slide":7,"text":"RETAIN + SUPERSEDE","textPreview":"RETAIN + SUPERSEDE","textChars":18,"textLines":1,"bbox":[520,620,500,34]}
+{"kind":"textbox","id":"sh/wneps3ap","slide":7,"text":"REPLACE","textPreview":"REPLACE","textChars":7,"textLines":1,"bbox":[1110,620,300,34]}
+{"kind":"image","id":"im/lgr2xk36","slide":7,"name":"","alt":"Actual Lesson 11 tail-only replan trace rendered by the notebook","bbox":[130,270,1338,360]}
+{"kind":"notes","id":"nt/gnmp4jqx","slide":7,"text":"[Sources]\nchapters/11-plan-and-execute-analyst.md\nnotebooks/11_plan_and_execute_analyst.ipynb\nassets/lesson-11/replan-trace.png\n[/Sources]"}
+{"kind":"slide","id":"sl/fu1gfa1s","slide":8,"title":"EVIDENCE GATE","textShapes":15}
+{"kind":"textbox","id":"sh/z61s7il4","slide":8,"text":"EVIDENCE GATE","textPreview":"EVIDENCE GATE","textChars":13,"textLines":1,"bbox":[102,70,500,36]}
+{"kind":"textbox","id":"sh/18byd4zy","slide":8,"text":"The evidence gate blocks fluent incompleteness","textPreview":"The evidence gate blocks fluent incompleteness","textChars":46,"textLines":1,"bbox":[102,124,1396,82]}
+{"kind":"textbox","id":"sh/w3ed8r6x","slide":8,"text":"A fluent report with one missing evidence cell still fails.","textPreview":"A fluent report with one missing evidence cell still fails.","textChars":59,"textLines":1,"bbox":[144,728,1310,42]}
+{"kind":"shape","id":"sh/m9sb2x4v","slide":8,"bbox":[90,829,1420,3]}
+{"kind":"shape","id":"sh/na1sb2lg","slide":8,"bbox":[90,829,840,4]}
+{"kind":"textbox","id":"sh/8bat47ml","slide":8,"text":"First Finance - Arnaud Demes","textPreview":"First Finance - Arnaud Demes","textChars":28,"textLines":1,"bbox":[102,846,390,34]}
+{"kind":"textbox","id":"sh/9w3uds36","slide":8,"text":"GATE","textPreview":"GATE","textChars":4,"textLines":1,"bbox":[1280,846,190,34]}
+{"kind":"textbox","id":"sh/y5sbed4j","slide":8,"text":"08","textPreview":"08","textChars":2,"textLines":1,"bbox":[1484,846,28,34]}
+{"kind":"shape","id":"sh/07atgnmp","slide":8,"bbox":[108,250,790,430]}
+{"kind":"textbox","id":"sh/b2hs3il8","slide":8,"text":"WRITE ONLY IF","textPreview":"WRITE ONLY IF","textChars":13,"textLines":1,"bbox":[990,294,460,48]}
+{"kind":"shape","id":"sh/3u18fepo","slide":8,"bbox":[995,360,44,44]}
+{"kind":"textbox","id":"sh/2ts769o3","slide":8,"text":"1","textPreview":"1","textChars":1,"textLines":1,"bbox":[995,365,44,30]}
+{"kind":"textbox","id":"sh/pwjqho7u","slide":8,"text":"NVIDIA metric","textPreview":"NVIDIA metric","textChars":13,"textLines":1,"bbox":[1057,358,378,60]}
+{"kind":"shape","id":"sh/4vap8j69","slide":8,"bbox":[995,446,44,44]}
+{"kind":"textbox","id":"sh/fq1obeps","slide":8,"text":"2","textPreview":"2","textChars":1,"textLines":1,"bbox":[995,451,44,30]}
+{"kind":"textbox","id":"sh/up872987","slide":8,"text":"NVIDIA document","textPreview":"NVIDIA document","textChars":15,"textLines":1,"bbox":[1057,444,378,60]}
+{"kind":"shape","id":"sh/hsjqd47y","slide":8,"bbox":[995,532,44,44]}
+{"kind":"textbox","id":"sh/grap4zqd","slide":8,"text":"3","textPreview":"3","textChars":1,"textLines":1,"bbox":[995,537,44,30]}
+{"kind":"textbox","id":"sh/72ho7upg","slide":8,"text":"Schneider metric","textPreview":"Schneider metric","textChars":16,"textLines":1,"bbox":[1057,530,378,60]}
+{"kind":"shape","id":"sh/6187yp8b","slide":8,"bbox":[995,618,44,44]}
+{"kind":"textbox","id":"sh/cvmdsb2h","slide":8,"text":"4","textPreview":"4","textChars":1,"textLines":1,"bbox":[995,623,44,30]}
+{"kind":"textbox","id":"sh/xwvelwj2","slide":8,"text":"Schneider document","textPreview":"Schneider document","textChars":18,"textLines":1,"bbox":[1057,616,378,60]}
+{"kind":"image","id":"im/ulsva1of","slide":8,"name":"","alt":"Actual Lesson 11 evidence coverage matrix rendered by the notebook","bbox":[130,270,745,385]}
+{"kind":"image","id":"im/14neh0na","slide":8,"name":"","alt":"Evidence release panel","bbox":[950,260,540,400]}
+{"kind":"notes","id":"nt/fu1gfa1s","slide":8,"text":"[Sources]\nchapters/11-plan-and-execute-analyst.md\nnotebooks/11_plan_and_execute_analyst.ipynb\nassets/lesson-11/evidence-gate.png\n[/Sources]"}
+{"kind":"slide","id":"sl/udsvah03","slide":9,"title":"LESSON 12 HANDOFF","textShapes":15}
+{"kind":"textbox","id":"sh/xgzitk76","slide":9,"text":"LESSON 12 HANDOFF","textPreview":"LESSON 12 HANDOFF","textChars":17,"textLines":1,"bbox":[102,70,500,36]}
+{"kind":"textbox","id":"sh/1cfmhgne","slide":9,"text":"Every claim must point back to evidence","textPreview":"Every claim must point back to evidence","textChars":39,"textLines":1,"bbox":[102,124,1396,82]}
+{"kind":"textbox","id":"sh/87a18zqt","slide":9,"text":"LESSON 12","textPreview":"LESSON 12","textChars":9,"textLines":1,"bbox":[108,744,160,34]}
+{"kind":"textbox","id":"sh/76h0zup8","slide":9,"text":"Score the path and the answer separately.","textPreview":"Score the path and the answer separately.","textChars":41,"textLines":1,"bbox":[284,734,1198,50]}
+{"kind":"shape","id":"sh/ml8j6p8n","slide":9,"bbox":[90,829,1420,3]}
+{"kind":"shape","id":"sh/hcji5o7a","slide":9,"bbox":[90,829,840,4]}
+{"kind":"textbox","id":"sh/wba1cjqp","slide":9,"text":"First Finance - Arnaud Demes","textPreview":"First Finance - Arnaud Demes","textChars":28,"textLines":1,"bbox":[102,846,390,34]}
+{"kind":"textbox","id":"sh/va103ep4","slide":9,"text":"EVALUATE","textPreview":"EVALUATE","textChars":8,"textLines":1,"bbox":[1280,846,190,34]}
+{"kind":"textbox","id":"sh/u9sja98z","slide":9,"text":"09","textPreview":"09","textChars":2,"textLines":1,"bbox":[1484,846,28,34]}
+{"kind":"shape","id":"sh/cf6h0fql","slide":9,"bbox":[108,252,600,420]}
+{"kind":"textbox","id":"sh/nmdg3q54","slide":9,"text":"OFFICIAL REPORT","textPreview":"OFFICIAL REPORT","textChars":15,"textLines":1,"bbox":[150,558,250,34]}
+{"kind":"textbox","id":"sh/onmxcv69","slide":9,"text":"Schneider Electric FY2025 results","textPreview":"Schneider Electric FY2025 results","textChars":33,"textLines":1,"bbox":[150,594,500,46]}
+{"kind":"textbox","id":"sh/pofy50nu","slide":9,"text":"→","textPreview":"→","textChars":1,"textLines":1,"bbox":[730,398,80,72]}
+{"kind":"textbox","id":"sh/bqxg7q50","slide":9,"text":"EVIDENCE ID","textPreview":"EVIDENCE ID","textChars":11,"textLines":1,"bbox":[875,286,260,34]}
+{"kind":"textbox","id":"sh/cr6xgv6l","slide":9,"text":"SU-FY2025-ENERGY-MANAGEMENT-001","textPreview":"SU-FY2025-ENERGY-MANAGEMENT-001","textChars":31,"textLines":1,"bbox":[875,326,560,48]}
+{"kind":"shape","id":"sh/xcfy90n6","slide":9,"bbox":[875,392,520,4]}
+{"kind":"textbox","id":"sh/qtkf21ob","slide":9,"text":"CITED FACT","textPreview":"CITED FACT","textChars":10,"textLines":1,"bbox":[875,422,220,34]}
+{"kind":"textbox","id":"sh/rutwv65w","slide":9,"text":"Schneider Electric reported FY2025 revenue of EUR 40.2 billion and an adjusted EBITA margin of 18.7%.","textPreview":"Schneider Electric reported FY2025 revenue of EUR 40.2 billion and an adjusted EBITA margin of 18.7%.","textChars":101,"textLines":1,"bbox":[875,462,560,130]}
+{"kind":"textbox","id":"sh/7y14jyd8","slide":9,"text":"source + evidence ID + claim","textPreview":"source + evidence ID + claim","textChars":28,"textLines":1,"bbox":[875,606,560,34]}
+{"kind":"image","id":"im/t0za54zu","slide":9,"name":"","alt":"Official Schneider Electric FY2025 key figures table","bbox":[130,288,556,250]}
+{"kind":"image","id":"im/h4ja94z6","slide":9,"name":"","alt":"Evidence-to-claim panel","bbox":[830,252,660,420]}
+{"kind":"notes","id":"nt/udsvah03","slide":9,"text":"[Sources]\nchapters/11-plan-and-execute-analyst.md\nassets/lesson-05/schneider-fy2025-results.pdf\nassets/course-data/mcp/lesson10_evidence_catalog_v1.json\nchapters/12-evaluating-agentic-systems.md\n[/Sources]"}
+{"kind":"slide","id":"sl/m90b6t0r","slide":10,"title":"FIRST FINANCE","textShapes":11}
+{"kind":"shape","id":"sh/kzu5c32t","slide":10,"bbox":[102,82,132,8]}
+{"kind":"textbox","id":"sh/xc3mho32","slide":10,"text":"FIRST FINANCE","textPreview":"FIRST FINANCE","textChars":13,"textLines":1,"bbox":[102,112,300,44]}
+{"kind":"textbox","id":"sh/cbu58j2h","slide":10,"text":"Quick quiz","textPreview":"Quick quiz","textChars":10,"textLines":1,"bbox":[102,248,1396,94]}
+{"kind":"textbox","id":"sh/zelojyl8","slide":10,"text":"Choose one answer for each question.","textPreview":"Choose one answer for each question.","textChars":36,"textLines":1,"bbox":[102,374,1180,54]}
+{"kind":"textbox","id":"sh/ydcnatkn","slide":10,"text":"LESSON 11  ·  3 QUESTIONS  ·  3 MINUTES","textPreview":"LESSON 11  ·  3 QUESTIONS  ·  3 MINUTES","textChars":39,"textLines":1,"bbox":[102,680,1000,42]}
+{"kind":"textbox","id":"sh/l036l83y","slide":10,"text":"First Finance - Arnaud Demes","textPreview":"First Finance - Arnaud Demes","textChars":28,"textLines":1,"bbox":[102,742,500,40]}
+{"kind":"textbox","id":"sh/725onyl4","slide":10,"name":"quiz-question-1","text":"1. Who validates a plan before execution?","textPreview":"1. Who validates a plan before execution?","textChars":41,"textLines":1,"bbox":[102,462,1396,30]}
+{"kind":"textbox","id":"sh/m1cnetkj","slide":10,"name":"quiz-options-1","text":"A  Host     |     B  Model alone     |     C  PDF parser","textPreview":"A  Host     |     B  Model alone     |     C  PDF parser","textChars":56,"textLines":1,"bbox":[132,494,1366,26]}
+{"kind":"textbox","id":"sh/s7yt4b21","slide":10,"name":"quiz-question-2","text":"2. What does a replan replace?","textPreview":"2. What does a replan replace?","textChars":30,"textLines":1,"bbox":[102,534,1396,30]}
+{"kind":"textbox","id":"sh/d87uxg3m","slide":10,"name":"quiz-options-2","text":"A  Unfinished work     |     B  Successful evidence     |     C  The company universe","textPreview":"A  Unfinished work     |     B  Successful evidence     |     C  The company universe","textChars":85,"textLines":1,"bbox":[132,566,1366,26]}
+{"kind":"textbox","id":"sh/q5gb21kb","slide":10,"name":"quiz-question-3","text":"3. What blocks an incomplete briefing?","textPreview":"3. What blocks an incomplete briefing?","textChars":38,"textLines":1,"bbox":[102,606,1396,30]}
+{"kind":"textbox","id":"sh/r6pcv6lw","slide":10,"name":"quiz-options-3","text":"A  Evidence gate     |     B  Streaming     |     C  A chart","textPreview":"A  Evidence gate     |     B  Streaming     |     C  A chart","textChars":60,"textLines":1,"bbox":[132,638,1366,26]}
+{"kind":"notes","id":"nt/m90b6t0r","slide":10,"text":"Instructor purpose: Check the three core decisions before the lesson closes.\nPlanned timing: 3 minutes.\nFacilitation: ask for one letter per question.\n[Sources]\n- chapters/11-plan-and-execute-analyst.md\n[/Sources]"}
+{"kind":"slide","id":"sl/jetc3ut0","slide":11,"title":"FIRST FINANCE","textShapes":11}
+{"kind":"shape","id":"sh/o7ih0r6h","slide":11,"bbox":[102,82,132,8]}
+{"kind":"textbox","id":"sh/xcryxg7y","slide":11,"text":"FIRST FINANCE","textPreview":"FIRST FINANCE","textChars":13,"textLines":1,"bbox":[102,112,300,44]}
+{"kind":"textbox","id":"sh/wbih4b6d","slide":11,"text":"Answers","textPreview":"Answers","textChars":7,"textLines":1,"bbox":[102,248,1396,94]}
+{"kind":"textbox","id":"sh/n69grmpw","slide":11,"text":"Check the idea, not only the letter.","textPreview":"Check the idea, not only the letter.","textChars":36,"textLines":1,"bbox":[102,374,1180,54]}
+{"kind":"textbox","id":"sh/250zy18b","slide":11,"text":"LESSON 11  ·  CORRECTION","textPreview":"LESSON 11  ·  CORRECTION","textChars":24,"textLines":1,"bbox":[102,680,1000,42]}
+{"kind":"textbox","id":"sh/98rytw72","slide":11,"text":"First Finance - Arnaud Demes","textPreview":"First Finance - Arnaud Demes","textChars":28,"textLines":1,"bbox":[102,742,500,40]}
+{"kind":"textbox","id":"sh/72t03qp0","slide":11,"name":"quiz-answer-1","text":"1. A. Host","textPreview":"1. A. Host","textChars":10,"textLines":1,"bbox":[102,462,1396,30]}
+{"kind":"textbox","id":"sh/61kzalof","slide":11,"name":"quiz-explanation-1","text":"The planner proposes steps; application policy checks them.","textPreview":"The planner proposes steps; application policy checks them.","textChars":59,"textLines":1,"bbox":[132,494,1366,26]}
+{"kind":"textbox","id":"sh/ofqtgnyt","slide":11,"name":"quiz-answer-2","text":"2. A. Unfinished work","textPreview":"2. A. Unfinished work","textChars":21,"textLines":1,"bbox":[102,534,1396,30]}
+{"kind":"textbox","id":"sh/9gza9sze","slide":11,"name":"quiz-explanation-2","text":"Successful observations stay immutable while the remaining tail changes.","textPreview":"Successful observations stay immutable while the remaining tail changes.","textChars":72,"textLines":1,"bbox":[132,566,1366,26]}
+{"kind":"textbox","id":"sh/mdobedg3","slide":11,"name":"quiz-answer-3","text":"3. A. Evidence gate","textPreview":"3. A. Evidence gate","textChars":19,"textLines":1,"bbox":[102,606,1396,30]}
+{"kind":"textbox","id":"sh/nehs7iho","slide":11,"name":"quiz-explanation-3","text":"The report stops if either company lacks required evidence.","textPreview":"The report stops if either company lacks required evidence.","textChars":59,"textLines":1,"bbox":[132,638,1366,26]}
+{"kind":"notes","id":"nt/jetc3ut0","slide":11,"text":"Instructor purpose: Correct the quiz and restate the practical rule behind each answer.\nPlanned timing: 3 minutes.\nFacilitation: ask learners to explain each rule in their own words.\n[Sources]\n- chapters/11-plan-and-execute-analyst.md\n[/Sources]"}

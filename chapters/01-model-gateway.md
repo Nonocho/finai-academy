@@ -58,10 +58,12 @@ the evidence that a successful API call is not yet an analyst application.
 
 ## Real-company evidence
 
-The guided answer uses four paraphrased facts from NVIDIA's fiscal 2026 Form
-10-K: total revenue, Data Center revenue, Gaming revenue, and the H20-related
-charge affecting gross margin. Facts are labelled `F1` to `F4` so the learner
-can distinguish a sourced claim from model prose before the RAG lessons.
+The guided answer uses a manually curated evidence card with four paraphrased
+facts from NVIDIA's fiscal 2026 Form 10-K: total revenue, Data Center revenue,
+Gaming revenue, and the H20-related charge affecting gross margin. The notebook
+does not download or parse the filing. Facts are labelled `F1` to `F4` so the
+learner can distinguish a sourced claim from model prose before document
+loading begins in Lesson 03 and retrieval is automated in later RAG lessons.
 
 Source: [NVIDIA fiscal 2026 Form 10-K](https://www.sec.gov/Archives/edgar/data/1045810/000104581026000021/nvda-20260125.htm)
 
@@ -69,7 +71,8 @@ Source: [NVIDIA fiscal 2026 Form 10-K](https://www.sec.gov/Archives/edgar/data/1
 
 - Offline: `provider=offline`, a non-negative latency, and
   `Token usage: unavailable for this provider response`.
-- Ollama/OpenAI: provider and model match configuration; token counts are shown
+- Ollama/OpenAI: provider and model match configuration; the hosted course
+  example uses `gpt-5.6-luna`; token counts are shown
   when the adapter returns all three normalized counts.
 - Streaming: the output starts with `Streaming demo:` and the collected text is
   non-empty.

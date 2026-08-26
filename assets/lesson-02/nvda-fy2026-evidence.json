@@ -1,0 +1,25 @@
+{
+  "company": "NVIDIA",
+  "reporting_period": "fiscal 2026",
+  "source_title": "NVIDIA Corporation Form 10-K for fiscal 2026",
+  "source_url": "https://www.sec.gov/Archives/edgar/data/1045810/000104581026000021/nvda-20260125.htm",
+  "accessed": "2026-08-25",
+  "evidence": [
+    {
+      "id": "F1",
+      "text": "NVIDIA fiscal 2026 revenue was $215.9 billion, up 65% year on year."
+    },
+    {
+      "id": "F2",
+      "text": "Data Center revenue was $193.7 billion, up 68% year on year."
+    },
+    {
+      "id": "F3",
+      "text": "Gaming revenue was $16.0 billion, up 41% year on year."
+    },
+    {
+      "id": "F4",
+      "text": "Gross margin decreased; the filing says it was also affected by a $4.5 billion H20 excess-inventory and purchase-obligation charge."
+    }
+  ]
+}

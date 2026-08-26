@@ -106,6 +106,22 @@ def test_grounding_rubric_rejects_a_ratio_not_present_in_the_evidence() -> None:
     assert result.checks["at least two evidence-bounded metrics"] is False
 
 
+def test_grounding_rubric_ignores_digits_inside_an_evidence_product_name() -> None:
+    """The H20 product name must not create a fake unsupported numeric claim."""
+    from finai_academy.lesson_support import evaluate_grounding
+
+    answer = (
+        "NVIDIA fiscal 2026 revenue was $215.9 billion, up 65% year on year [F1]. "
+        "Gross margin was affected by a $4.5 billion H20 charge [F4]. "
+        "The evidence does not establish valuation or a price target."
+    )
+
+    result = evaluate_grounding(answer)
+
+    assert result.score == 4
+    assert result.passed is True
+
+
 def test_recorded_structured_model_returns_a_valid_financial_brief() -> None:
     from finai_academy.capstone import AnalystBrief, EvidenceType
     from finai_academy.lesson_support import RecordedStructuredModel
@@ -142,6 +158,25 @@ def test_recorded_rag_model_answers_only_from_labelled_evidence() -> None:
     assert "[NVDA-F2]" in response.content
     assert "193.7" in response.content
     assert "does not establish valuation" in response.content
+
+
+def test_recorded_rag_model_supports_real_filing_window_ids() -> None:
+    from finai_academy.lesson_support import RecordedRagModel
+
+    response = RecordedRagModel().invoke(
+        [
+            ("system", "Use only retrieved evidence."),
+            (
+                "human",
+                "[NVDA-C152] Growth was driven by accelerated computing and AI.\n"
+                "[NVDA-C160] Data Center computing and networking revenue increased.",
+            ),
+        ]
+    )
+
+    assert "[NVDA-C152]" in response.content
+    assert "[NVDA-C160]" in response.content
+    assert "accelerated computing and AI" in response.content
 
 
 def test_recorded_contextual_chunking_model_uses_the_stable_chunk_id() -> None:

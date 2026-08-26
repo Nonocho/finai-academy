@@ -1,0 +1,247 @@
+{"kind":"deck","id":"pr/gy9tdm","name":"Deck"}
+{"kind":"layout","layoutId":"/ppt/slideMasters/slideMaster1.xml","name":"Master","type":"master"}
+{"kind":"layout","layoutId":"/ppt/slideLayouts/slideLayout1.xml","name":"Title Slide","type":"title"}
+{"kind":"slide","id":"sl/y90nupkv","slide":1,"title":"FIRST FINANCE","textShapes":5}
+{"kind":"shape","id":"sh/sryl4zqx","slide":1,"bbox":[102,82,132,8]}
+{"kind":"textbox","id":"sh/547294r6","slide":1,"text":"FIRST FINANCE","textPreview":"FIRST FINANCE","textChars":13,"textLines":1,"bbox":[102,112,300,44]}
+{"kind":"textbox","id":"sh/k3yl0zql","slide":1,"text":"Hybrid Retrieval: Exact Terms + Meaning","textPreview":"Hybrid Retrieval: Exact Terms + Meaning","textChars":39,"textLines":1,"bbox":[102,248,1396,94]}
+{"kind":"textbox","id":"sh/7qp4be9c","slide":1,"text":"Filter first, combine BM25 and dense search, then rerank the evidence you cite","textPreview":"Filter first, combine BM25 and dense search, then rerank the evidence you cite","textChars":78,"textLines":1,"bbox":[102,374,1180,54]}
+{"kind":"textbox","id":"sh/65g3298r","slide":1,"text":"SESSION 06  ·  15 MIN CONCEPTS + 30 MIN NOTEBOOK","textPreview":"SESSION 06  ·  15 MIN CONCEPTS + 30 MIN NOTEBOOK","textChars":48,"textLines":1,"bbox":[102,680,1000,42]}
+{"kind":"textbox","id":"sh/ts7md4r2","slide":1,"text":"First Finance - Arnaud Demes","textPreview":"First Finance - Arnaud Demes","textChars":28,"textLines":1,"bbox":[102,742,500,40]}
+{"kind":"notes","id":"nt/y90nupkv","slide":1,"text":"Open with the failure pattern: finance questions mix literal identifiers and semantic intent. One retrieval channel cannot reliably protect both."}
+{"kind":"slide","id":"sl/hwbqtkby","slide":2,"title":"WHY HYBRID RETRIEVAL","textShapes":6}
+{"kind":"textbox","id":"sh/fypcfqdg","slide":2,"text":"WHY HYBRID RETRIEVAL","textPreview":"WHY HYBRID RETRIEVAL","textChars":20,"textLines":1,"bbox":[102,70,500,36]}
+{"kind":"textbox","id":"sh/9072xkry","slide":2,"text":"Run lexical and semantic search in parallel—then fuse ranks","textPreview":"Run lexical and semantic search in parallel—then fuse ranks","textChars":59,"textLines":1,"bbox":[102,124,1396,82]}
+{"kind":"shape","id":"sh/je9crql0","slide":2,"bbox":[90,829,1420,3]}
+{"kind":"shape","id":"sh/ru5cbqd4","slide":2,"bbox":[90,829,840,4]}
+{"kind":"textbox","id":"sh/69wbilcj","slide":2,"text":"First Finance - Arnaud Demes","textPreview":"First Finance - Arnaud Demes","textChars":28,"textLines":1,"bbox":[102,846,390,34]}
+{"kind":"textbox","id":"sh/tw7ud0va","slide":2,"text":"ARCHITECTURE","textPreview":"ARCHITECTURE","textChars":12,"textLines":1,"bbox":[1280,846,190,34]}
+{"kind":"textbox","id":"sh/svedkvup","slide":2,"text":"02","textPreview":"02","textChars":2,"textLines":1,"bbox":[1484,846,28,34]}
+{"kind":"textbox","id":"sh/107uh0v6","slide":2,"name":"source-interpretation","text":"THE PATTERN\nLexical + semantic\nFuse ranks\n\nLAB UPGRADE\nBM25 replaces TF-IDF","textPreview":"THE PATTERN | Lexical + semantic | Fuse ranks |  | LAB UPGRADE | BM25 replaces TF-IDF","textChars":75,"textLines":6,"bbox":[1224,298,300,304]}
+{"kind":"image","id":"im/1kvuxcbu","slide":2,"name":"","alt":"Anthropic diagram of lexical and embedding retrieval feeding rank fusion and a generative model","bbox":[70,218,1140,590]}
+{"kind":"notes","id":"nt/hwbqtkby","slide":2,"text":"Explain the backbone before the algorithms. The same corpus is searched through a lexical channel and an embedding channel. Rank fusion combines ordering rather than incompatible raw score scales. Anthropic labels the lexical branch TF-IDF in this visual; the lesson implements BM25 as the stronger lexical baseline.\n\n[Sources]\n- https://www.anthropic.com/engineering/contextual-retrieval"}
+{"kind":"slide","id":"sl/ofy9wn61","slide":3,"title":"COMPLEMENTARY CHANNELS","textShapes":5}
+{"kind":"textbox","id":"sh/cruhwrud","slide":3,"text":"COMPLEMENTARY CHANNELS","textPreview":"COMPLEMENTARY CHANNELS","textChars":22,"textLines":1,"bbox":[102,70,500,36]}
+{"kind":"textbox","id":"sh/cza94vmx","slide":3,"text":"BM25 finds the figure; dense search finds the meaning","textPreview":"BM25 finds the figure; dense search finds the meaning","textChars":53,"textLines":1,"bbox":[102,124,1396,82]}
+{"kind":"shape","id":"sh/wv61obyx","slide":3,"bbox":[90,829,1420,3]}
+{"kind":"shape","id":"sh/4nuhs7uh","slide":3,"bbox":[90,829,840,4]}
+{"kind":"textbox","id":"sh/po3ilcvm","slide":3,"text":"First Finance - Arnaud Demes","textPreview":"First Finance - Arnaud Demes","textChars":28,"textLines":1,"bbox":[102,846,390,34]}
+{"kind":"textbox","id":"sh/21szqxcb","slide":3,"text":"CHANNELS","textPreview":"CHANNELS","textChars":8,"textLines":1,"bbox":[1280,846,190,34]}
+{"kind":"textbox","id":"sh/32l0j2dw","slide":3,"text":"03","textPreview":"03","textChars":2,"textLines":1,"bbox":[1484,846,28,34]}
+{"kind":"image","id":"im/axwny143","slide":3,"name":"","alt":"Executed notebook figure comparing BM25 and dense rankings for the NVIDIA data-center revenue question","bbox":[104,224,1392,580]}
+{"kind":"notes","id":"nt/ofy9wn61","slide":3,"text":"Read the green passage first: BM25 rewards the maintained evidence token. Dense retrieval ranks by semantic proximity and can miss a literal figure. The channels are complementary, and their raw scores are intentionally not compared.\n\n[Sources]\n- https://www.sec.gov/Archives/edgar/data/1045810/000104581026000021/nvda-20260125.htm"}
+{"kind":"slide","id":"sl/jyx0ra1s","slide":4,"title":"SAFETY GATE","textShapes":21}
+{"kind":"textbox","id":"sh/mtcfypkn","slide":4,"text":"SAFETY GATE","textPreview":"SAFETY GATE","textChars":11,"textLines":1,"bbox":[102,70,500,36]}
+{"kind":"textbox","id":"sh/1cj2d8b6","slide":4,"text":"Filter first: ineligible passages never enter either candidate list","textPreview":"Filter first: ineligible passages never enter either candidate list","textChars":67,"textLines":1,"bbox":[102,124,1396,82]}
+{"kind":"shape","id":"sh/0ba143al","slide":4,"name":"canonical-block","bbox":[558,296,484,326]}
+{"kind":"textbox","id":"sh/rm1k7yt4","slide":4,"text":"ELIGIBLE PASSAGES","textPreview":"ELIGIBLE PASSAGES","textChars":17,"textLines":1,"bbox":[604,328,392,54]}
+{"kind":"textbox","id":"sh/ql8jytsj","slide":4,"text":"company AND period AND type AND section","textPreview":"company AND period AND type AND section","textChars":39,"textLines":1,"bbox":[604,398,392,34]}
+{"kind":"shape","id":"sh/doj29oba","slide":4,"bbox":[606,458,388,2]}
+{"kind":"textbox","id":"sh/sna103ap","slide":4,"text":"Only eligible passages\nmay be scored","textPreview":"Only eligible passages | may be scored","textChars":36,"textLines":2,"bbox":[614,482,372,92]}
+{"kind":"shape","id":"sh/3ihk3et8","slide":4,"name":"left-field-0","bbox":[108,286,340,94]}
+{"kind":"textbox","id":"sh/ih8ju9sn","slide":4,"text":"COMPANY","textPreview":"COMPANY","textChars":7,"textLines":1,"bbox":[132,296,292,32]}
+{"kind":"textbox","id":"sh/kbm987y5","slide":4,"text":"NVIDIA","textPreview":"NVIDIA","textChars":6,"textLines":1,"bbox":[132,328,292,38]}
+{"kind":"shape","id":"sh/5cva1cfq","slide":4,"name":"left-field-1","bbox":[108,412,340,94]}
+{"kind":"textbox","id":"sh/i94r6xgz","slide":4,"text":"PERIOD","textPreview":"PERIOD","textChars":6,"textLines":1,"bbox":[132,422,292,32]}
+{"kind":"textbox","id":"sh/jadsz2xk","slide":4,"text":"FY2026","textPreview":"FY2026","textChars":6,"textLines":1,"bbox":[132,454,292,38]}
+{"kind":"shape","id":"sh/w72947yt","slide":4,"name":"left-field-2","bbox":[108,538,340,94]}
+{"kind":"textbox","id":"sh/x8vaxsfe","slide":4,"text":"DOCUMENT","textPreview":"DOCUMENT","textChars":8,"textLines":1,"bbox":[132,548,292,32]}
+{"kind":"textbox","id":"sh/a5kr2xg3","slide":4,"text":"10-K teaching extract","textPreview":"10-K teaching extract","textChars":21,"textLines":1,"bbox":[132,580,292,38]}
+{"kind":"shape","id":"sh/v6tsv2xo","slide":4,"name":"right-field-0","bbox":[1152,286,340,94]}
+{"kind":"textbox","id":"sh/g36tgryd","slide":4,"text":"BM25","textPreview":"BM25","textChars":4,"textLines":1,"bbox":[1176,296,292,32]}
+{"kind":"textbox","id":"sh/h4fa9wfy","slide":4,"text":"exact lexical candidates","textPreview":"exact lexical candidates","textChars":24,"textLines":1,"bbox":[1176,328,292,38]}
+{"kind":"shape","id":"sh/p0batw72","slide":4,"name":"right-field-1","bbox":[1152,412,340,94]}
+{"kind":"textbox","id":"sh/oz29krqh","slide":4,"text":"DENSE","textPreview":"DENSE","textChars":5,"textLines":1,"bbox":[1176,422,292,32]}
+{"kind":"textbox","id":"sh/3ytsrmpw","slide":4,"text":"semantic candidates","textPreview":"semantic candidates","textChars":19,"textLines":1,"bbox":[1176,454,292,38]}
+{"kind":"shape","id":"sh/2xkrih8b","slide":4,"name":"right-field-2","bbox":[1152,538,340,94]}
+{"kind":"textbox","id":"sh/1wbapc7q","slide":4,"text":"ABSTAIN","textPreview":"ABSTAIN","textChars":7,"textLines":1,"bbox":[1176,548,292,32]}
+{"kind":"textbox","id":"sh/gv29g7q5","slide":4,"text":"no eligible passage","textPreview":"no eligible passage","textChars":19,"textLines":1,"bbox":[1176,580,292,38]}
+{"kind":"shape","id":"sh/0jat4val","slide":4,"bbox":[448,333,110,126]}
+{"kind":"shape","id":"sh/lkjad0b6","slide":4,"bbox":[448,459,110,0]}
+{"kind":"shape","id":"sh/3epwjydo","slide":4,"bbox":[448,459,110,126]}
+{"kind":"shape","id":"sh/2dgvadc3","slide":4,"bbox":[1042,333,110,126]}
+{"kind":"shape","id":"sh/p0rel8vu","slide":4,"bbox":[1042,459,110,0]}
+{"kind":"shape","id":"sh/ozydc3u9","slide":4,"bbox":[1042,459,110,126]}
+{"kind":"textbox","id":"sh/knex8j21","slide":4,"text":"Post-filtering cannot recover eligible evidence omitted from a global top-k.","textPreview":"Post-filtering cannot recover eligible evidence omitted from a global top-k.","textChars":76,"textLines":1,"bbox":[246,704,1108,46]}
+{"kind":"shape","id":"sh/5ony1oj6","slide":4,"bbox":[90,829,1420,3]}
+{"kind":"shape","id":"sh/axcf29kj","slide":4,"bbox":[90,829,840,4]}
+{"kind":"textbox","id":"sh/vy5gbe14","slide":4,"text":"First Finance - Arnaud Demes","textPreview":"First Finance - Arnaud Demes","textChars":28,"textLines":1,"bbox":[102,846,390,34]}
+{"kind":"textbox","id":"sh/wzex4z2p","slide":4,"text":"ELIGIBILITY","textPreview":"ELIGIBILITY","textChars":11,"textLines":1,"bbox":[1280,846,190,34]}
+{"kind":"textbox","id":"sh/xknyx4ja","slide":4,"text":"04","textPreview":"04","textChars":2,"textLines":1,"bbox":[1484,846,28,34]}
+{"kind":"notes","id":"nt/jyx0ra1s","slide":4,"text":"Filters define the eligible corpus before either channel scores passages. Post-filtering cannot restore evidence that was pushed out of a global top-k by another company or period.\n\n[Sources]\n- https://learn.microsoft.com/en-us/azure/search/hybrid-search-overview"}
+{"kind":"slide","id":"sl/i107q5of","slide":5,"title":"RECIPROCAL-RANK FUSION","textShapes":21}
+{"kind":"textbox","id":"sh/ji5kf2ho","slide":5,"text":"RECIPROCAL-RANK FUSION","textPreview":"RECIPROCAL-RANK FUSION","textChars":22,"textLines":1,"bbox":[102,70,500,36]}
+{"kind":"textbox","id":"sh/dgbulwnm","slide":5,"text":"RRF adds rank contributions—not raw channel scores","textPreview":"RRF adds rank contributions—not raw channel scores","textChars":50,"textLines":1,"bbox":[102,124,1396,82]}
+{"kind":"textbox","id":"sh/cf2tcr61","slide":5,"text":"BM25 RANKS · w=1","textPreview":"BM25 RANKS · w=1","textChars":16,"textLines":1,"bbox":[108,294,260,38]}
+{"kind":"shape","id":"sh/z2tcnm5s","slide":5,"bbox":[390,288,250,68]}
+{"kind":"textbox","id":"sh/yhkbe1o7","slide":5,"text":"A · rank 1","textPreview":"A · rank 1","textChars":10,"textLines":1,"bbox":[400,298,230,48]}
+{"kind":"shape","id":"sh/l4bupwny","slide":5,"bbox":[646,288,210,68]}
+{"kind":"textbox","id":"sh/032tgr6d","slide":5,"text":"B · rank 2","textPreview":"B · rank 2","textChars":10,"textLines":1,"bbox":[656,298,190,48]}
+{"kind":"shape","id":"sh/n6dcr65o","slide":5,"bbox":[862,288,176,68]}
+{"kind":"textbox","id":"sh/m5kbi1oj","slide":5,"text":"C · rank 3","textPreview":"C · rank 3","textChars":10,"textLines":1,"bbox":[872,298,156,48]}
+{"kind":"shape","id":"sh/w32dkbuh","slide":5,"bbox":[1044,288,112,68]}
+{"kind":"textbox","id":"sh/x4vedgvm","slide":5,"text":"D · r4","textPreview":"D · r4","textChars":6,"textLines":1,"bbox":[1054,298,92,48]}
+{"kind":"textbox","id":"sh/ahkvi1cb","slide":5,"text":"B = .03252","textPreview":"B = .03252","textChars":10,"textLines":1,"bbox":[1260,294,230,38]}
+{"kind":"textbox","id":"sh/v2twb6dw","slide":5,"text":"DENSE RANKS · w=1","textPreview":"DENSE RANKS · w=1","textChars":17,"textLines":1,"bbox":[108,448,260,38]}
+{"kind":"shape","id":"sh/k7mxovud","slide":5,"bbox":[390,442,330,68]}
+{"kind":"textbox","id":"sh/58vehgvy","slide":5,"text":"B · rank 1","textPreview":"B · rank 1","textChars":10,"textLines":1,"bbox":[400,452,310,48]}
+{"kind":"shape","id":"sh/i54fmlc7","slide":5,"bbox":[726,442,310,68]}
+{"kind":"textbox","id":"sh/j6dwfqds","slide":5,"text":"C · rank 2","textPreview":"C · rank 2","textChars":10,"textLines":1,"bbox":[736,452,290,48]}
+{"kind":"shape","id":"sh/sb6xsvu9","slide":5,"bbox":[1042,442,210,68]}
+{"kind":"textbox","id":"sh/tcfel0vu","slide":5,"text":"A · rank 3","textPreview":"A · rank 3","textChars":10,"textLines":1,"bbox":[1052,452,190,48]}
+{"kind":"textbox","id":"sh/hgrmpwj2","slide":5,"text":"A = .03227","textPreview":"A = .03227","textChars":10,"textLines":1,"bbox":[1260,448,230,38]}
+{"kind":"textbox","id":"sh/gfi5grih","slide":5,"text":"FUSED · k=60","textPreview":"FUSED · k=60","textChars":12,"textLines":1,"bbox":[108,602,260,38]}
+{"kind":"shape","id":"sh/fe94nm1w","slide":5,"bbox":[390,596,348,68]}
+{"kind":"textbox","id":"sh/ud0ne10b","slide":5,"text":"B · 1/62 + 1/61 = 0.03252","textPreview":"B · 1/62 + 1/61 = 0.03252","textChars":25,"textLines":1,"bbox":[400,606,328,48]}
+{"kind":"shape","id":"sh/pkr6tgjy","slide":5,"bbox":[744,596,502,68]}
+{"kind":"textbox","id":"sh/4ji5kbid","slide":5,"text":"A · 1/61 + 1/63 = 0.03227","textPreview":"A · 1/61 + 1/63 = 0.03227","textChars":25,"textLines":1,"bbox":[754,606,482,48]}
+{"kind":"textbox","id":"sh/3i94r61s","slide":5,"text":"B ranks first","textPreview":"B ranks first","textChars":13,"textLines":1,"bbox":[1260,602,230,38]}
+{"kind":"shape","id":"sh/2h0ni107","slide":5,"bbox":[390,296,3,366]}
+{"kind":"shape","id":"sh/5o7mhcju","slide":5,"bbox":[108,718,1382,64]}
+{"kind":"textbox","id":"sh/kny587i9","slide":5,"text":"RRF(p) = Σ w / (60 + rank); deduplicate by passage ID; keep every contribution visible.","textPreview":"RRF(p) = Σ w / (60 + rank); deduplicate by passage ID; keep every contribution visible.","textChars":87,"textLines":1,"bbox":[144,728,1310,42]}
+{"kind":"shape","id":"sh/atcjidg7","slide":5,"bbox":[90,829,1420,3]}
+{"kind":"shape","id":"sh/vu5kbihc","slide":5,"bbox":[90,829,840,4]}
+{"kind":"textbox","id":"sh/wve1knyx","slide":5,"text":"First Finance - Arnaud Demes","textPreview":"First Finance - Arnaud Demes","textChars":28,"textLines":1,"bbox":[102,846,390,34]}
+{"kind":"textbox","id":"sh/xwn2dszi","slide":5,"text":"FUSION","textPreview":"FUSION","textChars":6,"textLines":1,"bbox":[1280,846,190,34]}
+{"kind":"textbox","id":"sh/ihw3mxg3","slide":5,"text":"05","textPreview":"05","textChars":2,"textLines":1,"bbox":[1484,846,28,34]}
+{"kind":"notes","id":"nt/i107q5of","slide":5,"text":"RRF assigns a contribution from each channel rank and adds them. It never pretends BM25 and cosine scores share units. Keep each contribution visible so the final ordering remains inspectable.\n\n[Sources]\n- https://qdrant.tech/documentation/search/hybrid-queries/"}
+{"kind":"slide","id":"sl/x8f69ofe","slide":6,"title":"RERANKING BOUNDARY","textShapes":18}
+{"kind":"textbox","id":"sh/gju58ji9","slide":6,"text":"RERANKING BOUNDARY","textPreview":"RERANKING BOUNDARY","textChars":18,"textLines":1,"bbox":[102,70,500,36]}
+{"kind":"textbox","id":"sh/yhg7epsj","slide":6,"text":"Retrieve for recall; rerank for final evidence quality","textPreview":"Retrieve for recall; rerank for final evidence quality","textChars":54,"textLines":1,"bbox":[102,124,1396,82]}
+{"kind":"shape","id":"sh/zi98nu94","slide":6,"name":"decision-source","bbox":[108,314,286,164]}
+{"kind":"textbox","id":"sh/87ipkzal","slide":6,"text":"FUSED SET","textPreview":"FUSED SET","textChars":9,"textLines":1,"bbox":[136,334,230,34]}
+{"kind":"textbox","id":"sh/98rqt4r6","slide":6,"text":"candidate_k = 4\neligible + deduplicated","textPreview":"candidate_k = 4 | eligible + deduplicated","textChars":39,"textLines":2,"bbox":[136,384,230,68]}
+{"kind":"shape","id":"sh/ml07i9sv","slide":6,"name":"decision-child","bbox":[542,300,342,192]}
+{"kind":"textbox","id":"sh/7m98ru9g","slide":6,"text":"TRANSPARENT RERANK","textPreview":"TRANSPARENT RERANK","textChars":18,"textLines":1,"bbox":[574,306,278,50]}
+{"kind":"textbox","id":"sh/oryp8fah","slide":6,"text":"lexical coverage=.25\nnumeric coverage=.45\nsection overlap=.10","textPreview":"lexical coverage=.25 | numeric coverage=.45 | section overlap=.10","textChars":61,"textLines":3,"bbox":[574,356,278,84]}
+{"kind":"textbox","id":"sh/pc76hkr2","slide":6,"text":"metadata eligibility=.10\nfusion signal=.10","textPreview":"metadata eligibility=.10 | fusion signal=.10","textChars":42,"textLines":2,"bbox":[574,440,278,50]}
+{"kind":"shape","id":"sh/h4bupgn6","slide":6,"name":"decision-parent","bbox":[1032,314,372,164]}
+{"kind":"textbox","id":"sh/w32twb6l","slide":6,"text":"FINAL EVIDENCE","textPreview":"FINAL EVIDENCE","textChars":14,"textLines":1,"bbox":[1064,334,308,34]}
+{"kind":"textbox","id":"sh/v2tcn650","slide":6,"text":"final_k = 2\nbudgeted + cited","textPreview":"final_k = 2 | budgeted + cited","textChars":28,"textLines":2,"bbox":[1064,382,308,72]}
+{"kind":"shape","id":"sh/5gfu1gfq","slide":6,"bbox":[394,396,148,0]}
+{"kind":"shape","id":"sh/kf6tsbe5","slide":6,"bbox":[884,396,148,0]}
+{"kind":"shape","id":"sh/47mt0b6x","slide":6,"bbox":[168,574,1264,118]}
+{"kind":"textbox","id":"sh/j6dcr65c","slide":6,"text":"HARD BOUNDARY","textPreview":"HARD BOUNDARY","textChars":13,"textLines":1,"bbox":[204,592,260,30]}
+{"kind":"textbox","id":"sh/i54bylor","slide":6,"text":"pre-filtered only · no silent broadening","textPreview":"pre-filtered only · no silent broadening","textChars":40,"textLines":1,"bbox":[204,626,520,42]}
+{"kind":"shape","id":"sh/twfux0ne","slide":6,"bbox":[786,592,3,78]}
+{"kind":"textbox","id":"sh/svmt4v6t","slide":6,"text":"SCORE SEMANTICS","textPreview":"SCORE SEMANTICS","textChars":15,"textLines":1,"bbox":[826,592,330,30]}
+{"kind":"textbox","id":"sh/cbe5g3ih","slide":6,"text":"provider-neutral · offline illustrative · not confidence","textPreview":"provider-neutral · offline illustrative · not confidence","textChars":56,"textLines":1,"bbox":[826,626,540,42]}
+{"kind":"textbox","id":"sh/dcnm98zm","slide":6,"text":"DECISION","textPreview":"DECISION","textChars":8,"textLines":1,"bbox":[108,744,160,34]}
+{"kind":"textbox","id":"sh/qpwnet0b","slide":6,"text":"The reranker spends a small evidence budget on visible, finance-aware features.","textPreview":"The reranker spends a small evidence budget on visible, finance-aware features.","textChars":79,"textLines":1,"bbox":[284,734,1198,50]}
+{"kind":"shape","id":"sh/bq547yhw","slide":6,"bbox":[90,829,1420,3]}
+{"kind":"shape","id":"sh/0fy5k3id","slide":6,"bbox":[90,829,840,4]}
+{"kind":"textbox","id":"sh/lg76d8zy","slide":6,"text":"First Finance - Arnaud Demes","textPreview":"First Finance - Arnaud Demes","textChars":28,"textLines":1,"bbox":[102,846,390,34]}
+{"kind":"textbox","id":"sh/ydgnit07","slide":6,"text":"RERANK","textPreview":"RERANK","textChars":6,"textLines":1,"bbox":[1280,846,190,34]}
+{"kind":"textbox","id":"sh/zep4byhs","slide":6,"text":"06","textPreview":"06","textChars":2,"textLines":1,"bbox":[1484,846,28,34]}
+{"kind":"notes","id":"nt/x8f69ofe","slide":6,"text":"Candidate retrieval should be broad enough to protect recall, but reranking should operate only on the eligible, deduplicated set. This lesson uses visible finance-aware features so students can explain why the final passages win.\n\n[Sources]\n- https://www.anthropic.com/engineering/contextual-retrieval"}
+{"kind":"slide","id":"sl/gnmp4jqx","slide":7,"title":"EVIDENCE FROM PRACTICE","textShapes":6}
+{"kind":"textbox","id":"sh/8jupo3ad","slide":7,"text":"EVIDENCE FROM PRACTICE","textPreview":"EVIDENCE FROM PRACTICE","textChars":22,"textLines":1,"bbox":[102,70,500,36]}
+{"kind":"textbox","id":"sh/cb2tkvap","slide":7,"text":"Hybrid retrieval + reranking cut failed retrievals by 67%","textPreview":"Hybrid retrieval + reranking cut failed retrievals by 67%","textChars":57,"textLines":1,"bbox":[102,124,1396,82]}
+{"kind":"shape","id":"sh/kra50jqh","slide":7,"bbox":[90,829,1420,3]}
+{"kind":"shape","id":"sh/wneps3ap","slide":7,"bbox":[90,829,840,4]}
+{"kind":"textbox","id":"sh/honq18ru","slide":7,"text":"First Finance - Arnaud Demes","textPreview":"First Finance - Arnaud Demes","textChars":28,"textLines":1,"bbox":[102,846,390,34]}
+{"kind":"textbox","id":"sh/ulc7qdsj","slide":7,"text":"BENCHMARK","textPreview":"BENCHMARK","textChars":9,"textLines":1,"bbox":[1280,846,190,34]}
+{"kind":"textbox","id":"sh/vm58zi94","slide":7,"text":"07","textPreview":"07","textChars":2,"textLines":1,"bbox":[1484,846,28,34]}
+{"kind":"textbox","id":"sh/mxc7mts7","slide":7,"name":"source-interpretation","text":"67% FEWER\nFAILED RETRIEVALS\n\n5.7% → 1.9%\nTop-20 benchmark","textPreview":"67% FEWER | FAILED RETRIEVALS |  | 5.7% → 1.9% | Top-20 benchmark","textChars":57,"textLines":5,"bbox":[1218,318,306,280]}
+{"kind":"image","id":"im/21ozihwb","slide":7,"name":"","alt":"Anthropic benchmark chart comparing failed top-20 retrieval rates across embedding, BM25, contextual, and reranked configurations","bbox":[72,214,1134,604]}
+{"kind":"notes","id":"nt/gnmp4jqx","slide":7,"text":"Anthropic reports average failed retrievals at top 20 falling from 5.7% for embeddings alone to 1.9% for reranked contextual embeddings plus contextual BM25. This is evidence for the architecture, not a promise that every corpus will obtain the same result.\n\n[Sources]\n- https://www.anthropic.com/engineering/contextual-retrieval"}
+{"kind":"slide","id":"sl/fu1gfa1s","slide":8,"title":"DESIGN BACKBONE","textShapes":23}
+{"kind":"textbox","id":"sh/z61s7il4","slide":8,"text":"DESIGN BACKBONE","textPreview":"DESIGN BACKBONE","textChars":15,"textLines":1,"bbox":[102,70,500,36]}
+{"kind":"textbox","id":"sh/18byd4zy","slide":8,"text":"Each stage repairs a different retrieval failure","textPreview":"Each stage repairs a different retrieval failure","textChars":48,"textLines":1,"bbox":[102,124,1396,82]}
+{"kind":"shape","id":"sh/g72x4zyd","slide":8,"name":"ingestion-1","bbox":[104,324,236,238]}
+{"kind":"textbox","id":"sh/ri9g7uhw","slide":8,"text":"01","textPreview":"01","textChars":2,"textLines":1,"bbox":[124,346,54,30]}
+{"kind":"textbox","id":"sh/6h0fypgb","slide":8,"text":"Eligibility","textPreview":"Eligibility","textChars":11,"textLines":1,"bbox":[116,394,212,72]}
+{"kind":"textbox","id":"sh/tkby9kzm","slide":8,"text":"wrong company · period · type","textPreview":"wrong company · period · type","textChars":29,"textLines":1,"bbox":[124,484,196,54]}
+{"kind":"shape","id":"sh/sjix0zy1","slide":8,"name":"ingestion-2","bbox":[400,324,236,238]}
+{"kind":"textbox","id":"sh/je9g3ahk","slide":8,"text":"02","textPreview":"02","textChars":2,"textLines":1,"bbox":[420,346,54,30]}
+{"kind":"textbox","id":"sh/id0fu50z","slide":8,"text":"BM25","textPreview":"BM25","textChars":4,"textLines":1,"bbox":[412,394,212,72]}
+{"kind":"textbox","id":"sh/o7ydoret","slide":8,"text":"exact figures · names · identifiers","textPreview":"exact figures · names · identifiers","textChars":35,"textLines":1,"bbox":[420,484,196,54]}
+{"kind":"shape","id":"sh/98rehwve","slide":8,"name":"ingestion-3","bbox":[696,324,236,238]}
+{"kind":"textbox","id":"sh/m5gvmhwn","slide":8,"text":"03","textPreview":"03","textChars":2,"textLines":1,"bbox":[716,346,54,30]}
+{"kind":"textbox","id":"sh/n6pwfmd8","slide":8,"text":"Dense","textPreview":"Dense","textChars":5,"textLines":1,"bbox":[708,394,212,72]}
+{"kind":"textbox","id":"sh/0jydkreh","slide":8,"text":"concepts · paraphrases · related meaning","textPreview":"concepts · paraphrases · related meaning","textChars":40,"textLines":1,"bbox":[716,484,196,54]}
+{"kind":"shape","id":"sh/1k7edwv2","slide":8,"name":"ingestion-4","bbox":[992,324,236,238]}
+{"kind":"textbox","id":"sh/ehgvihwr","slide":8,"text":"04","textPreview":"04","textChars":2,"textLines":1,"bbox":[1012,346,54,30]}
+{"kind":"textbox","id":"sh/zipwbmdc","slide":8,"text":"RRF","textPreview":"RRF","textChars":3,"textLines":1,"bbox":[1004,394,212,72]}
+{"kind":"textbox","id":"sh/kfixwbe1","slide":8,"text":"rank fusion · no score calibration","textPreview":"rank fusion · no score calibration","textChars":34,"textLines":1,"bbox":[1012,484,196,54]}
+{"kind":"shape","id":"sh/lgbepgvm","slide":8,"name":"ingestion-5","bbox":[1288,324,236,238]}
+{"kind":"textbox","id":"sh/tw7e9gnq","slide":8,"text":"05","textPreview":"05","textChars":2,"textLines":1,"bbox":[1308,346,54,30]}
+{"kind":"textbox","id":"sh/svydgb65","slide":8,"text":"Rerank","textPreview":"Rerank","textChars":6,"textLines":1,"bbox":[1300,394,212,72]}
+{"kind":"textbox","id":"sh/7u5w765k","slide":8,"text":"final evidence budget · cited passages","textPreview":"final evidence budget · cited passages","textChars":38,"textLines":1,"bbox":[1308,484,196,54]}
+{"kind":"shape","id":"sh/03alsfeh","slide":8,"bbox":[340,443,60,0]}
+{"kind":"shape","id":"sh/reh4fad0","slide":8,"bbox":[636,443,60,0]}
+{"kind":"shape","id":"sh/qd83m5wf","slide":8,"bbox":[932,443,60,0]}
+{"kind":"shape","id":"sh/g7m907q1","slide":8,"bbox":[1228,443,60,0]}
+{"kind":"textbox","id":"sh/i5wva1o3","slide":8,"text":"Hybrid works because the stages are complementary—not interchangeable.","textPreview":"Hybrid works because the stages are complementary—not interchangeable.","textChars":70,"textLines":1,"bbox":[250,652,1100,48]}
+{"kind":"textbox","id":"sh/x4ne1wni","slide":8,"text":"protect corpus precision","textPreview":"protect corpus precision","textChars":24,"textLines":1,"bbox":[198,718,470,34]}
+{"kind":"textbox","id":"sh/w3ed8r6x","slide":8,"text":"protect answer evidence","textPreview":"protect answer evidence","textChars":23,"textLines":1,"bbox":[924,718,500,34]}
+{"kind":"shape","id":"sh/m9sb2x4v","slide":8,"bbox":[90,829,1420,3]}
+{"kind":"shape","id":"sh/na1sb2lg","slide":8,"bbox":[90,829,840,4]}
+{"kind":"textbox","id":"sh/8bat47ml","slide":8,"text":"First Finance - Arnaud Demes","textPreview":"First Finance - Arnaud Demes","textChars":28,"textLines":1,"bbox":[102,846,390,34]}
+{"kind":"textbox","id":"sh/9w3uds36","slide":8,"text":"BACKBONE","textPreview":"BACKBONE","textChars":8,"textLines":1,"bbox":[1280,846,190,34]}
+{"kind":"textbox","id":"sh/y5sbed4j","slide":8,"text":"08","textPreview":"08","textChars":2,"textLines":1,"bbox":[1484,846,28,34]}
+{"kind":"notes","id":"nt/fu1gfa1s","slide":8,"text":"Use this slide as the mental model. Eligibility fixes corpus scope; BM25 fixes literal matching; dense search fixes paraphrase and conceptual recall; RRF fixes incomparable channel scores; reranking fixes the final evidence budget.\n\n[Sources]\n- https://learn.microsoft.com/en-us/azure/search/hybrid-search-overview\n- https://www.anthropic.com/engineering/contextual-retrieval"}
+{"kind":"slide","id":"sl/udsvah03","slide":9,"title":"30-MINUTE LAB","textShapes":23}
+{"kind":"textbox","id":"sh/bqxg7q50","slide":9,"text":"30-MINUTE LAB","textPreview":"30-MINUTE LAB","textChars":13,"textLines":1,"bbox":[102,70,500,36]}
+{"kind":"textbox","id":"sh/1cfmhgne","slide":9,"text":"The notebook proves each design choice—without busywork","textPreview":"The notebook proves each design choice—without busywork","textChars":55,"textLines":1,"bbox":[102,124,1396,82]}
+{"kind":"shape","id":"sh/0b65obm9","slide":9,"name":"ingestion-1","bbox":[104,324,236,238]}
+{"kind":"textbox","id":"sh/nex4jq5k","slide":9,"text":"01","textPreview":"01","textChars":2,"textLines":1,"bbox":[124,346,54,30]}
+{"kind":"textbox","id":"sh/mdonql4z","slide":9,"text":"Load evidence","textPreview":"Load evidence","textChars":13,"textLines":1,"bbox":[116,394,212,72]}
+{"kind":"textbox","id":"sh/9gzml0nq","slide":9,"text":"7 manifest-derived passages","textPreview":"7 manifest-derived passages","textChars":27,"textLines":1,"bbox":[124,484,196,54]}
+{"kind":"shape","id":"sh/ofq5svm5","slide":9,"name":"ingestion-2","bbox":[400,324,236,238]}
+{"kind":"textbox","id":"sh/bih4na5w","slide":9,"text":"02","textPreview":"02","textChars":2,"textLines":1,"bbox":[420,346,54,30]}
+{"kind":"textbox","id":"sh/ah8nu54b","slide":9,"text":"Compare channels","textPreview":"Compare channels","textChars":16,"textLines":1,"bbox":[412,394,212,72]}
+{"kind":"textbox","id":"sh/oza1gfyh","slide":9,"text":"BM25 versus dense","textPreview":"BM25 versus dense","textChars":17,"textLines":1,"bbox":[420,484,196,54]}
+{"kind":"shape","id":"sh/p0ji9kf2","slide":9,"name":"ingestion-3","bbox":[696,324,236,238]}
+{"kind":"textbox","id":"sh/2xsjepgb","slide":9,"text":"03","textPreview":"03","textChars":2,"textLines":1,"bbox":[716,346,54,30]}
+{"kind":"textbox","id":"sh/3y107axw","slide":9,"text":"Filter first","textPreview":"Filter first","textChars":12,"textLines":1,"bbox":[708,394,212,72]}
+{"kind":"textbox","id":"sh/cnu1kzyd","slide":9,"text":"block cross-company leakage","textPreview":"block cross-company leakage","textChars":27,"textLines":1,"bbox":[716,484,196,54]}
+{"kind":"shape","id":"sh/do3id4fy","slide":9,"name":"ingestion-4","bbox":[992,324,236,238]}
+{"kind":"textbox","id":"sh/qlcjipgn","slide":9,"text":"04","textPreview":"04","textChars":2,"textLines":1,"bbox":[1012,346,54,30]}
+{"kind":"textbox","id":"sh/bml0buxs","slide":9,"text":"Fuse + rerank","textPreview":"Fuse + rerank","textChars":13,"textLines":1,"bbox":[1004,394,212,72]}
+{"kind":"textbox","id":"sh/0ru1ozyp","slide":9,"text":"RRF contributions stay visible","textPreview":"RRF contributions stay visible","textChars":30,"textLines":1,"bbox":[1012,484,196,54]}
+{"kind":"shape","id":"sh/lsn2h4fa","slide":9,"name":"ingestion-5","bbox":[1288,324,236,238]}
+{"kind":"textbox","id":"sh/98ji147e","slide":9,"text":"05","textPreview":"05","textChars":2,"textLines":1,"bbox":[1308,346,54,30]}
+{"kind":"textbox","id":"sh/87a18zqt","slide":9,"text":"Score 4 queries","textPreview":"Score 4 queries","textChars":15,"textLines":1,"bbox":[1300,394,212,72]}
+{"kind":"textbox","id":"sh/76h0zup8","slide":9,"text":"rank-1 evidence recovery","textPreview":"rank-1 evidence recovery","textChars":24,"textLines":1,"bbox":[1308,484,196,54]}
+{"kind":"shape","id":"sh/wbuh4r65","slide":9,"bbox":[340,443,60,0]}
+{"kind":"shape","id":"sh/je50f6pg","slide":9,"bbox":[636,443,60,0]}
+{"kind":"shape","id":"sh/ydwz61ov","slide":9,"bbox":[932,443,60,0]}
+{"kind":"shape","id":"sh/gjyxwbm9","slide":9,"bbox":[1228,443,60,0]}
+{"kind":"textbox","id":"sh/u9sja98z","slide":9,"text":"Six figures explain the complete retrieval argument.","textPreview":"Six figures explain the complete retrieval argument.","textChars":52,"textLines":1,"bbox":[250,652,1100,48]}
+{"kind":"textbox","id":"sh/xgzitk76","slide":9,"text":"16 cells · 8 code","textPreview":"16 cells · 8 code","textChars":17,"textLines":1,"bbox":[198,718,470,34]}
+{"kind":"textbox","id":"sh/cf6h0fql","slide":9,"text":"offline deterministic · live embeddings optional","textPreview":"offline deterministic · live embeddings optional","textChars":48,"textLines":1,"bbox":[924,718,500,34]}
+{"kind":"shape","id":"sh/2l4faloj","slide":9,"bbox":[90,829,1420,3]}
+{"kind":"shape","id":"sh/nmdg3q54","slide":9,"bbox":[90,829,840,4]}
+{"kind":"textbox","id":"sh/onmxcv69","slide":9,"text":"First Finance - Arnaud Demes","textPreview":"First Finance - Arnaud Demes","textChars":28,"textLines":1,"bbox":[102,846,390,34]}
+{"kind":"textbox","id":"sh/pofy50nu","slide":9,"text":"LAB","textPreview":"LAB","textChars":3,"textLines":1,"bbox":[1280,846,190,34]}
+{"kind":"textbox","id":"sh/apofe5of","slide":9,"text":"09","textPreview":"09","textChars":2,"textLines":1,"bbox":[1484,846,28,34]}
+{"kind":"notes","id":"nt/udsvah03","slide":9,"text":"The lab is intentionally compact. Students run six figures, reproduce the exact-number miss and cross-company leakage, inspect RRF contributions and reranker features, and finish with a four-query rank-1 scorecard."}
+{"kind":"slide","id":"sl/m90b6t0r","slide":10,"title":"FIRST FINANCE","textShapes":11}
+{"kind":"shape","id":"sh/kzu5c32t","slide":10,"bbox":[102,82,132,8]}
+{"kind":"textbox","id":"sh/xc3mho32","slide":10,"text":"FIRST FINANCE","textPreview":"FIRST FINANCE","textChars":13,"textLines":1,"bbox":[102,112,300,44]}
+{"kind":"textbox","id":"sh/cbu58j2h","slide":10,"text":"Can you defend the retrieval order?","textPreview":"Can you defend the retrieval order?","textChars":35,"textLines":1,"bbox":[102,248,1396,94]}
+{"kind":"textbox","id":"sh/zelojyl8","slide":10,"text":"Choose the answer that preserves retrieval correctness.","textPreview":"Choose the answer that preserves retrieval correctness.","textChars":55,"textLines":1,"bbox":[102,374,1180,54]}
+{"kind":"textbox","id":"sh/ydcnatkn","slide":10,"text":"LESSON 06  ·  3 QUESTIONS  ·  3 MINUTES","textPreview":"LESSON 06  ·  3 QUESTIONS  ·  3 MINUTES","textChars":39,"textLines":1,"bbox":[102,680,1000,42]}
+{"kind":"textbox","id":"sh/l036l83y","slide":10,"text":"First Finance - Arnaud Demes","textPreview":"First Finance - Arnaud Demes","textChars":28,"textLines":1,"bbox":[102,742,500,40]}
+{"kind":"textbox","id":"sh/725onyl4","slide":10,"name":"quiz-question-1","text":"1. Which channel best protects exact figures?","textPreview":"1. Which channel best protects exact figures?","textChars":45,"textLines":1,"bbox":[102,462,1396,30]}
+{"kind":"textbox","id":"sh/m1cnetkj","slide":10,"name":"quiz-options-1","text":"A  BM25     |     B  Dense     |     C  Reranker","textPreview":"A  BM25     |     B  Dense     |     C  Reranker","textChars":48,"textLines":1,"bbox":[132,494,1366,26]}
+{"kind":"textbox","id":"sh/s7yt4b21","slide":10,"name":"quiz-question-2","text":"2. When should eligibility filters run?","textPreview":"2. When should eligibility filters run?","textChars":39,"textLines":1,"bbox":[102,534,1396,30]}
+{"kind":"textbox","id":"sh/d87uxg3m","slide":10,"name":"quiz-options-2","text":"A  Before ranking     |     B  After fusion     |     C  After the answer","textPreview":"A  Before ranking     |     B  After fusion     |     C  After the answer","textChars":73,"textLines":1,"bbox":[132,566,1366,26]}
+{"kind":"textbox","id":"sh/q5gb21kb","slide":10,"name":"quiz-question-3","text":"3. What does reciprocal-rank fusion combine?","textPreview":"3. What does reciprocal-rank fusion combine?","textChars":44,"textLines":1,"bbox":[102,606,1396,30]}
+{"kind":"textbox","id":"sh/r6pcv6lw","slide":10,"name":"quiz-options-3","text":"A  Rank positions     |     B  Raw score scales     |     C  Token counts","textPreview":"A  Rank positions     |     B  Raw score scales     |     C  Token counts","textChars":73,"textLines":1,"bbox":[132,638,1366,26]}
+{"kind":"notes","id":"nt/m90b6t0r","slide":10,"text":"Pause before revealing the answers. Ask learners to explain the mechanism, not only choose a letter."}
+{"kind":"slide","id":"sl/jetc3ut0","slide":11,"title":"FIRST FINANCE","textShapes":11}
+{"kind":"shape","id":"sh/o7ih0r6h","slide":11,"bbox":[102,82,132,8]}
+{"kind":"textbox","id":"sh/xcryxg7y","slide":11,"text":"FIRST FINANCE","textPreview":"FIRST FINANCE","textChars":13,"textLines":1,"bbox":[102,112,300,44]}
+{"kind":"textbox","id":"sh/wbih4b6d","slide":11,"text":"Answers","textPreview":"Answers","textChars":7,"textLines":1,"bbox":[102,248,1396,94]}
+{"kind":"textbox","id":"sh/n69grmpw","slide":11,"text":"The mechanism matters more than the letter.","textPreview":"The mechanism matters more than the letter.","textChars":43,"textLines":1,"bbox":[102,374,1180,54]}
+{"kind":"textbox","id":"sh/250zy18b","slide":11,"text":"LESSON 06  ·  CORRECTION","textPreview":"LESSON 06  ·  CORRECTION","textChars":24,"textLines":1,"bbox":[102,680,1000,42]}
+{"kind":"textbox","id":"sh/98rytw72","slide":11,"text":"First Finance - Arnaud Demes","textPreview":"First Finance - Arnaud Demes","textChars":28,"textLines":1,"bbox":[102,742,500,40]}
+{"kind":"textbox","id":"sh/72t03qp0","slide":11,"name":"quiz-answer-1","text":"1. A. BM25","textPreview":"1. A. BM25","textChars":10,"textLines":1,"bbox":[102,462,1396,30]}
+{"kind":"textbox","id":"sh/61kzalof","slide":11,"name":"quiz-explanation-1","text":"Lexical scoring protects exact figures, names and identifiers.","textPreview":"Lexical scoring protects exact figures, names and identifiers.","textChars":62,"textLines":1,"bbox":[132,494,1366,26]}
+{"kind":"textbox","id":"sh/ofqtgnyt","slide":11,"name":"quiz-answer-2","text":"2. A. Before ranking","textPreview":"2. A. Before ranking","textChars":20,"textLines":1,"bbox":[102,534,1396,30]}
+{"kind":"textbox","id":"sh/9gza9sze","slide":11,"name":"quiz-explanation-2","text":"Ineligible evidence must never enter either candidate list.","textPreview":"Ineligible evidence must never enter either candidate list.","textChars":59,"textLines":1,"bbox":[132,566,1366,26]}
+{"kind":"textbox","id":"sh/mdobedg3","slide":11,"name":"quiz-answer-3","text":"3. A. Rank positions","textPreview":"3. A. Rank positions","textChars":20,"textLines":1,"bbox":[102,606,1396,30]}
+{"kind":"textbox","id":"sh/nehs7iho","slide":11,"name":"quiz-explanation-3","text":"RRF fuses rank positions without pretending channel scores share one scale.","textPreview":"RRF fuses rank positions without pretending channel scores share one scale.","textChars":75,"textLines":1,"bbox":[132,638,1366,26]}
+{"kind":"notes","id":"nt/jetc3ut0","slide":11,"text":"Close by restating the retrieval order: define eligibility, retrieve through BM25 and dense channels, fuse ranks, rerank a smaller set, and cite the final evidence."}

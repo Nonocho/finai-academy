@@ -31,6 +31,10 @@ class DocumentSource:
     retrieval_date: str | None = None
     fixture_path: str | None = None
     fixture_sha256: str | None = None
+    official_path: str | None = None
+    official_sha256: str | None = None
+    official_bytes: int | None = None
+    accession_number: str | None = None
     provenance_mode: str = "fixture"
 
     def __post_init__(self) -> None:
@@ -55,6 +59,19 @@ class DocumentSource:
             return False
         payload = (root / self.fixture_path).read_bytes()
         return hashlib.sha256(payload).hexdigest() == self.fixture_sha256
+
+    def verify_official(self, root: Path) -> bool:
+        """Verify a versioned official download against its manifest metadata."""
+
+        if not self.official_path or not self.official_sha256:
+            return False
+        path = root / self.official_path
+        if not path.is_file():
+            return False
+        payload = path.read_bytes()
+        if self.official_bytes is not None and len(payload) != self.official_bytes:
+            return False
+        return hashlib.sha256(payload).hexdigest() == self.official_sha256
 
 
 @dataclass(frozen=True)
@@ -87,6 +104,76 @@ class DocumentBlock:
             raise ValueError("page_number must be positive")
         if self.block_type == "table" and not self.table_rows:
             raise ValueError("table blocks must contain table_rows")
+
+
+@dataclass(frozen=True)
+class OfficialContextPack:
+    """A compact teaching context extracted from a versioned official filing."""
+
+    source_path: Path
+    text: str
+    anchor_count: int
+    filing_text_characters: int
+
+
+def build_nvidia_fy2026_context_pack(path: Path) -> OfficialContextPack:
+    """Extract two auditable revenue anchors from NVIDIA's FY2026 Form 10-K.
+
+    Lesson 3 deliberately hides HTML/XBRL cleanup mechanics so learners can focus
+    on the context decision. The source remains the complete official filing, and
+    this helper fails loudly if either maintained anchor can no longer be found.
+    """
+
+    soup = BeautifulSoup(path.read_text(encoding="utf-8"), "html.parser")
+    for element in soup(["script", "style"]):
+        element.decompose()
+    filing_text = _clean_text(soup.get_text(" ", strip=True))
+
+    summary = re.search(
+        r"Revenue for fiscal year 2026 was (\$[\d.]+ billion), up (\d+%) "
+        r"from a year ago\. Data Center revenue for fiscal year 2026 was up "
+        r"(\d+%) from a year ago\..*?Gaming revenue for fiscal year 2026 was up "
+        r"(\d+%) from a year ago",
+        filing_text,
+    )
+    end_market = re.search(
+        r"Revenue by End Market: \(In millions\) Data Center \$ ([\d,]+) "
+        r"\$ ([\d,]+).*?Gaming ([\d,]+) ([\d,]+).*?Total revenue \$ "
+        r"([\d,]+) \$ ([\d,]+)",
+        filing_text,
+    )
+    if summary is None or end_market is None:
+        raise ValueError("Expected NVIDIA FY2026 revenue anchors were not found")
+
+    summary_start = filing_text.index("Fiscal Year 2026 Summary")
+    market_anchor = "The following table summarizes revenue by specialized markets"
+    market_start = filing_text.index(market_anchor)
+    summary_excerpt = filing_text[summary_start : summary_start + 4_500]
+    market_excerpt = filing_text[market_start : market_start + 1_600]
+    source_excerpts = re.sub(
+        r"\$ ([\d,]+)",
+        r"$\1",
+        (
+            "[F1] Fiscal Year 2026 Summary (official filing excerpt)\n"
+            f"{summary_excerpt}\n\n"
+            "[F2] Revenue by End Market (official filing excerpt)\n"
+            f"{market_excerpt}"
+        ),
+    )
+    evidence_index = (
+        "Evidence index derived from the excerpts: "
+        f"revenue {summary.group(1)}, up {summary.group(2)}; Data Center growth "
+        f"{summary.group(3)}; Gaming growth {summary.group(4)}; Data Center "
+        f"${end_market.group(1)} million; Gaming ${end_market.group(3)} million; "
+        f"total revenue ${end_market.group(5)} million."
+    )
+    context_text = f"{source_excerpts}\n\n{evidence_index}"
+    return OfficialContextPack(
+        source_path=path,
+        text=context_text,
+        anchor_count=2,
+        filing_text_characters=len(filing_text),
+    )
 
 
 def _new_block(

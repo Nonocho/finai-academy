@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import finai_academy.self_correcting_agent as self_correcting_agent
 from finai_academy.self_correcting_agent import (
     AgentAction,
     MetricRequest,
@@ -19,6 +20,45 @@ SNAPSHOT = {
         "SU.PA": {"company": "Schneider Electric", "P/E": 31.8, "EPS": 9.12},
     },
 }
+
+
+def test_live_action_schema_is_strict_and_openai_compatible() -> None:
+    """Optional schema keys would make strict Structured Outputs reject the request."""
+
+    assert hasattr(self_correcting_agent, "ModelAgentAction")
+    ModelAgentAction = self_correcting_agent.ModelAgentAction
+    schema = ModelAgentAction.model_json_schema()
+
+    assert schema["additionalProperties"] is False
+    assert set(schema["required"]) == {
+        "action",
+        "ticker",
+        "metric",
+        "answer",
+        "reason",
+    }
+
+
+def test_live_action_converts_to_the_internal_agent_contract() -> None:
+    """A flat wire schema must still produce the existing validated internal action."""
+
+    assert hasattr(self_correcting_agent, "ModelAgentAction")
+    ModelAgentAction = self_correcting_agent.ModelAgentAction
+    wire_action = ModelAgentAction(
+        action="tool",
+        ticker="NVDA",
+        metric="P/E",
+        answer=None,
+        reason="Use the valid metric returned by the tool.",
+    )
+
+    action = wire_action.to_agent_action()
+
+    assert action == AgentAction(
+        action="tool",
+        request=MetricRequest(ticker="NVDA", metric="P/E"),
+        reason="Use the valid metric returned by the tool.",
+    )
 
 
 def test_invalid_metric_becomes_actionable_retryable_observation() -> None:

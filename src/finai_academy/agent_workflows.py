@@ -9,7 +9,7 @@ from pathlib import Path
 from time import perf_counter
 from typing import Any, Literal
 
-from pydantic import BaseModel, Field, ValidationError, model_validator
+from pydantic import BaseModel, ConfigDict, Field, ValidationError, model_validator
 
 
 class ToolRequest(BaseModel):
@@ -82,6 +82,92 @@ class AgentDecision(BaseModel):
         if self.action == "finish" and not self.answer:
             raise ValueError("finish action requires answer")
         return self
+
+
+class ModelWorkflowDecision(BaseModel):
+    """Closed schema exposed to an LLM using strict Structured Outputs."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    route: Literal["tool", "unsupported_dependency", "finish"]
+    tool_name: Literal["get_market_price", "convert_currency"] | None
+    ticker: str | None
+    amount: float | None
+    from_currency: str | None
+    to_currency: str | None
+    answer: str | None
+    reason: str
+
+    def to_workflow_plan(self) -> WorkflowPlan:
+        request: ToolRequest | None = None
+        if self.route == "tool":
+            if self.tool_name == "get_market_price" and self.ticker:
+                request = ToolRequest(
+                    name=self.tool_name,
+                    arguments={"ticker": self.ticker},
+                )
+            elif (
+                self.tool_name == "convert_currency"
+                and self.amount is not None
+                and self.from_currency
+                and self.to_currency
+            ):
+                request = ToolRequest(
+                    name=self.tool_name,
+                    arguments={
+                        "amount": self.amount,
+                        "from_currency": self.from_currency,
+                        "to_currency": self.to_currency,
+                    },
+                )
+            else:
+                raise ValueError("tool route requires the fields for the selected tool")
+        return WorkflowPlan(
+            route=self.route,
+            request=request,
+            answer=self.answer,
+            reason=self.reason,
+        )
+
+
+class ModelAgentDecision(BaseModel):
+    """Closed schema for one model-selected action in the bounded loop."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    action: Literal["tool", "finish"]
+    tool_name: Literal["get_market_price", "convert_currency"] | None
+    ticker: str | None
+    amount: float | None
+    from_currency: str | None
+    to_currency: str | None
+    answer: str | None
+
+    def to_agent_decision(self) -> AgentDecision:
+        request: ToolRequest | None = None
+        if self.action == "tool":
+            if self.tool_name == "get_market_price" and self.ticker:
+                request = ToolRequest(
+                    name=self.tool_name,
+                    arguments={"ticker": self.ticker},
+                )
+            elif (
+                self.tool_name == "convert_currency"
+                and self.amount is not None
+                and self.from_currency
+                and self.to_currency
+            ):
+                request = ToolRequest(
+                    name=self.tool_name,
+                    arguments={
+                        "amount": self.amount,
+                        "from_currency": self.from_currency,
+                        "to_currency": self.to_currency,
+                    },
+                )
+            else:
+                raise ValueError("tool action requires the fields for the selected tool")
+        return AgentDecision(action=self.action, request=request, answer=self.answer)
 
 
 class TraceStep(BaseModel):
@@ -290,6 +376,94 @@ def run_one_pass_workflow(
     )
 
 
+def run_price_to_currency_workflow(
+    question: str,
+    *,
+    ticker: str,
+    target_currency: str,
+    answer_writer: AnswerWriter,
+    registry: ToolRegistry,
+) -> OrchestrationResult:
+    """Run a fixed price-then-conversion dependency in deterministic code."""
+
+    started = perf_counter()
+    trajectory: list[TraceStep] = [
+        TraceStep(
+            index=1,
+            phase="plan",
+            summary="Fixed route: market price, then currency conversion.",
+        )
+    ]
+    price_request = ToolRequest(
+        name="get_market_price",
+        arguments={"ticker": ticker},
+    )
+    price_observation = registry.invoke(price_request)
+    trajectory.append(
+        TraceStep(
+            index=2,
+            phase="tool",
+            summary=f"get_market_price returned {price_observation.status}.",
+            tool_name="get_market_price",
+            request=price_request,
+            observation=price_observation,
+        )
+    )
+    if price_observation.status == "error":
+        return OrchestrationResult(
+            architecture="workflow",
+            status="error",
+            answer=None,
+            trajectory=tuple(trajectory),
+            latency_ms=(perf_counter() - started) * 1_000,
+        )
+
+    conversion_request = ToolRequest(
+        name="convert_currency",
+        arguments={
+            "amount": price_observation.payload["price"],
+            "from_currency": price_observation.payload["currency"],
+            "to_currency": target_currency,
+        },
+    )
+    conversion_observation = registry.invoke(conversion_request)
+    trajectory.append(
+        TraceStep(
+            index=3,
+            phase="tool",
+            summary=f"convert_currency returned {conversion_observation.status}.",
+            tool_name="convert_currency",
+            request=conversion_request,
+            observation=conversion_observation,
+        )
+    )
+    if conversion_observation.status == "error":
+        return OrchestrationResult(
+            architecture="workflow",
+            status="error",
+            answer=None,
+            trajectory=tuple(trajectory),
+            latency_ms=(perf_counter() - started) * 1_000,
+        )
+
+    observations = (price_observation, conversion_observation)
+    answer = answer_writer(question, observations)
+    trajectory.append(
+        TraceStep(
+            index=4,
+            phase="finish",
+            summary="Answer written from the price and conversion observations.",
+        )
+    )
+    return OrchestrationResult(
+        architecture="workflow",
+        status="completed",
+        answer=answer,
+        trajectory=tuple(trajectory),
+        latency_ms=(perf_counter() - started) * 1_000,
+    )
+
+
 def _question_requires_currency_conversion(question: str) -> bool:
     normalized = question.casefold()
     return "converted" in normalized or "convert" in normalized or "euro" in normalized
@@ -304,6 +478,41 @@ def _has_grounded_conversion(trajectory: list[TraceStep]) -> bool:
         and step.observation.status == "ok"
     ]
     return "get_market_price" in successful_tools and "convert_currency" in successful_tools
+
+
+def _conversion_dependency_error(
+    request: ToolRequest,
+    trajectory: list[TraceStep],
+) -> str | None:
+    """Validate that conversion arguments come from a successful price observation."""
+
+    if request.name != "convert_currency":
+        return None
+    price_steps = [
+        step
+        for step in trajectory
+        if step.phase == "tool"
+        and step.tool_name == "get_market_price"
+        and step.observation is not None
+        and step.observation.status == "ok"
+    ]
+    if not price_steps:
+        return "Conversion rejected: get_market_price must succeed first."
+    observed = price_steps[-1].observation
+    if observed is None:  # retained for static narrowing
+        return "Conversion rejected: the price observation is missing."
+    try:
+        requested_amount = float(request.arguments["amount"])
+        observed_price = float(observed.payload["price"])
+    except (KeyError, TypeError, ValueError):
+        return "Conversion rejected: amount must equal the observed price."
+    if not math.isclose(requested_amount, observed_price, rel_tol=0, abs_tol=1e-9):
+        return "Conversion rejected: amount must equal the observed price."
+    requested_currency = str(request.arguments.get("from_currency", "")).upper().strip()
+    observed_currency = str(observed.payload.get("currency", "")).upper().strip()
+    if requested_currency != observed_currency:
+        return "Conversion rejected: source currency must equal the observed currency."
+    return None
 
 
 def run_bounded_agent(
@@ -368,6 +577,22 @@ def run_bounded_agent(
 
         if decision.request is None:  # protected by validation; retained for static narrowing
             raise RuntimeError("tool action is missing its validated request")
+        dependency_error = _conversion_dependency_error(decision.request, trajectory)
+        if dependency_error is not None:
+            trajectory.append(
+                TraceStep(
+                    index=len(trajectory) + 1,
+                    phase="guardrail",
+                    summary=dependency_error,
+                )
+            )
+            return OrchestrationResult(
+                architecture="agent",
+                status="error",
+                answer=None,
+                trajectory=tuple(trajectory),
+                latency_ms=(perf_counter() - started) * 1_000,
+            )
         observation = registry.invoke(decision.request)
         trajectory.append(
             TraceStep(

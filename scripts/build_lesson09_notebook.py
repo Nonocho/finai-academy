@@ -1,4 +1,4 @@
-"""Build the canonical output-free Lesson 09 notebook."""
+"""Build the compact, output-free Lesson 09 notebook."""
 
 from __future__ import annotations
 
@@ -36,49 +36,23 @@ def build_notebook():
         _markdown(
             "lesson09-000",
             """
-            # 09 — Self-correcting financial agent
+            # 09 — A tool error can become the next input
 
-            **First Finance - Arnaud Demes**  
-            **Day 2 · 10:30–11:15 · 10 minutes concepts + 30 minutes notebook + 5 minutes debrief**
+            **Engineering question:** how can an agent use precise external feedback to correct an observable action without entering an unlimited loop?
 
-            **Engineering question:** how can a financial agent use a typed tool error to correct its next action without entering an unlimited loop?
+            This lesson uses NVIDIA (`NVDA`) and Schneider Electric (`SU.PA`) with a controlled classroom fixture. Values are not live market data or investment advice.
 
-            This notebook uses NVIDIA (`NVDA`) and Schneider Electric (`SU.PA`) with a controlled classroom fixture. The values are not live market data or investment advice.
-            """,
-        ),
-        _markdown(
-            "lesson09-001",
-            """
             ## Learning objectives
 
-            By the end, you can:
+            By the end, you can classify an error, return model-correctable feedback through LangGraph state, inspect the correction trace, and enforce retry and tool-call budgets.
 
-            1. define explicit state for a LangGraph agent;
-            2. separate an agent node from a deterministic tool node;
-            3. convert validation failures into structured observations;
-            4. route errors back to the model as useful context;
-            5. enforce `MAX_RETRIES` and `MAX_TOOL_CALLS`; and
-            6. verify both the answer and the correction path.
-
-            **Expected visible result:** the first request uses invalid metric `PE`, the tool returns `unsupported_metric`, the agent retries with `P/E`, then compares NVIDIA and Schneider Electric from successful observations.
-            """,
-        ),
-        _markdown(
-            "lesson09-002",
-            """
             ## Where this fits
 
-            Lesson 08 exposed the agent loop in plain Python. Lesson 09 earns LangGraph by making state, error routing, and stop conditions explicit:
-
-            ```text
-            bounded agent → structured error → corrected action → bounded completion
-            ```
-
-            Set `FINAI_LIVE_MODE=1` through the course executor to use Ollama or OpenAI. Offline mode runs the same graph with a deterministic recorded policy.
+            Lesson 08 introduced a bounded agent loop. Lesson 09 makes its state, recovery route, and stopping conditions explicit with `StateGraph`.
             """,
         ),
         _code(
-            "lesson09-003",
+            "lesson09-001",
             """
             import json
             import os
@@ -92,7 +66,9 @@ def build_notebook():
             from finai_academy.self_correcting_agent import (
                 AgentAction,
                 MetricRequest,
+                ModelAgentAction,
                 build_metric_registry,
+                build_self_correcting_graph,
                 recorded_correction_policy,
                 run_self_correcting_agent,
             )
@@ -109,240 +85,231 @@ def build_notebook():
                 if LIVE_MODE
                 else "offline fixture · deterministic course run"
             )
-            snapshot_path = (
-                PROJECT_ROOT
-                / "assets/course-data/market/lesson09_metrics_snapshot_v1.json"
+            snapshot = json.loads(
+                (PROJECT_ROOT / "assets/course-data/market/lesson09_metrics_snapshot_v1.json")
+                .read_text(encoding="utf-8")
             )
-            snapshot = json.loads(snapshot_path.read_text(encoding="utf-8"))
             registry = build_metric_registry(snapshot)
             print(f"Runtime: {runtime_label}")
             print(f"Dataset: {snapshot['dataset_id']}")
-            print(f"Tickers: {', '.join(registry.tickers)}")
+            print(f"Valid tickers: {', '.join(registry.tickers)}")
             print(f"Valid metrics: {', '.join(registry.metric_names)}")
+            """,
+        ),
+        _markdown(
+            "lesson09-002",
+            """
+            ## First classify the error
+
+            “Retry” is not one universal action. A **model-correctable** validation error should return precise context to the model. A **transient** timeout needs system retry and backoff. A user-fixable omission should pause for input. An unexpected bug should surface for debugging.
+            """,
+        ),
+        _code(
+            "lesson09-003",
+            """
+            strategies = pd.DataFrame(
+                [
+                    ("MODEL-CORRECTABLE", "Unsupported metric", "Return typed feedback to agent", "#F07D00"),
+                    ("TRANSIENT", "Timeout or rate limit", "Retry with backoff", "#00A2EB"),
+                    ("USER-FIXABLE", "Missing ticker", "Pause and ask", "#2E8B57"),
+                    ("UNEXPECTED", "Unknown application bug", "Raise, log, investigate", "#8A2C2C"),
+                ],
+                columns=["error_type", "example", "owner_action", "color"],
+            )
+            display(strategies.drop(columns="color"))
+
+            fig, ax = plt.subplots(figsize=(11, 4.8))
+            ax.axis("off")
+            for row, item in strategies.iterrows():
+                y = 0.80 - row * 0.20
+                ax.add_patch(FancyBboxPatch((0.02, y), 0.25, 0.12, boxstyle="round,pad=0.015", facecolor=item.color, edgecolor="none"))
+                ax.text(0.145, y + 0.06, item.error_type, ha="center", va="center", color="white", weight="bold")
+                ax.text(0.32, y + 0.06, item.example, va="center", weight="bold", color="#0B2230")
+                ax.text(0.66, y + 0.06, item.owner_action, va="center", color="#334E5F")
+            ax.set_title("Errors need different recovery strategies", loc="left", weight="bold", fontsize=16)
+            plt.show()
             """,
         ),
         _markdown(
             "lesson09-004",
             """
-            ### The graph makes control visible
+            ## A precise tool error becomes context
 
-            The model chooses an action. Python validates and executes the tool. Conditional edges decide whether to continue, finish, or stop at a guardrail.
-
-            The course module compiles this contract with `workflow = StateGraph(RecoveryState)`. Keeping the graph in a tested Python module lets the notebook focus on state changes and visible evidence while students can still inspect the production implementation.
+            The financial tool rejects `metric="PE"` without crashing. Its structured `unsupported_metric` observation includes valid alternatives and explicitly marks whether a corrected attempt is allowed.
             """,
         ),
         _code(
             "lesson09-005",
             """
-            fig, ax = plt.subplots(figsize=(10, 5.2))
+            wrong_request = MetricRequest(ticker="NVDA", metric="PE")
+            error_observation = registry.invoke(wrong_request)
+            display(pd.DataFrame([error_observation.model_dump(mode="json")]))
+
+            fig, ax = plt.subplots(figsize=(11, 4.2))
             ax.axis("off")
-            positions = {
-                "agent": (0.08, 0.58),
-                "tools": (0.40, 0.58),
-                "finish": (0.73, 0.58),
-                "guardrails": (0.40, 0.16),
-            }
-            arrows = [
-                ((0.26, 0.69), (0.40, 0.69), "tool request"),
-                ((0.58, 0.69), (0.73, 0.69), "valid evidence"),
-                ((0.49, 0.58), (0.17, 0.58), "result or error"),
-                ((0.49, 0.58), (0.49, 0.35), "budget reached"),
+            steps = [
+                (0.04, "INVALID REQUEST", "NVDA · PE", "#1F40CB"),
+                (0.37, "TYPED FEEDBACK", "unsupported_metric\\nValid: EPS, P/E", "#F07D00"),
+                (0.72, "CORRECTED REQUEST", "NVDA · P/E", "#2E8B57"),
             ]
-            for start, end, label in arrows:
-                ax.add_patch(FancyArrowPatch(start, end, arrowstyle="-|>", mutation_scale=16, color="#00A2EB", linewidth=2, connectionstyle="arc3,rad=0.12" if "error" in label else "arc3"))
-                ax.text((start[0] + end[0]) / 2, (start[1] + end[1]) / 2 + 0.05, label, ha="center", fontsize=9, color="#4B6070")
-            for label, (x, y) in positions.items():
-                is_guard = label == "guardrails"
-                ax.add_patch(FancyBboxPatch((x, y), 0.18, 0.20, boxstyle="round,pad=0.02", facecolor="#FFF2E5" if is_guard else "#F5F5F5", edgecolor="#F07D00" if is_guard else "#1F40CB", linewidth=2))
-                ax.text(x + 0.09, y + 0.10, label, ha="center", va="center", weight="bold", fontsize=13)
-            ax.text(0.5, 0.04, "State: question · decision · observation · error_count · tool_calls · trace", ha="center", color="#1F40CB", weight="bold")
-            ax.set_title(f"LangGraph turns the loop into explicit state and routes · {runtime_label}", loc="left", weight="bold")
+            for index, (x, title, body, color) in enumerate(steps):
+                ax.add_patch(FancyBboxPatch((x, 0.28), 0.24, 0.38, boxstyle="round,pad=0.02", facecolor="#F7F9FA", edgecolor=color, linewidth=2.5))
+                ax.text(x + 0.12, 0.57, title, ha="center", weight="bold", color=color)
+                ax.text(x + 0.12, 0.42, body, ha="center", va="center", fontsize=12)
+                if index < 2:
+                    ax.add_patch(FancyArrowPatch((x + 0.24, 0.47), (steps[index + 1][0], 0.47), arrowstyle="-|>", mutation_scale=18, color="#00A2EB", linewidth=2.5))
+            ax.set_title("External feedback changes the next observable action", loc="left", weight="bold", fontsize=16)
             plt.show()
             """,
         ),
         _markdown(
             "lesson09-006",
             """
-            ### Tool errors are context, not crashes
+            ## The graph owns the recovery route
 
-            A useful error contains the rejected value, a stable error code, valid alternatives, and whether correction is allowed. The model receives this observation in the same trace as a successful result.
+            The model proposes a typed action. Python validates and executes it. LangGraph routes the resulting state to another action, a successful finish, or a guardrail.
+
+            Offline mode uses a recorded policy. Live Ollama or OpenAI mode uses `with_structured_output(ModelAgentAction)` and converts that strict wire schema into the internal `AgentAction`.
             """,
         ),
         _code(
             "lesson09-007",
             """
-            wrong_request = MetricRequest(ticker="NVDA", metric="PE")
-            error_observation = registry.invoke(wrong_request)
-            display(pd.DataFrame([error_observation.model_dump(mode="json")]))
-            print(error_observation.message)
-
-            fig, ax = plt.subplots(figsize=(10, 3.8))
-            ax.axis("off")
-            labels = [
-                (0.04, "Request", "metric = PE", "#1F40CB"),
-                (0.36, "Tool feedback", "unsupported_metric\\nValid: EPS, P/E", "#F07D00"),
-                (0.71, "Corrected request", "metric = P/E", "#2E8B57"),
-            ]
-            for index, (x, title, body, color) in enumerate(labels):
-                ax.add_patch(FancyBboxPatch((x, 0.30), 0.24, 0.38, boxstyle="round,pad=0.02", facecolor="#F5F5F5", edgecolor=color, linewidth=2))
-                ax.text(x + 0.12, 0.55, title, ha="center", weight="bold", color=color)
-                ax.text(x + 0.12, 0.40, body, ha="center", va="center")
-                if index < len(labels) - 1:
-                    ax.add_patch(FancyArrowPatch((x + 0.24, 0.49), (labels[index + 1][0], 0.49), arrowstyle="-|>", mutation_scale=16, color="#00A2EB", linewidth=2))
-            ax.set_title("A precise error is a prompt for the next action", loc="left", weight="bold")
-            plt.show()
-            """,
-        ),
-        _markdown(
-            "lesson09-008",
-            """
-            ### Provider-neutral action policy
-
-            Offline mode uses a recorded policy for deterministic verification. Live mode injects the same first invalid request, then asks the configured Ollama or OpenAI model for a structured `AgentAction` from the visible error and results. This is fault injection for teaching, not a claim that every model always makes this exact mistake.
-            """,
-        ),
-        _code(
-            "lesson09-009",
-            """
             class LiveCorrectionPolicy:
                 def __init__(self, chat_model):
-                    self.action_model = chat_model.with_structured_output(AgentAction)
+                    self.action_model = chat_model.with_structured_output(ModelAgentAction)
 
                 def __call__(self, state):
                     tool_events = [
-                        event
-                        for event in state.get("trace", ())
+                        event for event in state.get("trace", ())
                         if event.phase in {"tool_error", "tool_ok"}
                     ]
                     if not tool_events:
                         return AgentAction(
                             action="tool",
                             request=MetricRequest(ticker="NVDA", metric="PE"),
-                            reason="Injected invalid alias for the recovery demonstration.",
+                            reason="Inject one invalid alias so recovery remains visible.",
                         )
-                    visible_trace = [
-                        event.model_dump(mode="json")
-                        for event in state.get("trace", ())
-                    ]
-                    prompt = f'''Return the next typed action for a bounded financial agent.
+                    visible_trace = [event.model_dump(mode="json") for event in state.get("trace", ())]
+                    prompt = f'''Choose the next action for this bounded financial agent.
             Tool: get_metric(ticker, metric).
             Valid tickers: NVDA, SU.PA.
-            Do not guess valid metric names. Read structured tool feedback.
-            For comparison questions, collect successful P/E observations for both companies.
+            Use structured tool feedback to correct invalid metric names.
+            For comparisons, collect successful P/E observations for both companies.
             Finish only from successful observations and include value, date and source.
             Question: {state['question']}
             Visible trace: {json.dumps(visible_trace)}'''
-                    return self.action_model.invoke([("human", prompt)])
+                    wire_action = self.action_model.invoke([("human", prompt)])
+                    return wire_action.to_agent_action()
 
 
             MAX_RETRIES = 1
             MAX_TOOL_CALLS = 4
+            correction_policy = (
+                LiveCorrectionPolicy(create_chat_model(settings))
+                if LIVE_MODE
+                else recorded_correction_policy
+            )
             if LIVE_MODE:
-                chat_model = create_chat_model(settings)
-                correction_policy = LiveCorrectionPolicy(chat_model)
                 print("Live provider:", provider_summary(settings))
             else:
-                correction_policy = recorded_correction_policy
                 print("Policy: offline recorded correction")
-            """,
-        ),
-        _markdown(
-            "lesson09-010",
-            """
-            ### Run the self-correcting graph
 
-            Watch the sequence, not only the final sentence. A professional result must show the failed call, the error feedback, the corrected call, the second company lookup, and a grounded finish.
-            """,
-        ),
-        _code(
-            "lesson09-011",
-            """
-            question = "Compare NVIDIA's P/E with Schneider Electric."
-            recovery_result = run_self_correcting_agent(
-                question,
+            graph = build_self_correcting_graph(
                 registry=registry,
                 policy=correction_policy,
                 max_retries=MAX_RETRIES,
                 max_tool_calls=MAX_TOOL_CALLS,
             )
-            print(f"status={recovery_result.status}")
-            print(f"errors={recovery_result.error_count}")
-            print(f"tool_calls={recovery_result.tool_calls}")
-            print(recovery_result.answer)
+
+            fig, ax = plt.subplots(figsize=(11, 4.8))
+            ax.axis("off")
+            nodes = {
+                "agent": (0.05, 0.55, "#1F40CB"),
+                "tools": (0.35, 0.55, "#00A2EB"),
+                "finish": (0.70, 0.55, "#2E8B57"),
+                "guardrails": (0.35, 0.12, "#F07D00"),
+            }
+            arrows = [
+                ((0.25, 0.66), (0.35, 0.66), "request"),
+                ((0.55, 0.66), (0.70, 0.66), "evidence"),
+                ((0.44, 0.55), (0.15, 0.55), "result or error"),
+                ((0.45, 0.55), (0.45, 0.34), "budget reached"),
+            ]
+            for start, end, label in arrows:
+                ax.add_patch(FancyArrowPatch(start, end, arrowstyle="-|>", mutation_scale=17, color="#7F8C94", linewidth=2, connectionstyle="arc3,rad=0.12" if "error" in label else "arc3"))
+                ax.text((start[0] + end[0]) / 2, (start[1] + end[1]) / 2 + 0.05, label, ha="center", color="#4B6070")
+            for label, (x, y, color) in nodes.items():
+                ax.add_patch(FancyBboxPatch((x, y), 0.20, 0.22, boxstyle="round,pad=0.02", facecolor="#F7F9FA", edgecolor=color, linewidth=2.5))
+                ax.text(x + 0.10, y + 0.11, label, ha="center", va="center", weight="bold", fontsize=13, color=color)
+            ax.set_title("LangGraph makes the recovery route explicit", loc="left", weight="bold", fontsize=16)
+            ax.text(0.5, 0.02, "State = question · decision · observation · error_count · tool_calls · trace", ha="center", color="#1F40CB", weight="bold")
+            plt.show()
+            """,
+        ),
+        _markdown(
+            "lesson09-008",
+            """
+            ## Follow the successful correction
+
+            Judge the sequence, not only the final sentence: failed request, actionable feedback, corrected request, second company observation, grounded finish.
             """,
         ),
         _code(
-            "lesson09-012",
+            "lesson09-009",
             """
-            trace_rows = []
-            for event in recovery_result.trace:
-                trace_rows.append(
-                    {
-                        "event": event.index,
-                        "phase": event.phase,
-                        "ticker": event.request.ticker if event.request else "",
-                        "metric": event.request.metric if event.request else "",
-                        "status": event.observation.status if event.observation else "",
-                        "summary": event.summary,
-                    }
-                )
-            trace_frame = pd.DataFrame(trace_rows)
+            recovery_result = graph.invoke({"question": "Compare NVIDIA's P/E with Schneider Electric."})
+            print(f"success_path={recovery_result['status']}")
+            print(f"errors={recovery_result['error_count']} · tool_calls={recovery_result['tool_calls']}")
+            print(recovery_result["answer"])
+
+            trace_frame = pd.DataFrame(
+                {
+                    "event": event.index,
+                    "phase": event.phase,
+                    "request": (
+                        f"{event.request.ticker} {event.request.metric}"
+                        if event.request else ""
+                    ),
+                    "summary": event.summary,
+                }
+                for event in recovery_result["trace"]
+            )
             display(trace_frame)
 
-            colors = {
+            phase_colors = {
                 "agent": "#1F40CB",
                 "tool_error": "#F07D00",
                 "tool_ok": "#00A2EB",
                 "finish": "#2E8B57",
                 "guardrail": "#8A2C2C",
             }
-            fig, ax = plt.subplots(figsize=(11, 4.4))
+            fig, ax = plt.subplots(figsize=(12, 4.5))
             for _, row in trace_frame.iterrows():
-                ax.scatter(row["event"], 0, s=300, color=colors[row["phase"]], zorder=3)
-                label = row["phase"]
-                if row["metric"]:
-                    label += f"\\n{row['ticker']} {row['metric']}"
-                ax.annotate(label, (row["event"], 0), xytext=(0, 28 if row["event"] % 2 else -48), textcoords="offset points", ha="center", fontsize=9, weight="bold")
-            ax.plot(trace_frame["event"], [0] * len(trace_frame), color="#A0A7AE", linewidth=2, zorder=1)
-            ax.set(xlim=(0.5, len(trace_frame) + 0.5), ylim=(-0.7, 0.7), xlabel="Recorded event order")
+                ax.scatter(row.event, 0, s=340, color=phase_colors[row.phase], zorder=3)
+                label = row.phase.replace("_", " ")
+                if row.request:
+                    label += f"\\n{row.request}"
+                ax.annotate(label, (row.event, 0), xytext=(0, 30 if row.event % 2 else -52), textcoords="offset points", ha="center", weight="bold", fontsize=9)
+            ax.plot(trace_frame.event, [0] * len(trace_frame), color="#A0A7AE", linewidth=2)
+            ax.set(xlim=(0.5, len(trace_frame) + 0.5), ylim=(-0.75, 0.75), xlabel="Recorded event order")
             ax.set_yticks([])
-            ax.set_title(f"The trace proves the correction path · {runtime_label}", loc="left", weight="bold")
+            ax.set_title("The trace proves that external feedback changed the action", loc="left", weight="bold", fontsize=16)
             ax.grid(axis="x", alpha=0.15)
             plt.tight_layout()
             plt.show()
             """,
         ),
-        _code(
-            "lesson09-013",
-            """
-            successful = [
-                event.observation.payload
-                for event in recovery_result.trace
-                if event.phase == "tool_ok" and event.observation is not None
-            ]
-            metric_frame = pd.DataFrame(successful)
-            display(metric_frame)
-
-            fig, ax = plt.subplots(figsize=(8.5, 4.2))
-            ax.bar(metric_frame["company"], metric_frame["value"], color=["#1F40CB", "#00A2EB"])
-            ax.set(title="Controlled classroom comparison", ylabel="P/E value")
-            for index, value in enumerate(metric_frame["value"]):
-                ax.text(index, value + 1, f"{value:.1f}", ha="center", weight="bold")
-            ax.text(0.5, -0.20, "Controlled fixture · not live data or investment advice", transform=ax.transAxes, ha="center", color="#F07D00")
-            plt.tight_layout()
-            plt.show()
-            """,
-        ),
         _markdown(
-            "lesson09-014",
+            "lesson09-010",
             """
             ## Failure lab
 
-            A model may ignore the feedback and repeat `PE`. The application must permit only one retry, record the second error, and stop before a third tool call.
+            Now force the policy to repeat `PE`. `MAX_RETRIES = 1` allows one correction opportunity; the second validation failure must route to `retry_budget_exhausted` before a third tool execution.
             """,
         ),
         _code(
-            "lesson09-015",
+            "lesson09-011",
             """
             def always_wrong(_state):
                 return AgentAction(
@@ -359,44 +326,55 @@ def build_notebook():
                 max_retries=MAX_RETRIES,
                 max_tool_calls=MAX_TOOL_CALLS,
             )
-            phase_counts = pd.Series(event.phase for event in failed_result.trace).value_counts()
-            fig, ax = plt.subplots(figsize=(8, 4))
-            phase_counts.reindex(["agent", "tool_error", "guardrail"], fill_value=0).plot(kind="bar", ax=ax, color=["#1F40CB", "#F07D00", "#8A2C2C"])
-            ax.set(title=f"The retry budget stops repeated failures · {failed_result.status}", xlabel="Recorded phase", ylabel="Event count")
-            ax.tick_params(axis="x", rotation=0)
+            print(f"failure_path={failed_result.status}")
+            print(f"errors={failed_result.error_count} · tool_calls={failed_result.tool_calls}")
+
+            def plot_path(ax, events, title):
+                phases = [event.phase for event in events]
+                xs = list(range(1, len(phases) + 1))
+                ax.plot(xs, [0] * len(xs), color="#A0A7AE", linewidth=2)
+                for x, phase in zip(xs, phases, strict=True):
+                    ax.scatter(x, 0, s=260, color=phase_colors[phase], zorder=3)
+                    ax.annotate(phase.replace("_", "\\n"), (x, 0), xytext=(0, 24 if x % 2 else -42), textcoords="offset points", ha="center", fontsize=8, weight="bold")
+                ax.set(xlim=(0.5, len(xs) + 0.5), ylim=(-0.65, 0.65), title=title)
+                ax.set_yticks([])
+                ax.set_xticks(xs)
+
+            fig, axes = plt.subplots(1, 2, figsize=(12, 4.2))
+            plot_path(axes[0], recovery_result["trace"], "Corrected: evidence then finish")
+            plot_path(axes[1], failed_result.trace, "Repeated failure: budget stops the loop")
+            fig.suptitle("The same graph can complete safely or stop safely", weight="bold", fontsize=16)
             plt.tight_layout()
             plt.show()
-            print(failed_result.trace[-1].summary)
             """,
         ),
         _markdown(
-            "lesson09-016",
+            "lesson09-012",
             """
             ## Verification
 
-            Verify behavior, not appearance:
+            Verify behavior: `PE` fails, `P/E` succeeds, both companies provide evidence, one error is recorded on the successful path, and the repeated failure stops after two executed calls.
 
-            - first executed metric is `PE` and fails with `unsupported_metric`;
-            - second executed metric is `P/E` and succeeds;
-            - both companies have successful observations before the answer;
-            - exactly one error is recorded in the successful run;
-            - repeated invalid calls stop after the allowed retry; and
-            - every successful value retains date and source.
+            ## Challenge
+
+            Add a `failed_calls` set and prevent an identical failed request from reaching the tool twice. Then decide which failures belong to model correction, infrastructure retry, human input, or immediate stop.
             """,
         ),
         _code(
-            "lesson09-017",
+            "lesson09-013",
             """
-            executed_events = [
-                event
-                for event in recovery_result.trace
+            executed = [
+                event for event in recovery_result["trace"]
                 if event.phase in {"tool_error", "tool_ok"}
             ]
-            assert recovery_result.status == "completed"
-            assert recovery_result.error_count == 1
-            assert recovery_result.tool_calls == 3
-            assert [event.request.metric for event in executed_events] == ["PE", "P/E", "P/E"]
-            assert executed_events[0].observation.error_code == "unsupported_metric"
+            successful = [
+                event.observation.payload for event in recovery_result["trace"]
+                if event.phase == "tool_ok" and event.observation is not None
+            ]
+            assert recovery_result["status"] == "completed"
+            assert recovery_result["error_count"] == 1
+            assert recovery_result["tool_calls"] == 3
+            assert [event.request.metric for event in executed] == ["PE", "P/E", "P/E"]
             assert {item["ticker"] for item in successful} == {"NVDA", "SU.PA"}
             assert all(item["as_of"] and item["source"] for item in successful)
             assert failed_result.status == "retry_budget_exhausted"
@@ -406,55 +384,32 @@ def build_notebook():
             """,
         ),
         _markdown(
-            "lesson09-018",
-            """
-            ### Knowledge check
-
-            1. Why is `unsupported_metric` more useful than a generic exception?
-            2. Which component executes the financial tool?
-            3. Why count model-caused validation failures separately from infrastructure errors?
-            4. What does `MAX_RETRIES` guarantee, and what does it not guarantee?
-            5. Which trace events prove the final comparison is supported?
-
-            Answers: it contains corrective context; Python executes tools; the recovery strategy differs; it bounds retries but not quality; require both successful company observations before `finish`.
-            """,
-        ),
-        _markdown(
-            "lesson09-019",
-            """
-            ## Challenge
-
-            Add `failed_calls` to the state. Before executing a request, detect whether the same tool and arguments have already failed. Return a structured observation that tells the model not to repeat it.
-
-            Advanced option: classify `validation_error`, `timeout`, and `rate_limit`. Decide which errors should consume the model-correction budget and which need an infrastructure retry policy.
-            """,
-        ),
-        _markdown(
-            "lesson09-020",
+            "lesson09-014",
             """
             ## Capstone integration
 
-            Lesson 09 contributes:
+            Lesson 09 contributes explicit state, typed tool feedback, conditional recovery routes, evidence-aware finishing, and bounded retry budgets. Lesson 10 exposes the same financial contracts through MCP.
 
-            - explicit LangGraph state;
-            - agent and deterministic tool nodes;
-            - structured error feedback;
-            - conditional recovery routes; and
-            - bounded retry and tool-call budgets.
+            ## Recap
 
-            Lesson 10 exposes financial resources and tools through MCP so the application can discover capabilities instead of importing every function directly.
+            - External feedback can change the next observable action.
+            - Self-correction does not guarantee truth or better hidden reasoning.
+            - Different failures need different owners and recovery strategies.
+            - Application code owns validation, budgets, evidence checks, and stopping.
             """,
         ),
         _markdown(
-            "lesson09-021",
+            "lesson09-015",
             """
-            ## Recap
+            ### Knowledge check
 
-            - Prompt instructions reduce tool errors but do not eliminate them.
-            - Precise error observations help a model correct its next action.
-            - LangGraph makes state, routes, and stop conditions explicit.
-            - Application Python validates and executes every financial tool.
-            - Self-correction is useful only when retries remain bounded and traces remain inspectable.
+            1. Why is `unsupported_metric` better than a generic exception?
+            2. Which errors should loop back to the model?
+            3. Why should timeouts use a separate policy?
+            4. What do `MAX_RETRIES` and `MAX_TOOL_CALLS` guarantee?
+            5. Which trace events support the final comparison?
+
+            **Answers:** it carries corrective context; only model-correctable errors; transient failures need backoff; budgets bound behavior rather than quality; require successful observations for both companies before finish.
             """,
         ),
     ]
@@ -462,10 +417,8 @@ def build_notebook():
 
 
 def main() -> None:
-    notebook = build_notebook()
-    OUTPUT.parent.mkdir(parents=True, exist_ok=True)
-    nbformat.write(notebook, OUTPUT)
-    print(f"Wrote {OUTPUT.relative_to(ROOT)} with {len(notebook.cells)} cells")
+    nbformat.write(build_notebook(), OUTPUT)
+    print(OUTPUT)
 
 
 if __name__ == "__main__":

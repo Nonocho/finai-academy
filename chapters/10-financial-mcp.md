@@ -1,23 +1,94 @@
-# Lesson 10 — Financial MCP
+# Lesson 10 — Connect Financial Tools with MCP
 
 **First Finance - Arnaud Demes**
 **Day 2 · 11:15–12:00 · 10-minute concept deck + 30-minute notebook + 5-minute verification and debrief**
 
 ## Instructor outcome
 
-Students connect a local financial application to one MCP server over `stdio`, discover its declared capabilities at runtime, and use them within a host-owned permission boundary. The NVIDIA (`NVDA`) and Schneider Electric (`SU.PA`) examples are read-only, deterministic, and grounded in controlled course fixtures. This lesson does not demonstrate trading, portfolio changes, or an investment recommendation.
+Students connect a financial application to one real local MCP server over `stdio`, discover the server's declared resources, tools, and prompts, and call read-only capabilities inside a host-owned trust boundary.
 
-The full Lesson 10 route is ready for an instructor-led test class. Use the
-nine-slide deck to frame the notebook; do not read the slides aloud.
+The full Lesson 10 route is ready for an instructor-led test class. Use the **eleven-slide deck** to explain the boundary, then let the notebook prove it:
 
 ```text
-host starts local server → client discovers capabilities → host reads context
-→ client calls read-only tools → user reviews prompt → host verifies trace
+host starts server → client lists capabilities → host inspects schemas
+→ host applies policy → client reads or calls → host records evidence
 ```
+
+The controlled NVIDIA (`NVDA`) and Schneider Electric (`SU.PA`) fixtures keep classroom output reproducible. They are derived from tracked course documents, not live market feeds, trading systems, or investment recommendations.
+
+## The lesson in one sentence
+
+**MCP standardizes how capabilities are discovered and invoked; it does not decide whether they are trusted or permitted.**
+
+## Why MCP exists
+
+A direct Python import couples the host to one language, module path, implementation, and release cycle. MCP moves the boundary to a declared protocol contract:
+
+- the **host** owns the user experience, model access, lifecycle, permission, and final answer;
+- the **client** carries MCP requests and responses for one server connection;
+- the **server** declares focused resources, tools, and prompts;
+- the **transport** carries protocol messages locally or over a network.
+
+The benefit is interoperability, not automatic safety. A discovered capability remains untrusted input until the host applies its own policy.
+
+## Current SDK and protocol note
+
+The course pins the official MCP Python SDK v2 line with `mcp[cli]>=2,<3`. In v2, the high-level server class is:
+
+```python
+from mcp.server import MCPServer
+```
+
+Older v1 tutorials use `FastMCP`. The familiar decorators remain:
+
+```python
+@server.resource("finance://coverage")
+@server.tool()
+@server.prompt()
+```
+
+The current MCP `2026-07-28` specification has a stateless protocol core and a discovery RPC. The course SDK handles those protocol details. Students focus on the durable application boundary: discover names and schemas, apply host policy, call, and preserve evidence.
+
+## Resources, tools, and prompts have different controllers
+
+| Primitive | Typical controller | Lesson capability | Purpose |
+|---|---|---|---|
+| Resource | Application | `finance://coverage` | Read the controlled data boundary before choosing a tool. |
+| Tool | Model + host approval | `get_company_metric` | Return one dated, source-bearing metric. |
+| Tool | Model + host approval | `search_financial_documents` | Search versioned evidence and retain document and evidence IDs. |
+| Prompt | User | `compare_companies` | Render a reusable comparison request for review. |
+
+The expected catalog is exactly one resource, two tools, and one prompt.
+
+## Discovery is not permission
+
+The host must still enforce five controls:
+
+1. **Approval** — require user confirmation for consequential actions.
+2. **Authentication** — establish the identity allowed to access a remote server.
+3. **Allowlist** — permit only capabilities relevant to the application.
+4. **Argument validation** — validate names and arguments against discovered schemas and business rules.
+5. **Evidence and audit** — retain provenance, results, refusals, and policy decisions.
+
+Tool descriptions and server-returned content are data, not trusted instructions. A malicious or irrelevant server can still advertise a tool.
+
+## Local stdio and remote MCP
+
+| Boundary | Local `stdio` | Remote MCP |
+|---|---|---|
+| Entry point | Host starts a subprocess | Client or OpenAI receives a `server_url` |
+| Location | Same machine | Network service |
+| Transport concern | Process lifecycle and clean protocol streams | TLS, availability, latency, rate limits, and deployment |
+| Identity | Local process identity is not authentication | OAuth or another supported authorization design may be required |
+| Permission | Host policy | Approval policy plus host and service authorization |
+
+`stdio` is a local transport, not authentication. Streamable HTTP is the production extension discussed in class; it requires a separate authentication, authorization, approval, monitoring, and audit design.
+
+OpenAI's Responses API can use connectors and remote MCP servers through the `mcp` tool type. A remote server provides a `server_url`; the developer chooses whether tool calls require approval. This is an extension of the lesson's local boundary, not a replacement for the host policy.
 
 ## Before class
 
-Run these commands from the repository root:
+Run from the repository root:
 
 ```bash
 uv sync --frozen --extra ai --extra rag --extra finance --extra evaluation --extra dev
@@ -27,182 +98,151 @@ uv run python scripts/validate_notebooks.py notebooks/10_financial_mcp.ipynb
 uv run jupyter lab
 ```
 
-Open `notebooks/10_financial_mcp.ipynb`. Offline mode is the core lesson: it uses the local server and requires neither network nor a model. For optional Ollama, prepare it before class:
+Open `notebooks/10_financial_mcp.ipynb` and run it from the repository root.
+
+## Live model extension
+
+The core lesson requires neither network access nor a model. Live mode lets a model propose one selection from the discovered tool catalog; Python still enforces discovery and the allowlist.
+
+For OpenAI, keep the key in the project `.env`. The maintained default is `gpt-5.6-luna`:
+
+```bash
+uv run python scripts/execute_notebooks.py \
+  notebooks/10_financial_mcp.ipynb \
+  --mode live \
+  --provider openai \
+  --output-dir /private/tmp/finai-lesson10-openai
+```
+
+For Ollama:
 
 ```bash
 ollama pull qwen3:8b
-FINAI_LIVE_MODE=1 FINAI_MODEL_PROVIDER=ollama FINAI_CHAT_MODEL=qwen3:8b \
-  uv run python scripts/execute_notebooks.py notebooks/10_financial_mcp.ipynb \
-  --mode live --provider ollama --output-dir /private/tmp/finai-lesson10-ollama
+uv run python scripts/execute_notebooks.py \
+  notebooks/10_financial_mcp.ipynb \
+  --mode live \
+  --provider ollama \
+  --output-dir /private/tmp/finai-lesson10-ollama
 ```
 
-For an optional OpenAI comparison, configure the key outside the notebook and repository:
-
-```bash
-export OPENAI_API_KEY="..."
-FINAI_LIVE_MODE=1 FINAI_MODEL_PROVIDER=openai FINAI_CHAT_MODEL=gpt-5-mini \
-  uv run python scripts/execute_notebooks.py notebooks/10_financial_mcp.ipynb \
-  --mode live --provider openai --output-dir /private/tmp/finai-lesson10-openai
-```
-
-Never display, print, trace, or commit the key. A live provider is optional; the shared gateway gives Ollama and OpenAI the same discovered-tool contract.
-
-## Static recovery catalog
-
-Use this table only when local discovery cannot run. It is a teaching fallback, not a substitute for runtime discovery or host policy. The controlled evidence fixture is `assets/course-data/mcp/lesson10_evidence_catalog_v1.json`.
-
-| Primitive | Controller | Expected capability | Classroom purpose |
-|---|---|---|---|
-| Resource | Application | `finance://coverage` | Read the controlled coverage boundary before tool selection. |
-| Tool | Model + host approval | `get_company_metric` | Read one dated, source-bearing metric. |
-| Tool | Model + host approval | `search_financial_documents` | Find controlled evidence with document and evidence IDs. |
-| Prompt | User | `compare_companies` | Render a reusable comparison request for review. |
-
-The expected discovery result is exactly one resource, two tools, and one prompt. The host must still allowlist a tool name, validate its arguments, and apply permissions.
+Never print, trace, or commit an API key.
 
 ## 10-minute concept deck
 
-The certified nine-slide `decks/10-financial-mcp.pptx` deck frames this route.
-Use it to introduce the notebook; do not read the slides aloud.
+The certified eleven-slide `decks/10-financial-mcp.pptx` deck follows one cumulative argument:
 
-| Time | Slide | Instructor job |
+| Time | Slide | Teaching job |
 |---:|---:|---|
-| 0:00–1:00 | 1 | State the question: discover capabilities instead of importing server functions. |
-| 1:00–2:00 | 2 | Contrast a direct Python import with a declared process boundary. |
-| 2:00–3:15 | 3 | Name host, client, server, and transport; the host owns lifecycle and permissions. |
-| 3:15–4:30 | 4 | Separate resources, tools, and prompts by their controller. |
-| 4:30–5:30 | 5 | Preview one resource, two read-only tools, and one prompt. |
-| 5:30–6:45 | 6 | Explain runtime discovery: list, inspect schema, decide, call. |
-| 6:45–7:45 | 7 | Show local `stdio`: the host starts and closes a subprocess transport. |
-| 7:45–9:00 | 8 | State the rule: discovery is not permission; allowlist and validate. |
-| 9:00–10:00 | 9 | Set the production boundary and preview the Lesson 11 handoff. |
-
-The rows total 10 minutes.
-
-## Version and transport note
-
-This course uses the official MCP Python SDK v2 name `MCPServer`. Older v1 tutorials, including the reviewed MLExpert inspiration, may use `FastMCP`. The decorator pattern remains familiar: `@mcp.resource()`, `@mcp.tool()`, and `@mcp.prompt()` register declared capabilities. Do not change the notebook to the earlier import name.
-
-The classroom core uses local `stdio`: the host starts one subprocess and the client carries protocol messages on standard streams. `stdio` is local transport, not authentication. Streamable HTTP is a production extension only; it needs separate authentication, authorization, rate limits, audit logging, and deployment controls.
+| 0:00–0:45 | 1 | State the outcome: connect financial tools through a discoverable boundary. |
+| 0:45–1:40 | 2 | Explain why the host should discover capabilities instead of importing implementation. |
+| 1:40–2:35 | 3 | Identify host, client, server, and the capability boundary. |
+| 2:35–3:30 | 4 | Separate resources, tools, and prompts by controller. |
+| 3:30–4:30 | 5 | Use an official MCP visual to show the real ecosystem and development surface. |
+| 4:30–5:30 | 6 | Follow `list → inspect schema → apply policy → call → record`. |
+| 5:30–6:30 | 7 | Show the real financial catalog and provenance-bearing call. |
+| 6:30–7:30 | 8 | State the security rule: discovery returns schemas, not trust. |
+| 7:30–8:30 | 9 | Compare local `stdio` with OpenAI connectors and remote MCP servers. |
+| 8:30–9:15 | 10 | Quiz. |
+| 9:15–10:00 | 11 | Correct the quiz and transition to Lesson 11. |
 
 ## 30-minute notebook route
 
-The route maps to checked-in stable cell IDs and visible outputs. Do not create a second server or replace the controlled fixture with live market data.
-
-| Time | Cells | Instructor action | Expected visible output |
-|---:|---|---|---|
-| 0:00–3:00 | `lesson10-000`–`lesson10-003` | Connect Lesson 09 direct imports to MCP discovery, then run setup. | Lesson context, `offline fixture · deterministic course run`, `Transport: local stdio`, read-only boundary. |
-| 3:00–6:00 | `lesson10-004`–`lesson10-005` | Compare direct imports with the host-client-server boundary. | Figure 1: direct import versus MCP discovery. |
-| 6:00–9:00 | `lesson10-006`–`lesson10-008` | Inspect contracts and four `MCPServer` registrations; identify controllers. | Two contract tables and Figure 2 control matrix. |
-| 9:00–13:00 | `lesson10-009`–`lesson10-011` | Start the real lifecycle; name each phase before running it. | `First Finance Research`; one resource, two tools, one prompt; Figure 3 `stdio` sequence. |
-| 13:00–16:00 | `lesson10-012`–`lesson10-014` | Read discovery as input to host policy, not permission. | Capability table plus Figure 4 with 1 resource, 2 tools, 1 prompt. |
-| 16:00–20:00 | `lesson10-015`–`lesson10-016` | Read `finance://coverage`, inspect a metric, search documents, render `compare_companies`. | Coverage, dated metric with source, document hits with evidence IDs, rendered user prompt. |
-| 20:00–24:00 | `lesson10-017`–`lesson10-018` | Run the maintained invalid alias and discuss the typed result. | `unsupported_metric`, valid `P/E`, retryability, trace table, Figure 5. |
-| 24:00–26:00 | `lesson10-019`–`lesson10-020` | Show live selection only if ready; otherwise keep offline selection. | Offline allowlisted choice, or Ollama/OpenAI structured selection validated by Python. |
-| 26:00–28:00 | `lesson10-021`–`lesson10-022` | Verify each observable contract. | `LESSON_10_PASS`. |
-| 28:00–30:00 | `lesson10-023`–`lesson10-025` | Knowledge check, capstone increment, and recap. | Challenge policy, capstone boundary, Lesson 11 handoff. |
-
-The rows total 30 minutes. The core runs without a model. In live mode, the gateway receives only discovered tool names, descriptions, and input schemas; Python checks the returned name against runtime discovery and the allowlist.
-
-## 5-minute verification and debrief
-
-| Time | Instructor action | Evidence |
+| Time | Cells | Visible result |
 |---:|---|---|
-| 0:00–2:00 | Confirm final assertions and ask a learner to read the catalog aloud. | Exactly `finance://coverage`, `get_company_metric`, `search_financial_documents`, and `compare_companies`; `LESSON_10_PASS`. |
-| 2:00–3:30 | Ask who permitted the tool call and what discovery proves. | The host owns permission; discovery describes an untrusted offer. |
-| 3:30–5:00 | Connect the boundary to capstone and next lesson. | The host retains evidence, policy, and final synthesis. |
+| 0:00–4:00 | `lesson10-000`–`lesson10-002` | Learning contract, runtime, local `stdio`, read-only boundary. |
+| 4:00–8:00 | `lesson10-003`–`lesson10-004` | Real `MCPServer` declarations and direct import versus MCP visual. |
+| 8:00–15:00 | `lesson10-005`–`lesson10-006` | Visible `Client`, `list_tools`, `list_resources`, `list_prompts`, `read_resource`, `call_tool`, and `get_prompt` code. |
+| 15:00–19:00 | `lesson10-007` | Discovered names, schemas, and control model. |
+| 19:00–22:00 | `lesson10-008`–`lesson10-009` | Coverage, metric, evidence hits, and rendered prompt with provenance. |
+| 22:00–26:00 | `lesson10-010`–`lesson10-011` | Allowlist refusal, typed `unsupported_metric`, protocol trace, local versus remote boundary. |
+| 26:00–28:00 | `lesson10-012`–`lesson10-013` | Optional Ollama or OpenAI `gpt-5.6-luna` tool selection. |
+| 28:00–30:00 | `lesson10-014`–`lesson10-015` | `LESSON_10_PASS`, knowledge check, and Lesson 11 handoff. |
 
-The rows total 5 minutes. The slot is 10 + 30 + 5 = 45 minutes, from 11:15 to 12:00.
+## Static recovery catalog
 
-## Student checkpoints
+Use this only if the local server cannot start. It is a teaching fallback, not evidence that discovery occurred.
 
-1. Which component opens and closes the local `stdio` transport? The host, through its MCP client.
-2. Which primitive should the host read before a model chooses a tool? The application-controlled `finance://coverage` resource.
-3. Why may a discovered tool still be refused? Discovery does not establish trust, business permission, or safe arguments.
-4. Why use `PE`? It is a typed `unsupported_metric` result that reveals `P/E`, rather than a notebook crash.
-5. Does an Ollama or OpenAI selection replace host policy? No. It is proposed data; Python validates it against discovery and the allowlist.
+| Primitive | Name |
+|---|---|
+| Resource | `finance://coverage` |
+| Tool | `get_company_metric` |
+| Tool | `search_financial_documents` |
+| Prompt | `compare_companies` |
+
+The controlled fallback fixture is `assets/course-data/mcp/lesson10_evidence_catalog_v1.json`.
+
+## No-network fallback
+
+```bash
+uv run python scripts/execute_notebooks.py \
+  notebooks/10_financial_mcp.ipynb \
+  --mode offline \
+  --output-dir /private/tmp/finai-lesson10-offline
+```
+
+The output must include:
+
+```text
+catalog=1 resource | 2 tools | 1 prompt
+allowlist_refusal=blocked
+LESSON_10_PASS
+```
+
+This proves the local protocol and teaching contract. It does not prove live model quality or live financial data.
 
 ## Recovery paths
 
 ### Missing SDK or stale environment
 
-Run the frozen sync command from **Before class**, restart the notebook kernel, then recheck:
+Run the frozen sync command from **Before class**, restart the kernel, and verify that `MCPServer` imports. Do not switch the notebook back to `FastMCP`.
 
-```bash
-uv run python -c "from mcp.server import MCPServer; print(MCPServer.__name__)"
-```
+### Subprocess import fails
 
-If this does not print `MCPServer`, restore the maintained environment. Do not patch imports in the notebook. Until it is fixed, use the **Static recovery catalog** in this chapter to explain the expected capability boundary.
-
-### Subprocess cannot import the package
-
-Start Jupyter and the executor from the repository root, not `notebooks/`. Confirm the same environment can import the server:
+Start Jupyter and the notebook executor from the repository root. Confirm:
 
 ```bash
 uv run python -c "import finai_academy.financial_mcp_server as server; print(server.mcp.name)"
 ```
 
-Restart the kernel after a sync. If it still fails, use the **Static recovery catalog** in this chapter to teach the lifecycle, catalog, and policy; do not replace the subprocess with direct server-function calls.
-
 ### Protocol output is corrupted
 
-The server's stdout is the `stdio` protocol stream. Do not add `print()` calls, debug banners, or application logs to `financial_mcp_server.py`; send diagnostics to stderr outside the protocol path. Revert local debugging, restart the kernel, and rerun `lesson10-010`.
+The server's stdout carries MCP messages. Do not add debug `print()` calls to `financial_mcp_server.py`; send diagnostics to stderr.
 
 ### Discovery is empty
 
-Check `lesson10-010`: a healthy run lists one resource, two tools, and one prompt. Confirm the import check above and rerun from the repository root. If the catalog remains empty, use the **Static recovery catalog** in this chapter and the controlled evidence fixture at `assets/course-data/mcp/lesson10_evidence_catalog_v1.json`, explicitly labeled as recovery material.
+Verify that the server module imports, restart the kernel, and rerun `lesson10-006`. If necessary, teach from the **Static recovery catalog** and label it explicitly as fallback material.
 
 ### Unsupported metric
 
-`metric="PE"` in `lesson10-018` is intentional. Show `unsupported_metric`, `retryable=true`, and `P/E`, then correct it to `P/E`. Do not suppress it or turn it into an empty result.
+`metric="PE"` is intentional. The expected typed result is `unsupported_metric`, with `P/E` visible and `retryable=true`.
 
-### Ollama unavailable or invalid live output
+### Live provider is unavailable
 
-Do not spend the core lesson debugging a local model. Leave `FINAI_LIVE_MODE` unset and explain the allowlisted selection using the **Static recovery catalog**. For malformed live output, retry the cell once; if it fails again, keep the schema and use offline mode. Record the provider issue after class. OpenAI is optional under the same rule.
-
-## No-network fallback
-
-Use the same local server, controlled fixture, and recorded valid selection:
-
-```bash
-uv run python scripts/execute_notebooks.py notebooks/10_financial_mcp.ipynb \
-  --mode offline --output-dir /private/tmp/finai-lesson10-offline
-```
-
-The output must include `offline fixture · deterministic course run` and `LESSON_10_PASS`. This verifies teaching and protocol contracts, not live model quality or live financial data. If the local command cannot run, teach from the **Static recovery catalog** and `assets/course-data/mcp/lesson10_evidence_catalog_v1.json`; do not claim that discovery or notebook execution occurred.
+Do not debug a provider during the core lesson. Leave live mode disabled and use the deterministic offline selection. OpenAI and Ollama are optional extensions.
 
 ## Skip if late
 
-If the class is five minutes late, keep this route:
+Keep four moments:
 
-1. Run `lesson10-010` for discovery and name the host-owned lifecycle.
-2. Run `lesson10-016` and read the `finance://coverage` resource.
-3. Point out the successful `get_company_metric` result with its date and source.
-4. Show the rendered `compare_companies` prompt as the user-controlled primitive.
-5. State the trust rule: a discovered tool remains untrusted until the host allowlists its name, validates arguments, and applies permissions.
+1. Show the four `MCPServer` declarations in `lesson10-003`.
+2. Run the real discovery and calls in `lesson10-006`.
+3. Run the refusal and typed error in `lesson10-011`.
+4. State the rule: discovery returns schemas, not trust.
 
-Skip the second visual walkthrough, extended search discussion, and live extension. Keep the `PE` failure as homework if necessary, but not the trust-boundary debrief.
-
-## Read-only safety boundary
-
-- The server exposes exactly one concrete resource, two read-only tools, and one prompt.
-- The notebook contains controlled teaching data, not a market feed or investment advice.
-- No orders, transactions, rebalancing, portfolio mutation, credentials, local files, or personal data cross the protocol boundary.
-- Preserve company, metric, date, source, document ID, and evidence ID in successful observations.
-- Treat tool descriptions and server-returned content as untrusted data.
-- Permit a tool only when it is discovered, statically allowlisted, valid for the request, and approved by host policy.
+Skip the extended evidence tables and live provider comparison.
 
 ## Capstone increment and Lesson 11 transition
 
-Lesson 10 adds a discoverable external-capability boundary to the Financial Analyst Copilot: `MCPServer` declarations, a real local `stdio` lifecycle, runtime discovery, host allowlisting, and provenance-bearing results. It does not add authority to act on a portfolio.
+Lesson 10 adds a discoverable read-only capability boundary to the Financial Analyst Copilot. The server exposes evidence; the host owns permission, validation, trace capture, and final synthesis.
 
-Lesson 11 builds a plan-and-execute analyst across these discovered read-only capabilities. The planner may propose a sequence; the host owns permissions, validation, trace capture, and final evidence-backed synthesis.
+Lesson 11 plans across these discovered capabilities. A planner may propose a sequence, but it never inherits authority merely because a tool was discovered.
 
 ## Sources
 
-- [Official MCP Python SDK](https://github.com/modelcontextprotocol/python-sdk)
+- [Official MCP Python SDK v2](https://github.com/modelcontextprotocol/python-sdk/blob/main/docs/index.md)
 - [Official MCP Python SDK first steps](https://github.com/modelcontextprotocol/python-sdk/blob/main/docs/get-started/first-steps.md)
-- [Model Context Protocol documentation](https://modelcontextprotocol.io/)
-- [MLExpert Academy MCP lesson, used as inspiration only](https://www.mlexpert.io/academy/v1/ai-agents/build-mcp-agent)
+- [MCP 2026-07-28 specification release](https://blog.modelcontextprotocol.io/posts/2026-07-28/)
+- [Model Context Protocol primitives](https://modelcontextprotocol.io/specification/2026-07-28/server)
+- [OpenAI MCP and Connectors](https://developers.openai.com/api/docs/guides/tools-connectors-mcp)
+- [OpenAI GPT-5.6 Luna](https://developers.openai.com/api/docs/models/gpt-5.6-luna)
 - [Lesson 09 instructor chapter](09-self-correcting-agent.md)
-- [Lesson 10 design](../docs/superpowers/specs/2026-08-21-lesson-10-financial-mcp-design.md)

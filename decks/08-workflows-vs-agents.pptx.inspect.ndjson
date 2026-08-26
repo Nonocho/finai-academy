@@ -1,0 +1,251 @@
+{"kind":"deck","id":"pr/3szkh7","name":"Deck"}
+{"kind":"layout","layoutId":"/ppt/slideMasters/slideMaster1.xml","name":"Master","type":"master"}
+{"kind":"layout","layoutId":"/ppt/slideLayouts/slideLayout1.xml","name":"Title Slide","type":"title"}
+{"kind":"slide","id":"sl/y90nupkv","slide":1,"title":"FIRST FINANCE","textShapes":5}
+{"kind":"shape","id":"sh/sryl4zqx","slide":1,"bbox":[102,82,132,8]}
+{"kind":"textbox","id":"sh/547294r6","slide":1,"text":"FIRST FINANCE","textPreview":"FIRST FINANCE","textChars":13,"textLines":1,"bbox":[102,112,300,44]}
+{"kind":"textbox","id":"sh/k3yl0zql","slide":1,"text":"Who Chooses the Next Step?","textPreview":"Who Chooses the Next Step?","textChars":26,"textLines":1,"bbox":[102,248,1396,94]}
+{"kind":"textbox","id":"sh/7qp4be9c","slide":1,"text":"Workflows use code-defined routes. Agents let the model direct execution.","textPreview":"Workflows use code-defined routes. Agents let the model direct execution.","textChars":73,"textLines":1,"bbox":[102,374,1180,54]}
+{"kind":"textbox","id":"sh/65g3298r","slide":1,"text":"SESSION 08  ·  10 MIN CONCEPTS + 30 MIN NOTEBOOK","textPreview":"SESSION 08  ·  10 MIN CONCEPTS + 30 MIN NOTEBOOK","textChars":48,"textLines":1,"bbox":[102,680,1000,42]}
+{"kind":"textbox","id":"sh/ts7md4r2","slide":1,"text":"First Finance - Arnaud Demes","textPreview":"First Finance - Arnaud Demes","textChars":28,"textLines":1,"bbox":[102,742,500,40]}
+{"kind":"notes","id":"nt/y90nupkv","slide":1,"text":"Opening: workflows and agents can use the same models and tools; the controller is different.\n\n[Sources]\n- chapters/08-workflows-vs-agents.md\n- https://www.anthropic.com/engineering/building-effective-agents\n[/Sources]"}
+{"kind":"slide","id":"sl/hwbqtkby","slide":2,"title":"Is the path known?","textShapes":21}
+{"kind":"textbox","id":"sh/ba9cn6l4","slide":2,"text":"Is the path known?","textPreview":"Is the path known?","textChars":18,"textLines":1,"bbox":[102,70,500,36]}
+{"kind":"textbox","id":"sh/9072xkry","slide":2,"text":"Who chooses the next step?","textPreview":"Who chooses the next step?","textChars":26,"textLines":1,"bbox":[102,124,1396,82]}
+{"kind":"textbox","id":"sh/ozy1ofad","slide":2,"text":"WORKFLOW","textPreview":"WORKFLOW","textChars":8,"textLines":1,"bbox":[108,294,260,38]}
+{"kind":"shape","id":"sh/b29kza94","slide":2,"bbox":[390,288,250,68]}
+{"kind":"textbox","id":"sh/a10jqpsj","slide":2,"text":"Python code","textPreview":"Python code","textChars":11,"textLines":1,"bbox":[400,298,230,48]}
+{"kind":"shape","id":"sh/x4r21kru","slide":2,"bbox":[646,288,210,68]}
+{"kind":"textbox","id":"sh/w3i1sfa9","slide":2,"text":"Coded by you","textPreview":"Coded by you","textChars":12,"textLines":1,"bbox":[656,298,190,48]}
+{"kind":"shape","id":"sh/r65knqtk","slide":2,"bbox":[862,288,176,68]}
+{"kind":"textbox","id":"sh/q5wjelsz","slide":2,"text":"Uses results","textPreview":"Uses results","textChars":12,"textLines":1,"bbox":[872,298,156,48]}
+{"kind":"shape","id":"sh/ove9o7yd","slide":2,"bbox":[1044,288,112,68]}
+{"kind":"textbox","id":"sh/9wnqhczy","slide":2,"text":"Known route","textPreview":"Known route","textChars":11,"textLines":1,"bbox":[1054,298,92,48]}
+{"kind":"textbox","id":"sh/mtwrmxg7","slide":2,"text":"PREDICTABLE","textPreview":"PREDICTABLE","textChars":11,"textLines":1,"bbox":[1260,294,230,38]}
+{"kind":"textbox","id":"sh/nu58f2hs","slide":2,"text":"AGENT","textPreview":"AGENT","textChars":5,"textLines":1,"bbox":[108,448,260,38]}
+{"kind":"shape","id":"sh/wjy9sry9","slide":2,"bbox":[390,442,330,68]}
+{"kind":"textbox","id":"sh/xk7qlczu","slide":2,"text":"One model","textPreview":"One model","textChars":9,"textLines":1,"bbox":[400,452,310,48]}
+{"kind":"shape","id":"sh/ahwrqhgj","slide":2,"bbox":[726,442,310,68]}
+{"kind":"textbox","id":"sh/bip8jmho","slide":2,"text":"Chosen by the model","textPreview":"Chosen by the model","textChars":19,"textLines":1,"bbox":[736,452,290,48]}
+{"kind":"shape","id":"sh/cnupgny5","slide":2,"bbox":[1042,442,210,68]}
+{"kind":"textbox","id":"sh/do3q9szq","slide":2,"text":"Selects tools","textPreview":"Selects tools","textChars":13,"textLines":1,"bbox":[1052,452,190,48]}
+{"kind":"textbox","id":"sh/t8byxkn2","slide":2,"text":"VARIABLE","textPreview":"VARIABLE","textChars":8,"textLines":1,"bbox":[1260,448,230,38]}
+{"kind":"textbox","id":"sh/s72xofmh","slide":2,"text":"VALUE TEST","textPreview":"VALUE TEST","textChars":10,"textLines":1,"bbox":[108,602,260,38]}
+{"kind":"shape","id":"sh/76twva5c","slide":2,"bbox":[390,596,348,68]}
+{"kind":"textbox","id":"sh/65kfmpor","slide":2,"text":"Quality gain?","textPreview":"Quality gain?","textChars":13,"textLines":1,"bbox":[400,606,328,48]}
+{"kind":"shape","id":"sh/hcvy14ne","slide":2,"bbox":[744,596,502,68]}
+{"kind":"textbox","id":"sh/gbmxszmt","slide":2,"text":"Must beat workflow baseline","textPreview":"Must beat workflow baseline","textChars":27,"textLines":1,"bbox":[754,606,482,48]}
+{"kind":"textbox","id":"sh/fadgzu58","slide":2,"text":"MEASURE IT","textPreview":"MEASURE IT","textChars":10,"textLines":1,"bbox":[1260,602,230,38]}
+{"kind":"shape","id":"sh/u94fqp4n","slide":2,"bbox":[390,296,3,366]}
+{"kind":"shape","id":"sh/p0vy54na","slide":2,"bbox":[108,718,1382,64]}
+{"kind":"textbox","id":"sh/4zmxwzmp","slide":2,"text":"Tool output does not define an agent. The controller does.","textPreview":"Tool output does not define an agent. The controller does.","textChars":58,"textLines":1,"bbox":[144,728,1310,42]}
+{"kind":"shape","id":"sh/mlgvq147","slide":2,"bbox":[90,829,1420,3]}
+{"kind":"shape","id":"sh/nmpcj6ls","slide":2,"bbox":[90,829,840,4]}
+{"kind":"textbox","id":"sh/onydsbmd","slide":2,"text":"First Finance - Arnaud Demes","textPreview":"First Finance - Arnaud Demes","textChars":28,"textLines":1,"bbox":[102,846,390,34]}
+{"kind":"textbox","id":"sh/9o7ulg3y","slide":2,"text":"COMPARE","textPreview":"COMPARE","textChars":7,"textLines":1,"bbox":[1280,846,190,34]}
+{"kind":"textbox","id":"sh/a9gvulkj","slide":2,"text":"02","textPreview":"02","textChars":2,"textLines":1,"bbox":[1484,846,28,34]}
+{"kind":"notes","id":"nt/hwbqtkby","slide":2,"text":"Use the rows to separate code-defined control from model-directed control.\n\n[Sources]\n- https://www.anthropic.com/engineering/building-effective-agents\n- https://docs.langchain.com/oss/python/langgraph/workflows-agents\n- chapters/08-workflows-vs-agents.md\n[/Sources]"}
+{"kind":"slide","id":"sl/ofy9wn61","slide":3,"title":"WORKFLOW PROOF","textShapes":8}
+{"kind":"textbox","id":"sh/czmhc7id","slide":3,"text":"WORKFLOW PROOF","textPreview":"WORKFLOW PROOF","textChars":14,"textLines":1,"bbox":[102,70,500,36]}
+{"kind":"textbox","id":"sh/cza94vmx","slide":3,"text":"Workflows can use results, branch and stop","textPreview":"Workflows can use results, branch and stop","textChars":42,"textLines":1,"bbox":[102,124,1396,82]}
+{"kind":"textbox","id":"sh/tgry9ofu","slide":3,"text":"If you can draw every step before the run, use a workflow.","textPreview":"If you can draw every step before the run, use a workflow.","textChars":58,"textLines":1,"bbox":[250,652,1100,48]}
+{"kind":"textbox","id":"sh/a9kfadwn","slide":3,"text":"Anthropic · prompt chaining","textPreview":"Anthropic · prompt chaining","textChars":27,"textLines":1,"bbox":[198,718,470,34]}
+{"kind":"textbox","id":"sh/batgjixs","slide":3,"text":"Fixed path + programmatic gate","textPreview":"Fixed path + programmatic gate","textChars":30,"textLines":1,"bbox":[924,718,500,34]}
+{"kind":"shape","id":"sh/l4fi9cza","slide":3,"bbox":[90,829,1420,3]}
+{"kind":"shape","id":"sh/k3m1g7yp","slide":3,"bbox":[90,829,840,4]}
+{"kind":"textbox","id":"sh/z2d07mh4","slide":3,"text":"First Finance - Arnaud Demes","textPreview":"First Finance - Arnaud Demes","textChars":28,"textLines":1,"bbox":[102,846,390,34]}
+{"kind":"textbox","id":"sh/y14jehgj","slide":3,"text":"COMPARE","textPreview":"COMPARE","textChars":7,"textLines":1,"bbox":[1280,846,190,34]}
+{"kind":"textbox","id":"sh/x0vi5czy","slide":3,"text":"03","textPreview":"03","textChars":2,"textLines":1,"bbox":[1484,846,28,34]}
+{"kind":"image","id":"im/gfy9wfil","slide":3,"name":"","alt":"Anthropic prompt-chaining workflow with a programmatic gate","bbox":[120,238,1360,380]}
+{"kind":"notes","id":"nt/ofy9wn61","slide":3,"text":"Anthropic's prompt-chaining example proves that workflow steps can consume previous outputs and include gates.\n\n[Sources]\n- https://www.anthropic.com/engineering/building-effective-agents\n- assets/lesson-08/anthropic-prompt-chaining.png\n[/Sources]"}
+{"kind":"slide","id":"sl/jyx0ra1s","slide":4,"title":"TYPED TOOL BOUNDARY","textShapes":21}
+{"kind":"textbox","id":"sh/vy5gbe14","slide":4,"text":"TYPED TOOL BOUNDARY","textPreview":"TYPED TOOL BOUNDARY","textChars":19,"textLines":1,"bbox":[102,70,500,36]}
+{"kind":"textbox","id":"sh/1cj2d8b6","slide":4,"text":"The model proposes. Python validates and runs.","textPreview":"The model proposes. Python validates and runs.","textChars":46,"textLines":1,"bbox":[102,124,1396,82]}
+{"kind":"textbox","id":"sh/0ba143al","slide":4,"text":"MODEL REQUEST","textPreview":"MODEL REQUEST","textChars":13,"textLines":1,"bbox":[108,294,260,38]}
+{"kind":"shape","id":"sh/rm1k7yt4","slide":4,"bbox":[390,288,250,68]}
+{"kind":"textbox","id":"sh/ql8jytsj","slide":4,"text":"tool name","textPreview":"tool name","textChars":9,"textLines":1,"bbox":[400,298,230,48]}
+{"kind":"shape","id":"sh/doj29oba","slide":4,"bbox":[646,288,210,68]}
+{"kind":"textbox","id":"sh/sna103ap","slide":4,"text":"arguments","textPreview":"arguments","textChars":9,"textLines":1,"bbox":[656,298,190,48]}
+{"kind":"shape","id":"sh/3ihk3et8","slide":4,"bbox":[862,288,176,68]}
+{"kind":"textbox","id":"sh/ih8ju9sn","slide":4,"text":"validate","textPreview":"validate","textChars":8,"textLines":1,"bbox":[872,298,156,48]}
+{"kind":"shape","id":"sh/kbm987y5","slide":4,"bbox":[1044,288,112,68]}
+{"kind":"textbox","id":"sh/5cva1cfq","slide":4,"text":"typed","textPreview":"typed","textChars":5,"textLines":1,"bbox":[1054,298,92,48]}
+{"kind":"textbox","id":"sh/i94r6xgz","slide":4,"text":"Invalid requests stop here","textPreview":"Invalid requests stop here","textChars":26,"textLines":1,"bbox":[1260,294,230,38]}
+{"kind":"textbox","id":"sh/jadsz2xk","slide":4,"text":"PYTHON EXECUTION","textPreview":"PYTHON EXECUTION","textChars":16,"textLines":1,"bbox":[108,448,260,38]}
+{"kind":"shape","id":"sh/w72947yt","slide":4,"bbox":[390,442,330,68]}
+{"kind":"textbox","id":"sh/x8vaxsfe","slide":4,"text":"get_market_price","textPreview":"get_market_price","textChars":16,"textLines":1,"bbox":[400,452,310,48]}
+{"kind":"shape","id":"sh/a5kr2xg3","slide":4,"bbox":[726,442,310,68]}
+{"kind":"textbox","id":"sh/v6tsv2xo","slide":4,"text":"convert_currency","textPreview":"convert_currency","textChars":16,"textLines":1,"bbox":[736,452,290,48]}
+{"kind":"shape","id":"sh/g36tgryd","slide":4,"bbox":[1042,442,210,68]}
+{"kind":"textbox","id":"sh/h4fa9wfy","slide":4,"text":"tool registry","textPreview":"tool registry","textChars":13,"textLines":1,"bbox":[1052,452,190,48]}
+{"kind":"textbox","id":"sh/p0batw72","slide":4,"text":"tool result","textPreview":"tool result","textChars":11,"textLines":1,"bbox":[1260,448,230,38]}
+{"kind":"textbox","id":"sh/oz29krqh","slide":4,"text":"TYPED OBSERVATION","textPreview":"TYPED OBSERVATION","textChars":17,"textLines":1,"bbox":[108,602,260,38]}
+{"kind":"shape","id":"sh/3ytsrmpw","slide":4,"bbox":[390,596,348,68]}
+{"kind":"textbox","id":"sh/2xkrih8b","slide":4,"text":"value · currency","textPreview":"value · currency","textChars":16,"textLines":1,"bbox":[400,606,328,48]}
+{"kind":"shape","id":"sh/1wbapc7q","slide":4,"bbox":[744,596,502,68]}
+{"kind":"textbox","id":"sh/gv29g7q5","slide":4,"text":"source · date","textPreview":"source · date","textChars":13,"textLines":1,"bbox":[754,606,482,48]}
+{"kind":"textbox","id":"sh/fu9sn2p0","slide":4,"text":"verified","textPreview":"verified","textChars":8,"textLines":1,"bbox":[1260,602,230,38]}
+{"kind":"shape","id":"sh/et0reh8f","slide":4,"bbox":[390,296,3,366]}
+{"kind":"shape","id":"sh/tsrqlc7u","slide":4,"bbox":[108,718,1382,64]}
+{"kind":"textbox","id":"sh/sri9s7q9","slide":4,"text":"Schemas, allowlists and provenance stay deterministic.","textPreview":"Schemas, allowlists and provenance stay deterministic.","textChars":54,"textLines":1,"bbox":[144,728,1310,42]}
+{"kind":"shape","id":"sh/ilwf69kv","slide":4,"bbox":[90,829,1420,3]}
+{"kind":"shape","id":"sh/jm5gze1g","slide":4,"bbox":[90,829,840,4]}
+{"kind":"textbox","id":"sh/knex8j21","slide":4,"text":"First Finance - Arnaud Demes","textPreview":"First Finance - Arnaud Demes","textChars":28,"textLines":1,"bbox":[102,846,390,34]}
+{"kind":"textbox","id":"sh/5ony1oj6","slide":4,"text":"TOOLS","textPreview":"TOOLS","textChars":5,"textLines":1,"bbox":[1280,846,190,34]}
+{"kind":"textbox","id":"sh/axcf29kj","slide":4,"text":"04","textPreview":"04","textChars":2,"textLines":1,"bbox":[1484,846,28,34]}
+{"kind":"notes","id":"nt/jyx0ra1s","slide":4,"text":"The model proposes typed fields; Python validates, invokes the allowlisted function and records provenance.\n\n[Sources]\n- src/finai_academy/agent_workflows.py\n- https://developers.openai.com/api/docs/guides/structured-outputs\n- https://developers.openai.com/api/docs/guides/function-calling\n[/Sources]"}
+{"kind":"slide","id":"sl/i107q5of","slide":5,"title":"DIRECT LOOKUP","textShapes":23}
+{"kind":"textbox","id":"sh/ji5kf2ho","slide":5,"text":"DIRECT LOOKUP","textPreview":"DIRECT LOOKUP","textChars":13,"textLines":1,"bbox":[102,70,500,36]}
+{"kind":"textbox","id":"sh/dgbulwnm","slide":5,"text":"One known action: use a one-step workflow","textPreview":"One known action: use a one-step workflow","textChars":41,"textLines":1,"bbox":[102,124,1396,82]}
+{"kind":"shape","id":"sh/cf2tcr61","slide":5,"name":"ingestion-1","bbox":[104,324,236,238]}
+{"kind":"textbox","id":"sh/z2tcnm5s","slide":5,"text":"01","textPreview":"01","textChars":2,"textLines":1,"bbox":[124,346,54,30]}
+{"kind":"textbox","id":"sh/yhkbe1o7","slide":5,"text":"Question","textPreview":"Question","textChars":8,"textLines":1,"bbox":[116,394,212,72]}
+{"kind":"textbox","id":"sh/l4bupwny","slide":5,"text":"NVDA price?","textPreview":"NVDA price?","textChars":11,"textLines":1,"bbox":[124,484,196,54]}
+{"kind":"shape","id":"sh/032tgr6d","slide":5,"name":"ingestion-2","bbox":[400,324,236,238]}
+{"kind":"textbox","id":"sh/n6dcr65o","slide":5,"text":"02","textPreview":"02","textChars":2,"textLines":1,"bbox":[420,346,54,30]}
+{"kind":"textbox","id":"sh/m5kbi1oj","slide":5,"text":"Choose tool","textPreview":"Choose tool","textChars":11,"textLines":1,"bbox":[412,394,212,72]}
+{"kind":"textbox","id":"sh/w32dkbuh","slide":5,"text":"choose one tool","textPreview":"choose one tool","textChars":15,"textLines":1,"bbox":[420,484,196,54]}
+{"kind":"shape","id":"sh/x4vedgvm","slide":5,"name":"ingestion-3","bbox":[696,324,236,238]}
+{"kind":"textbox","id":"sh/ahkvi1cb","slide":5,"text":"03","textPreview":"03","textChars":2,"textLines":1,"bbox":[716,346,54,30]}
+{"kind":"textbox","id":"sh/v2twb6dw","slide":5,"text":"get_market_price","textPreview":"get_market_price","textChars":16,"textLines":1,"bbox":[708,394,212,72]}
+{"kind":"textbox","id":"sh/k7mxovud","slide":5,"text":"Python call","textPreview":"Python call","textChars":11,"textLines":1,"bbox":[716,484,196,54]}
+{"kind":"shape","id":"sh/58vehgvy","slide":5,"name":"ingestion-4","bbox":[992,324,236,238]}
+{"kind":"textbox","id":"sh/i54fmlc7","slide":5,"text":"04","textPreview":"04","textChars":2,"textLines":1,"bbox":[1012,346,54,30]}
+{"kind":"textbox","id":"sh/j6dwfqds","slide":5,"text":"Observation","textPreview":"Observation","textChars":11,"textLines":1,"bbox":[1004,394,212,72]}
+{"kind":"textbox","id":"sh/sb6xsvu9","slide":5,"text":"price · currency · source","textPreview":"price · currency · source","textChars":25,"textLines":1,"bbox":[1012,484,196,54]}
+{"kind":"shape","id":"sh/tcfel0vu","slide":5,"name":"ingestion-5","bbox":[1288,324,236,238]}
+{"kind":"textbox","id":"sh/hgrmpwj2","slide":5,"text":"05","textPreview":"05","textChars":2,"textLines":1,"bbox":[1308,346,54,30]}
+{"kind":"textbox","id":"sh/gfi5grih","slide":5,"text":"Answer","textPreview":"Answer","textChars":6,"textLines":1,"bbox":[1300,394,212,72]}
+{"kind":"textbox","id":"sh/fe94nm1w","slide":5,"text":"from tool data","textPreview":"from tool data","textChars":14,"textLines":1,"bbox":[1308,484,196,54]}
+{"kind":"shape","id":"sh/0jyls3ep","slide":5,"bbox":[340,443,60,0]}
+{"kind":"shape","id":"sh/fi5kzyx4","slide":5,"bbox":[636,443,60,0]}
+{"kind":"shape","id":"sh/ehw3qtwz","slide":5,"bbox":[932,443,60,0]}
+{"kind":"shape","id":"sh/p87m58fm","slide":5,"bbox":[1228,443,60,0]}
+{"kind":"textbox","id":"sh/2h0ni107","slide":5,"text":"No model-directed loop is needed.","textPreview":"No model-directed loop is needed.","textChars":33,"textLines":1,"bbox":[250,652,1100,48]}
+{"kind":"textbox","id":"sh/5o7mhcju","slide":5,"text":"known path","textPreview":"known path","textChars":10,"textLines":1,"bbox":[198,718,470,34]}
+{"kind":"textbox","id":"sh/kny587i9","slide":5,"text":"predictable · easy to test","textPreview":"predictable · easy to test","textChars":26,"textLines":1,"bbox":[924,718,500,34]}
+{"kind":"shape","id":"sh/atcjidg7","slide":5,"bbox":[90,829,1420,3]}
+{"kind":"shape","id":"sh/vu5kbihc","slide":5,"bbox":[90,829,840,4]}
+{"kind":"textbox","id":"sh/wve1knyx","slide":5,"text":"First Finance - Arnaud Demes","textPreview":"First Finance - Arnaud Demes","textChars":28,"textLines":1,"bbox":[102,846,390,34]}
+{"kind":"textbox","id":"sh/xwn2dszi","slide":5,"text":"WORKFLOW","textPreview":"WORKFLOW","textChars":8,"textLines":1,"bbox":[1280,846,190,34]}
+{"kind":"textbox","id":"sh/ihw3mxg3","slide":5,"text":"05","textPreview":"05","textChars":2,"textLines":1,"bbox":[1484,846,28,34]}
+{"kind":"notes","id":"nt/i107q5of","slide":5,"text":"A direct lookup has one known action, so a workflow is the simplest adequate controller.\n\n[Sources]\n- notebooks/08_workflows_vs_agents.ipynb\n- src/finai_academy/agent_workflows.py\n[/Sources]"}
+{"kind":"slide","id":"sl/x8f69ofe","slide":6,"title":"TWO-STEP WORKFLOW","textShapes":23}
+{"kind":"textbox","id":"sh/u907axkf","slide":6,"text":"TWO-STEP WORKFLOW","textPreview":"TWO-STEP WORKFLOW","textChars":17,"textLines":1,"bbox":[102,70,500,36]}
+{"kind":"textbox","id":"sh/yhg7epsj","slide":6,"text":"Price to FX succeeds because code owns the route","textPreview":"Price to FX succeeds because code owns the route","textChars":48,"textLines":1,"bbox":[102,124,1396,82]}
+{"kind":"shape","id":"sh/zi98nu94","slide":6,"name":"ingestion-1","bbox":[104,324,236,238]}
+{"kind":"textbox","id":"sh/87ipkzal","slide":6,"text":"01","textPreview":"01","textChars":2,"textLines":1,"bbox":[124,346,54,30]}
+{"kind":"textbox","id":"sh/98rqt4r6","slide":6,"text":"Question","textPreview":"Question","textChars":8,"textLines":1,"bbox":[116,394,212,72]}
+{"kind":"textbox","id":"sh/ml07i9sv","slide":6,"text":"NVDA price in EUR","textPreview":"NVDA price in EUR","textChars":17,"textLines":1,"bbox":[124,484,196,54]}
+{"kind":"shape","id":"sh/7m98ru9g","slide":6,"name":"ingestion-2","bbox":[400,324,236,238]}
+{"kind":"textbox","id":"sh/oryp8fah","slide":6,"text":"02","textPreview":"02","textChars":2,"textLines":1,"bbox":[420,346,54,30]}
+{"kind":"textbox","id":"sh/pc76hkr2","slide":6,"text":"Code route","textPreview":"Code route","textChars":10,"textLines":1,"bbox":[412,394,212,72]}
+{"kind":"textbox","id":"sh/h4bupgn6","slide":6,"text":"price then FX","textPreview":"price then FX","textChars":13,"textLines":1,"bbox":[420,484,196,54]}
+{"kind":"shape","id":"sh/w32twb6l","slide":6,"name":"ingestion-3","bbox":[696,324,236,238]}
+{"kind":"textbox","id":"sh/v2tcn650","slide":6,"text":"03","textPreview":"03","textChars":2,"textLines":1,"bbox":[716,346,54,30]}
+{"kind":"textbox","id":"sh/u1kbu1ov","slide":6,"text":"get_market_price","textPreview":"get_market_price","textChars":16,"textLines":1,"bbox":[708,394,212,72]}
+{"kind":"textbox","id":"sh/5svutgni","slide":6,"text":"214.57 USD","textPreview":"214.57 USD","textChars":10,"textLines":1,"bbox":[716,484,196,54]}
+{"kind":"shape","id":"sh/47mt0b6x","slide":6,"name":"ingestion-4","bbox":[992,324,236,238]}
+{"kind":"textbox","id":"sh/j6dcr65c","slide":6,"text":"04","textPreview":"04","textChars":2,"textLines":1,"bbox":[1012,346,54,30]}
+{"kind":"textbox","id":"sh/i54bylor","slide":6,"text":"Pass observed value","textPreview":"Pass observed value","textChars":19,"textLines":1,"bbox":[1004,394,212,72]}
+{"kind":"textbox","id":"sh/twfux0ne","slide":6,"text":"214.57 USD","textPreview":"214.57 USD","textChars":10,"textLines":1,"bbox":[1012,484,196,54]}
+{"kind":"shape","id":"sh/svmt4v6t","slide":6,"name":"ingestion-5","bbox":[1288,324,236,238]}
+{"kind":"textbox","id":"sh/cbe5g3ih","slide":6,"text":"05","textPreview":"05","textChars":2,"textLines":1,"bbox":[1308,346,54,30]}
+{"kind":"textbox","id":"sh/dcnm98zm","slide":6,"text":"convert_currency","textPreview":"convert_currency","textChars":16,"textLines":1,"bbox":[1300,394,212,72]}
+{"kind":"textbox","id":"sh/qpwnet0b","slide":6,"text":"183.76 EUR","textPreview":"183.76 EUR","textChars":10,"textLines":1,"bbox":[1308,484,196,54]}
+{"kind":"shape","id":"sh/faxkjep0","slide":6,"bbox":[340,443,60,0]}
+{"kind":"shape","id":"sh/gb6lsj65","slide":6,"bbox":[636,443,60,0]}
+{"kind":"shape","id":"sh/1cf2lo7q","slide":6,"bbox":[932,443,60,0]}
+{"kind":"shape","id":"sh/2do3utob","slide":6,"bbox":[1228,443,60,0]}
+{"kind":"textbox","id":"sh/zep4byhs","slide":6,"text":"A dependency is data flow, not agent control.","textPreview":"A dependency is data flow, not agent control.","textChars":45,"textLines":1,"bbox":[250,652,1100,48]}
+{"kind":"textbox","id":"sh/gju58ji9","slide":6,"text":"route known before run","textPreview":"route known before run","textChars":22,"textLines":1,"bbox":[198,718,470,34]}
+{"kind":"textbox","id":"sh/1k3mhozu","slide":6,"text":"workflow status: completed","textPreview":"workflow status: completed","textChars":26,"textLines":1,"bbox":[924,718,500,34]}
+{"kind":"shape","id":"sh/jet8nm1c","slide":6,"bbox":[90,829,1420,3]}
+{"kind":"shape","id":"sh/idk7ehkr","slide":6,"bbox":[90,829,840,4]}
+{"kind":"textbox","id":"sh/50bqpcj2","slide":6,"text":"First Finance - Arnaud Demes","textPreview":"First Finance - Arnaud Demes","textChars":28,"textLines":1,"bbox":[102,846,390,34]}
+{"kind":"textbox","id":"sh/4f2pgr2h","slide":6,"text":"WORKFLOW","textPreview":"WORKFLOW","textChars":8,"textLines":1,"bbox":[1280,846,190,34]}
+{"kind":"textbox","id":"sh/va98j210","slide":6,"text":"06","textPreview":"06","textChars":2,"textLines":1,"bbox":[1484,846,28,34]}
+{"kind":"notes","id":"nt/x8f69ofe","slide":6,"text":"The route is known before execution: price, then FX. Code passes the observed price and currency into conversion.\n\n[Sources]\n- notebooks/08_workflows_vs_agents.ipynb\n- src/finai_academy/agent_workflows.py\n- assets/course-data/market/lesson08_market_snapshot_v1.json\n[/Sources]"}
+{"kind":"slide","id":"sl/gnmp4jqx","slide":7,"title":"AGENT LOOP","textShapes":8}
+{"kind":"textbox","id":"sh/c3a5wzq5","slide":7,"text":"AGENT LOOP","textPreview":"AGENT LOOP","textChars":10,"textLines":1,"bbox":[102,70,500,36]}
+{"kind":"textbox","id":"sh/cb2tkvap","slide":7,"text":"An agent lets the model choose after each result","textPreview":"An agent lets the model choose after each result","textChars":48,"textLines":1,"bbox":[102,124,1396,82]}
+{"kind":"textbox","id":"sh/d4f2t0nm","slide":7,"text":"Environment feedback changes the model's next action.","textPreview":"Environment feedback changes the model's next action.","textChars":53,"textLines":1,"bbox":[250,652,1100,48]}
+{"kind":"textbox","id":"sh/e5o32lor","slide":7,"text":"Anthropic · autonomous agent","textPreview":"Anthropic · autonomous agent","textChars":28,"textLines":1,"bbox":[198,718,470,34]}
+{"kind":"textbox","id":"sh/f6xkvq5c","slide":7,"text":"MAX_STEPS = 4","textPreview":"MAX_STEPS = 4","textChars":13,"textLines":1,"bbox":[924,718,500,34]}
+{"kind":"shape","id":"sh/p0zmlk7u","slide":7,"bbox":[90,829,1420,3]}
+{"kind":"shape","id":"sh/ozq5szq9","slide":7,"bbox":[90,829,840,4]}
+{"kind":"textbox","id":"sh/nyh4jupo","slide":7,"text":"First Finance - Arnaud Demes","textPreview":"First Finance - Arnaud Demes","textChars":28,"textLines":1,"bbox":[102,846,390,34]}
+{"kind":"textbox","id":"sh/2x8nqp83","slide":7,"text":"AGENT","textPreview":"AGENT","textChars":5,"textLines":1,"bbox":[1280,846,190,34]}
+{"kind":"textbox","id":"sh/x4j6p47q","slide":7,"text":"07","textPreview":"07","textChars":2,"textLines":1,"bbox":[1484,846,28,34]}
+{"kind":"image","id":"im/kfilofml","slide":7,"name":"","alt":"Anthropic autonomous-agent loop showing action, environment feedback, human interaction and stop","bbox":[180,235,1240,398]}
+{"kind":"notes","id":"nt/gnmp4jqx","slide":7,"text":"Anthropic depicts an autonomous agent as an LLM acting on and receiving feedback from its environment, with a stop path.\n\n[Sources]\n- https://www.anthropic.com/engineering/building-effective-agents\n- assets/lesson-08/anthropic-autonomous-agent.png\n[/Sources]"}
+{"kind":"slide","id":"sl/fu1gfa1s","slide":8,"title":"BOUNDED BY CODE","textShapes":8}
+{"kind":"textbox","id":"sh/z61s7il4","slide":8,"text":"BOUNDED BY CODE","textPreview":"BOUNDED BY CODE","textChars":15,"textLines":1,"bbox":[102,70,500,36]}
+{"kind":"textbox","id":"sh/18byd4zy","slide":8,"text":"An agent still needs tools, instructions and exit conditions","textPreview":"An agent still needs tools, instructions and exit conditions","textChars":60,"textLines":1,"bbox":[102,124,1396,82]}
+{"kind":"textbox","id":"sh/i5wva1o3","slide":8,"text":"The model directs execution. The application owns the boundary.","textPreview":"The model directs execution. The application owns the boundary.","textChars":63,"textLines":1,"bbox":[250,652,1100,48]}
+{"kind":"textbox","id":"sh/x4ne1wni","slide":8,"text":"OpenAI · single-agent system","textPreview":"OpenAI · single-agent system","textChars":28,"textLines":1,"bbox":[198,718,470,34]}
+{"kind":"textbox","id":"sh/w3ed8r6x","slide":8,"text":"MAX_STEPS stops the loop","textPreview":"MAX_STEPS stops the loop","textChars":24,"textLines":1,"bbox":[924,718,500,34]}
+{"kind":"shape","id":"sh/m9sb2x4v","slide":8,"bbox":[90,829,1420,3]}
+{"kind":"shape","id":"sh/na1sb2lg","slide":8,"bbox":[90,829,840,4]}
+{"kind":"textbox","id":"sh/8bat47ml","slide":8,"text":"First Finance - Arnaud Demes","textPreview":"First Finance - Arnaud Demes","textChars":28,"textLines":1,"bbox":[102,846,390,34]}
+{"kind":"textbox","id":"sh/9w3uds36","slide":8,"text":"TRACE","textPreview":"TRACE","textChars":5,"textLines":1,"bbox":[1280,846,190,34]}
+{"kind":"textbox","id":"sh/y5sbed4j","slide":8,"text":"08","textPreview":"08","textChars":2,"textLines":1,"bbox":[1484,846,28,34]}
+{"kind":"image","id":"im/fm1cj650","slide":8,"name":"","alt":"OpenAI single-agent system with instructions, tools, guardrails and hooks","bbox":[260,225,1080,420]}
+{"kind":"notes","id":"nt/fu1gfa1s","slide":8,"text":"OpenAI recommends an incremental approach and describes agent runs as loops with exit conditions such as errors or maximum turns.\n\n[Sources]\n- https://openai.com/business/guides-and-resources/a-practical-guide-to-building-ai-agents/\n- assets/lesson-08/openai-single-agent-loop.png\n[/Sources]"}
+{"kind":"slide","id":"sl/udsvah03","slide":9,"title":"WORKFLOW OR AGENT?","textShapes":18}
+{"kind":"textbox","id":"sh/xgzitk76","slide":9,"text":"WORKFLOW OR AGENT?","textPreview":"WORKFLOW OR AGENT?","textChars":18,"textLines":1,"bbox":[102,70,500,36]}
+{"kind":"textbox","id":"sh/1cfmhgne","slide":9,"text":"Choose an agent only when the model adds measured value","textPreview":"Choose an agent only when the model adds measured value","textChars":55,"textLines":1,"bbox":[102,124,1396,82]}
+{"kind":"shape","id":"sh/0b65obm9","slide":9,"name":"decision-source","bbox":[108,314,286,164]}
+{"kind":"textbox","id":"sh/nex4jq5k","slide":9,"text":"WORKFLOW","textPreview":"WORKFLOW","textChars":8,"textLines":1,"bbox":[136,334,230,34]}
+{"kind":"textbox","id":"sh/mdonql4z","slide":9,"text":"Known path\nCoded by you","textPreview":"Known path | Coded by you","textChars":23,"textLines":2,"bbox":[136,384,230,68]}
+{"kind":"shape","id":"sh/9gzml0nq","slide":9,"name":"decision-child","bbox":[542,300,342,192]}
+{"kind":"textbox","id":"sh/ofq5svm5","slide":9,"text":"AGENT","textPreview":"AGENT","textChars":5,"textLines":1,"bbox":[574,306,278,50]}
+{"kind":"textbox","id":"sh/bih4na5w","slide":9,"text":"Open-ended path\nChosen by the model","textPreview":"Open-ended path | Chosen by the model","textChars":35,"textLines":2,"bbox":[574,356,278,84]}
+{"kind":"textbox","id":"sh/ah8nu54b","slide":9,"text":"typed tools · trace\nMAX_STEPS","textPreview":"typed tools · trace | MAX_STEPS","textChars":29,"textLines":2,"bbox":[574,440,278,50]}
+{"kind":"shape","id":"sh/oza1gfyh","slide":9,"name":"decision-parent","bbox":[1032,314,372,164]}
+{"kind":"textbox","id":"sh/p0ji9kf2","slide":9,"text":"LESSON 09","textPreview":"LESSON 09","textChars":9,"textLines":1,"bbox":[1064,334,308,34]}
+{"kind":"textbox","id":"sh/2xsjepgb","slide":9,"text":"tool errors\n+ safe retry","textPreview":"tool errors | + safe retry","textChars":24,"textLines":2,"bbox":[1064,382,308,72]}
+{"kind":"shape","id":"sh/ehsvqlkf","slide":9,"bbox":[394,396,148,0]}
+{"kind":"shape","id":"sh/fi1wjql0","slide":9,"bbox":[884,396,148,0]}
+{"kind":"shape","id":"sh/do3id4fy","slide":9,"bbox":[168,574,1264,118]}
+{"kind":"textbox","id":"sh/qlcjipgn","slide":9,"text":"DECISION RULE","textPreview":"DECISION RULE","textChars":13,"textLines":1,"bbox":[204,592,260,30]}
+{"kind":"textbox","id":"sh/bml0buxs","slide":9,"text":"Use an agent only when model-directed control flow creates measurable value.","textPreview":"Use an agent only when model-directed control flow creates measurable value.","textChars":76,"textLines":1,"bbox":[204,626,520,42]}
+{"kind":"shape","id":"sh/0ru1ozyp","slide":9,"bbox":[786,592,3,78]}
+{"kind":"textbox","id":"sh/lsn2h4fa","slide":9,"text":"EVALUATE","textPreview":"EVALUATE","textChars":8,"textLines":1,"bbox":[826,592,330,30]}
+{"kind":"textbox","id":"sh/98ji147e","slide":9,"text":"quality · latency · cost · failure rate","textPreview":"quality · latency · cost · failure rate","textChars":39,"textLines":1,"bbox":[826,626,540,42]}
+{"kind":"textbox","id":"sh/87a18zqt","slide":9,"text":"NEXT","textPreview":"NEXT","textChars":4,"textLines":1,"bbox":[108,744,160,34]}
+{"kind":"textbox","id":"sh/76h0zup8","slide":9,"text":"Lesson 09: explicit state, recovery and safe retries.","textPreview":"Lesson 09: explicit state, recovery and safe retries.","textChars":53,"textLines":1,"bbox":[284,734,1198,50]}
+{"kind":"shape","id":"sh/ml8j6p8n","slide":9,"bbox":[90,829,1420,3]}
+{"kind":"shape","id":"sh/hcji5o7a","slide":9,"bbox":[90,829,840,4]}
+{"kind":"textbox","id":"sh/wba1cjqp","slide":9,"text":"First Finance - Arnaud Demes","textPreview":"First Finance - Arnaud Demes","textChars":28,"textLines":1,"bbox":[102,846,390,34]}
+{"kind":"textbox","id":"sh/va103ep4","slide":9,"text":"DECIDE","textPreview":"DECIDE","textChars":6,"textLines":1,"bbox":[1280,846,190,34]}
+{"kind":"textbox","id":"sh/u9sja98z","slide":9,"text":"09","textPreview":"09","textChars":2,"textLines":1,"bbox":[1484,846,28,34]}
+{"kind":"notes","id":"nt/udsvah03","slide":9,"text":"Choose the lowest-complexity controller that reaches the quality target. Measure any agent advantage.\n\n[Sources]\n- https://www.anthropic.com/engineering/building-effective-agents\n- https://openai.com/business/guides-and-resources/a-practical-guide-to-building-ai-agents/\n- chapters/08-workflows-vs-agents.md\n[/Sources]"}
+{"kind":"slide","id":"sl/m90b6t0r","slide":10,"title":"FIRST FINANCE","textShapes":11}
+{"kind":"shape","id":"sh/kzu5c32t","slide":10,"bbox":[102,82,132,8]}
+{"kind":"textbox","id":"sh/xc3mho32","slide":10,"text":"FIRST FINANCE","textPreview":"FIRST FINANCE","textChars":13,"textLines":1,"bbox":[102,112,300,44]}
+{"kind":"textbox","id":"sh/cbu58j2h","slide":10,"text":"Quick quiz","textPreview":"Quick quiz","textChars":10,"textLines":1,"bbox":[102,248,1396,94]}
+{"kind":"textbox","id":"sh/zelojyl8","slide":10,"text":"Choose one answer for each question.","textPreview":"Choose one answer for each question.","textChars":36,"textLines":1,"bbox":[102,374,1180,54]}
+{"kind":"textbox","id":"sh/ydcnatkn","slide":10,"text":"LESSON 08  ·  3 QUESTIONS  ·  3 MINUTES","textPreview":"LESSON 08  ·  3 QUESTIONS  ·  3 MINUTES","textChars":39,"textLines":1,"bbox":[102,680,1000,42]}
+{"kind":"textbox","id":"sh/l036l83y","slide":10,"text":"First Finance - Arnaud Demes","textPreview":"First Finance - Arnaud Demes","textChars":28,"textLines":1,"bbox":[102,742,500,40]}
+{"kind":"textbox","id":"sh/725onyl4","slide":10,"name":"quiz-question-1","text":"1. Can a workflow pass one tool result into the next step?","textPreview":"1. Can a workflow pass one tool result into the next step?","textChars":58,"textLines":1,"bbox":[102,462,1396,30]}
+{"kind":"textbox","id":"sh/m1cnetkj","slide":10,"name":"quiz-options-1","text":"A  Yes, if code defines the route     |     B  No     |     C  Only with agents","textPreview":"A  Yes, if code defines the route     |     B  No     |     C  Only with agents","textChars":79,"textLines":1,"bbox":[132,494,1366,26]}
+{"kind":"textbox","id":"sh/s7yt4b21","slide":10,"name":"quiz-question-2","text":"2. What makes the system an agent?","textPreview":"2. What makes the system an agent?","textChars":34,"textLines":1,"bbox":[102,534,1396,30]}
+{"kind":"textbox","id":"sh/d87uxg3m","slide":10,"name":"quiz-options-2","text":"A  The model chooses the next action     |     B  It uses two tools     |     C  It has a loop","textPreview":"A  The model chooses the next action     |     B  It uses two tools     |     C  It has a loop","textChars":94,"textLines":1,"bbox":[132,566,1366,26]}
+{"kind":"textbox","id":"sh/q5gb21kb","slide":10,"name":"quiz-question-3","text":"3. When should you add an agent?","textPreview":"3. When should you add an agent?","textChars":32,"textLines":1,"bbox":[102,606,1396,30]}
+{"kind":"textbox","id":"sh/r6pcv6lw","slide":10,"name":"quiz-options-3","text":"A  Measured value on an open path     |     B  Every multi-step task     |     C  When code is hard","textPreview":"A  Measured value on an open path     |     B  Every multi-step task     |     C  When code is hard","textChars":99,"textLines":1,"bbox":[132,638,1366,26]}
+{"kind":"notes","id":"nt/m90b6t0r","slide":10,"text":"Instructor purpose: test the corrected workflow-versus-agent distinction.\n\n[Sources]\n- chapters/08-workflows-vs-agents.md\n[/Sources]"}
+{"kind":"slide","id":"sl/jetc3ut0","slide":11,"title":"FIRST FINANCE","textShapes":11}
+{"kind":"shape","id":"sh/o7ih0r6h","slide":11,"bbox":[102,82,132,8]}
+{"kind":"textbox","id":"sh/xcryxg7y","slide":11,"text":"FIRST FINANCE","textPreview":"FIRST FINANCE","textChars":13,"textLines":1,"bbox":[102,112,300,44]}
+{"kind":"textbox","id":"sh/wbih4b6d","slide":11,"text":"Answers","textPreview":"Answers","textChars":7,"textLines":1,"bbox":[102,248,1396,94]}
+{"kind":"textbox","id":"sh/n69grmpw","slide":11,"text":"Check the idea, not only the letter.","textPreview":"Check the idea, not only the letter.","textChars":36,"textLines":1,"bbox":[102,374,1180,54]}
+{"kind":"textbox","id":"sh/250zy18b","slide":11,"text":"LESSON 08  ·  CORRECTION","textPreview":"LESSON 08  ·  CORRECTION","textChars":24,"textLines":1,"bbox":[102,680,1000,42]}
+{"kind":"textbox","id":"sh/98rytw72","slide":11,"text":"First Finance - Arnaud Demes","textPreview":"First Finance - Arnaud Demes","textChars":28,"textLines":1,"bbox":[102,742,500,40]}
+{"kind":"textbox","id":"sh/72t03qp0","slide":11,"name":"quiz-answer-1","text":"1. A. Yes, if code defines the route","textPreview":"1. A. Yes, if code defines the route","textChars":36,"textLines":1,"bbox":[102,462,1396,30]}
+{"kind":"textbox","id":"sh/61kzalof","slide":11,"name":"quiz-explanation-1","text":"Workflows can chain, branch and loop through observed data.","textPreview":"Workflows can chain, branch and loop through observed data.","textChars":59,"textLines":1,"bbox":[132,494,1366,26]}
+{"kind":"textbox","id":"sh/ofqtgnyt","slide":11,"name":"quiz-answer-2","text":"2. A. The model chooses the next action","textPreview":"2. A. The model chooses the next action","textChars":39,"textLines":1,"bbox":[102,534,1396,30]}
+{"kind":"textbox","id":"sh/9gza9sze","slide":11,"name":"quiz-explanation-2","text":"Control flow, not tool count, defines an agent.","textPreview":"Control flow, not tool count, defines an agent.","textChars":47,"textLines":1,"bbox":[132,566,1366,26]}
+{"kind":"textbox","id":"sh/mdobedg3","slide":11,"name":"quiz-answer-3","text":"3. A. Measured value on an open path","textPreview":"3. A. Measured value on an open path","textChars":36,"textLines":1,"bbox":[102,606,1396,30]}
+{"kind":"textbox","id":"sh/nehs7iho","slide":11,"name":"quiz-explanation-3","text":"Extra autonomy must improve quality enough to justify its cost.","textPreview":"Extra autonomy must improve quality enough to justify its cost.","textChars":63,"textLines":1,"bbox":[132,638,1366,26]}
+{"kind":"notes","id":"nt/jetc3ut0","slide":11,"text":"Instructor purpose: correct the quiz and restate the decision rule.\n\n[Sources]\n- chapters/08-workflows-vs-agents.md\n[/Sources]"}

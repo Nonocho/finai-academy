@@ -114,9 +114,9 @@ def test_lesson12_notebook_is_output_free_stable_and_contains_the_teaching_contr
     source = "\n".join(cell.source for cell in notebook.cells)
 
     assert notebook.metadata["finai"]["expected_runtime_minutes"] == 40
-    assert len(notebook.cells) == 27
+    assert 18 <= len(notebook.cells) <= 20
     assert [cell.id for cell in notebook.cells] == [
-        f"lesson12-{index:03d}" for index in range(27)
+        f"lesson12-{index:03d}" for index in range(len(notebook.cells))
     ]
     assert len({cell.id for cell in notebook.cells}) == len(notebook.cells)
     assert all(
@@ -160,7 +160,7 @@ def test_lesson12_notebook_source_loads_one_persisted_failed_root_trace() -> Non
     """Catch replacement of the offline trace drill with IDs or aggregate rows only."""
 
     notebook = nbformat.read(NOTEBOOK, as_version=4)
-    failure_lab = next(cell for cell in notebook.cells if cell.id == "lesson12-020")
+    failure_lab = next(cell for cell in notebook.cells if cell.id == "lesson12-015")
     for marker in (
         "mlflow.search_traces",
         "bounded-agent-v1",
@@ -177,6 +177,21 @@ def test_lesson12_notebook_source_loads_one_persisted_failed_root_trace() -> Non
         "failure_stage",
     ):
         assert marker in failure_lab.source
+
+
+def test_lesson12_notebook_asks_for_decisions_before_aggregate_release() -> None:
+    """Catch a regression to an uninterrupted implementation walkthrough."""
+
+    notebook = _build_notebook()
+    source = "\n".join(cell.source for cell in notebook.cells)
+
+    for marker in (
+        "Learner decision",
+        "Which configuration is safer",
+        "Which case blocks release",
+        "Who owns the earliest public failure",
+    ):
+        assert marker in source
 
 
 def test_lesson12_notebook_executes_offline_with_persisted_visual_evidence(
@@ -210,7 +225,7 @@ def test_lesson12_notebook_executes_offline_with_persisted_visual_evidence(
         _cell_output_text(executed, cell.id) for cell in executed.cells
     )
 
-    assert _png_output_count(executed) >= 6
+    assert _png_output_count(executed) == 4
     assert "Reference public signature: MATCH" in stream_text
     assert "Dataset: agent-cases-v1" in stream_text
     assert f"Dataset SHA-256: {DATASET_SHA256}" in stream_text
@@ -231,17 +246,17 @@ def test_lesson12_notebook_executes_offline_with_persisted_visual_evidence(
         for configuration_id, case_id, trace_id in trace_matches
     }
     for metric_name in METRIC_NAMES:
-        assert metric_name in _cell_output_text(executed, "lesson12-017")
-    assert "failure_stage" in _cell_output_text(executed, "lesson12-017")
-    assert "unsupported_metric" in _cell_output_text(executed, "lesson12-008")
-    assert "expected signature" in _cell_output_text(executed, "lesson12-009")
-    assert "observed signature" in _cell_output_text(executed, "lesson12-009")
-    assert "phase" in _cell_output_text(executed, "lesson12-012")
-    assert "latency_ms" in _cell_output_text(executed, "lesson12-012")
+        assert metric_name in _cell_output_text(executed, "lesson12-011")
+    assert "failure_stage" in _cell_output_text(executed, "lesson12-011")
+    assert "unsupported_metric" in _cell_output_text(executed, "lesson12-006")
+    assert "expected signature" in _cell_output_text(executed, "lesson12-007")
+    assert "observed signature" in _cell_output_text(executed, "lesson12-007")
+    assert "phase" in _cell_output_text(executed, "lesson12-007")
+    assert "latency_ms" in _cell_output_text(executed, "lesson12-007")
     assert "Execution revisions: [0, 0, 0, 1, 1]" in _cell_output_text(
-        executed, "lesson12-012"
+        executed, "lesson12-007"
     )
-    failure_lab_text = _cell_output_text(executed, "lesson12-020")
+    failure_lab_text = _cell_output_text(executed, "lesson12-015")
     assert "Selected failed trace configuration: bounded-agent-v1" in failure_lab_text
     assert "Selected failed trace case: unsupported_metric_not_recovered" in (
         failure_lab_text
@@ -273,14 +288,14 @@ def test_lesson12_notebook_executes_offline_with_persisted_visual_evidence(
         "Failure owner: evidence_gate",
     ):
         assert marker in failure_lab_text
-    assert "NOT RUN" in _cell_output_text(executed, "lesson12-022")
-    assert "openai:/<model>" in _cell_output_text(executed, "lesson12-022")
-    assert "ollama_chat:/<model>" in _cell_output_text(executed, "lesson12-022")
+    assert "NOT RUN" in _cell_output_text(executed, "lesson12-016")
+    assert "openai:/<model>" in _cell_output_text(executed, "lesson12-016")
+    assert "ollama_chat:/<model>" in _cell_output_text(executed, "lesson12-016")
     expected_database = (mlflow_dir / "mlflow.db").resolve()
     expected_ui_command = f"mlflow ui --backend-store-uri sqlite:///{expected_database}"
-    assert str(expected_database) in _cell_output_text(executed, "lesson12-023")
-    assert expected_ui_command in _cell_output_text(executed, "lesson12-023")
-    assert "http://127.0.0.1:5000" in _cell_output_text(executed, "lesson12-023")
+    assert str(expected_database) in _cell_output_text(executed, "lesson12-016")
+    assert expected_ui_command in _cell_output_text(executed, "lesson12-016")
+    assert "http://127.0.0.1:5000" in _cell_output_text(executed, "lesson12-016")
     assert all_output_text.count("LESSON_12_PASS") == 1
 
 
@@ -329,15 +344,13 @@ def test_lesson12_chapter_defines_the_complete_instructor_route() -> None:
         "full Lesson 12 route is ready for an instructor-led offline test class",
     ):
         assert marker.casefold() in normalized_chapter.casefold()
-    for cell_index in range(27):
+    for cell_index in range(19):
         assert f"lesson12-{cell_index:03d}" in chapter
     for figure_purpose in (
         "Versioned expectations evaluate trajectory and answer separately",
-        "Expected and observed dependency-aware call signatures align",
         "One public trace retains phase, attempt, revision, status, and latency",
         "Per-case metrics reveal failures hidden by configuration means",
         "Aligned configurations compare all five means on one dataset hash",
-        "Failure diagnosis assigns the earliest public owner",
     ):
         assert figure_purpose in chapter
     assert chapter.count("Answer:") >= 5
@@ -459,10 +472,13 @@ def test_lesson12_deck_has_the_complete_sourced_concept_route() -> None:
         "DIFFERENT PATH",
         "TRAJECTORY",
         "ANSWER",
-        "agent-cases-v1",
-        "MLFLOW RUN",
-        "ROOT TRACE",
-        "TOOL",
+        "MLflow turns every case into inspectable evidence",
+        "A trace reveals what the agent actually did",
+        "Span tree",
+        "Inputs / outputs",
+        "Tools + errors",
+        "Assessments",
+        "Per-case failures matter more than averages",
         *METRIC_NAMES,
         "DETERMINISTIC RELEASE GATE",
         "LLM JUDGE",
@@ -479,68 +495,93 @@ def test_lesson12_deck_has_the_complete_sourced_concept_route() -> None:
         "https://mlflow.org/docs/latest/genai/tracing/",
         "https://mlflow.org/docs/latest/genai/eval-monitor/quickstart/",
         "https://mlflow.org/docs/latest/genai/eval-monitor/scorers/index.html",
+        "https://mlflow.org/docs/latest/genai/tracing/observe-with-traces/ui",
+        "https://mlflow.org/docs/latest/genai/tracing/observe-with-traces/dashboard/",
     ):
         assert source_url in notes_text
 
 
-def test_lesson12_deck_uses_native_tables_for_comparison_slides() -> None:
-    """Catch flattened or shape-only substitutes for the three required tables."""
+def test_lesson12_deck_embeds_real_mlflow_and_notebook_visuals() -> None:
+    """Catch a return to a shapes-only explanation of the MLflow product."""
 
     with zipfile.ZipFile(DECK) as archive:
-        for slide_number in (3, 7, 8):
+        media = [
+            name
+            for name in archive.namelist()
+            if name.startswith("ppt/media/")
+            and name.lower().endswith((".png", ".jpg", ".jpeg", ".webp"))
+        ]
+        slide4 = archive.read("ppt/slides/slide4.xml")
+        slide5 = archive.read("ppt/slides/slide5.xml")
+
+    assert len(media) >= 5
+    assert b"<p:pic>" in slide4
+    assert b"<p:pic>" in slide5
+
+
+def test_lesson12_deck_uses_native_tables_for_decision_slides() -> None:
+    """Catch flattened substitutes for the release and ownership tables."""
+
+    with zipfile.ZipFile(DECK) as archive:
+        for slide_number in (7, 8):
             slide = ElementTree.fromstring(
                 archive.read(f"ppt/slides/slide{slide_number}.xml")
             )
             assert slide.find(f".//{{{DRAWING_NS}}}tbl") is not None
 
 
-def test_lesson12_deck_versioned_case_slide_keeps_dataset_case_and_budget_distinct() -> None:
-    """Catch dataset/case identity swaps or the wrong reference-case budget."""
+def test_lesson12_deck_mlflow_run_slide_keeps_evidence_steps_distinct() -> None:
+    """Catch a screenshot without the learner's evaluation-to-trace reading path."""
 
     with zipfile.ZipFile(DECK) as archive:
         slide_text = _visible_text(_slide_root(archive, 4))
 
     normalized = " ".join(slide_text.split())
-    assert re.search(r"dataset_version:\s*agent-cases-v1", normalized)
-    assert re.search(r"case_id:\s*reference_completed", normalized)
-    assert "max_tool_calls: 5" in normalized
+    for marker in (
+        "Versioned cases",
+        "Run the agent",
+        "Apply scorers",
+        "Open failures",
+        "One root trace per case",
+    ):
+        assert marker in normalized
 
 
-def test_lesson12_deck_trace_slide_shows_recovery_before_the_evidence_gate() -> None:
-    """Catch collapsed replan/gate stages or missing post-error tool work."""
+def test_lesson12_deck_trace_slide_teaches_the_mlflow_evidence_hierarchy() -> None:
+    """Catch a product screenshot without the four trace-reading cues."""
+
+    with zipfile.ZipFile(DECK) as archive:
+        slide_text = " ".join(_visible_text(_slide_root(archive, 5)).split())
+
+    cursor = 0
+    for marker in (
+        "Span tree",
+        "Inputs / outputs",
+        "Tools + errors",
+        "Assessments",
+    ):
+        marker_position = slide_text.find(marker, cursor)
+        assert marker_position >= cursor, f"Missing or out-of-order stage: {marker}"
+        cursor = marker_position + len(marker)
+    assert "earliest public failure" in slide_text
+
+
+def test_lesson12_deck_case_slide_teaches_failure_first_diagnosis() -> None:
+    """Catch a heatmap without the failure-first diagnostic sequence."""
 
     with zipfile.ZipFile(DECK) as archive:
         slide_text = " ".join(_visible_text(_slide_root(archive, 6)).split())
 
     cursor = 0
     for marker in (
-        "PLAN",
-        "PLAN GATE",
-        "TOOL ATTEMPTS",
-        "REPLAN",
-        "TOOL ATTEMPTS",
-        "EVIDENCE GATE",
-        "REPORT",
+        "Find the weakest case",
+        "Open its trace",
+        "Locate the first failed span",
+        "Assign the fix to its owner",
     ):
         marker_position = slide_text.find(marker, cursor)
-        assert marker_position >= cursor, f"Missing or out-of-order stage: {marker}"
+        assert marker_position >= cursor, f"Missing or out-of-order step: {marker}"
         cursor = marker_position + len(marker)
-    assert "unsupported_metric" in slide_text
-    assert "post-error success" in slide_text
-
-
-def test_lesson12_deck_trace_connectors_point_toward_the_next_stage() -> None:
-    """Catch leftward arrowheads that reverse the trace's reading direction."""
-
-    with zipfile.ZipFile(DECK) as archive:
-        slide = _slide_root(archive, 6)
-
-    connectors = list(slide.iter(f"{{{PRESENTATION_NS}}}cxnSp"))
-    assert len(connectors) == 6
-    for connector in connectors:
-        assert connector.find(f".//{{{DRAWING_NS}}}headEnd") is None
-        tail = connector.find(f".//{{{DRAWING_NS}}}tailEnd")
-        assert tail is not None and tail.get("type") == "triangle"
 
 
 def test_lesson12_deck_failure_path_uses_warning_not_pass_color() -> None:

@@ -41,6 +41,8 @@ def test_lesson08_notebook_is_output_free_and_contains_the_teaching_contract() -
         if cell.cell_type == "code"
     )
     assert len({cell.id for cell in notebook.cells}) == len(notebook.cells)
+    assert len(notebook.cells) <= 18
+    assert sum(cell.cell_type == "code" for cell in notebook.cells) <= 8
     for heading in (
         "## Learning objectives",
         "## Where this fits",
@@ -52,13 +54,17 @@ def test_lesson08_notebook_is_output_free_and_contains_the_teaching_contract() -
     ):
         assert heading in source
     for marker in (
-        "unsupported_dependency",
+        "run_price_to_currency_workflow",
+        "ModelWorkflowDecision",
+        "ModelAgentDecision",
         "MAX_STEPS",
         "get_market_price",
         "convert_currency",
         "LESSON_08_PASS",
     ):
         assert marker in source
+    assert "The workflow cannot know the EUR amount yet" not in source
+    assert "If the next step depends on a tool result, use an agent." not in source
 
 
 def test_lesson08_notebook_declares_the_provider_and_runtime_contract() -> None:
@@ -86,7 +92,8 @@ def test_lesson08_chapter_and_asset_indexes_are_discoverable() -> None:
         "10-minute concept deck",
         "30-minute notebook",
         "MAX_STEPS",
-        "unsupported_dependency",
+        "deterministic two-step workflow",
+        "model-directed control flow",
         "Ollama",
         "OpenAI",
         "No-network fallback",
@@ -117,22 +124,21 @@ def test_lesson08_deck_teaches_the_required_decision_and_is_fully_sourced() -> N
     ):
         assert jargon not in joined.casefold()
     for marker in (
-        "THREE SYSTEMS AT A GLANCE",
+        "Workflows can use results, branch and stop",
         "Who chooses the next step?",
         "Python code",
-        "One LLM",
-        "Several LLMs",
         "WORKFLOW OR AGENT?",
         "Is the path known?",
         "Coded by you",
-        "Chosen after each result",
+        "Chosen by the model",
         "TYPED TOOL BOUNDARY",
         "get_market_price",
         "convert_currency",
-        "unsupported_dependency",
         "MAX_STEPS",
         "If you can draw every step before the run, use a workflow.",
-        "If the next step depends on a tool result, use an agent.",
+        "Use an agent only when model-directed control flow creates measurable value.",
         "LESSON 09",
     ):
         assert marker in joined
+    assert "If the next step depends on a tool result, use an agent." not in joined
+    assert "The workflow cannot know the EUR amount yet" not in joined

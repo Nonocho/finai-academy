@@ -1,104 +1,123 @@
-# Lesson 07 — RAG Evaluation and Tracing
+# Lesson 07 — Find the Failure in a RAG System
 
 **First Finance - Arnaud Demes**  
 **Day 1 · 16:00–16:45 · 15 minutes concepts + 30 minutes notebook**
 
 ## Instructor outcome
 
-Students finish Day 1 with a measured financial RAG application, not a single successful
-demo. They can explain whether a failure came from retrieval, filters, citations,
-grounding or abstention, and they can open the corresponding MLflow trace.
+Students finish Day 1 with a diagnosable financial RAG application, not a polished demo.
+Given a failed case, they can identify whether retrieval, filters, citation, grounding or
+abstention owns the failure and inspect the corresponding MLflow trace.
 
 The teaching contract is:
 
 ```text
-versioned cases → real pipeline → separated metrics → traces → comparison → decision
+versioned cases → BM25+dense RAG → layer-specific metrics → trace → diagnosis
 ```
 
-MLflow first appears here because Lessons 01–06 already expose ordinary typed results and
-stage boundaries. Lesson 07 instruments those boundaries without rewriting the pipeline.
+Lesson 07 evaluates the exact BM25+dense pipeline built in Lesson 06. It does not recreate
+the old TF-IDF retriever or hide the application behind a judge score.
 
 ## Before class
 
-Install the evaluation extra together with the normal AI dependencies:
+Install the evaluation dependencies with the normal AI and RAG extras:
 
 ```bash
 uv sync --extra ai --extra rag --extra evaluation --extra dev
 ```
 
-Offline mode needs no server and no API key. It writes a local SQLite database and local
-artifacts below the directory selected by `FINAI_MLFLOW_DIR`; otherwise it uses the system
-temporary directory.
+Offline mode requires no server or API key. It writes a local SQLite MLflow database and
+artifacts under `FINAI_MLFLOW_DIR`, or a temporary directory when the variable is absent.
 
-Optional Ollama setup:
-
-```bash
-ollama pull qwen3:8b
-ollama pull qwen3-embedding:0.6b
-```
-
-Optional OpenAI setup:
+Optional live-provider setup:
 
 ```bash
 export OPENAI_API_KEY="..."
+export FINAI_PROVIDER="openai"
 export FINAI_CHAT_MODEL="gpt-5-mini"
 export FINAI_EMBEDDING_MODEL="text-embedding-3-small"
+export FINAI_LIVE_MODE="1"
 ```
 
-Never store credentials in MLflow parameters, span inputs, notebook output or the
+Never store credentials in notebook output, MLflow parameters, span inputs or the
 repository.
 
-## 15-minute concept deck
+## Communication job of the concept deck
+
+By the end of the deck, finance and AI practitioners should understand that “bad RAG
+answer” is not a diagnosis: retrieval, generation and abstention require different tests,
+and a trace connects the failed metric to the responsible application boundary.
+
+The deck uses the learning progression:
+
+```text
+hidden failure → evaluation contract → metric layers → trace → comparison → repair decision
+```
 
 | Time | Slide | Instructor job |
 |---:|---:|---|
-| 0:00–2:00 | 1 | State that evaluation locates a failing stage; it is not one overall score. |
-| 2:00–4:00 | 2 | Explain the golden set as versioned engineering data. |
-| 4:00–6:00 | 3 | Separate retrieval, answer and abstention axes. |
-| 6:00–8:00 | 4 | Work through deterministic metric formulas. |
-| 8:00–10:30 | 5 | Read one trace from question and filters to answer. |
-| 10:30–13:00 | 6 | Compare two configurations on identical cases. |
-| 13:00–15:00 | 7 | Position Ragas after the baseline and state judge limitations. |
+| 0:00–1:15 | 1 | Frame evaluation as failure location, not model grading. |
+| 1:15–2:30 | 2 | Show why one fluent answer cannot validate a RAG system. |
+| 2:30–3:45 | 3 | Introduce the versioned golden-set coverage contract. |
+| 3:45–5:15 | 4 | Demonstrate retrieval passing while the answer fails. |
+| 5:15–6:45 | 5 | Assign one metric family to each application layer. |
+| 6:45–8:45 | 6 | Read a real MLflow trace and its spans. |
+| 8:45–10:15 | 7 | Interpret the case-by-metric heatmap. |
+| 10:15–11:45 | 8 | Compare a one-variable RRF change at aggregate and case level. |
+| 11:45–13:00 | 9 | Map failure stages to engineering owners. |
+| 13:00–14:00 | 10 | Run the knowledge check. |
+| 14:00–15:00 | 11 | Debrief the answers and bridge to the notebook. |
 
-Do not spend deck time launching the UI. The notebook shows the same essential trace and
-run-comparison information inline, so the class remains teachable without a browser.
+Use the official OpenAI evaluation process as methodological grounding, not as a required
+course platform. The lesson code remains provider-neutral and local:
+[OpenAI evaluation best practices](https://developers.openai.com/api/docs/guides/evaluation-best-practices).
 
 ## 30-minute notebook pacing
 
-| Time | Work | Expected output |
+| Time | Work | Observable output |
 |---:|---|---|
-| 0:00–4:00 | Load `rag-cases-v1`. | Eight cases, seven known evidence IDs, Figure 1. |
-| 4:00–9:00 | Run the first NVIDIA case. | Six separated metric values, Figure 2. |
-| 9:00–14:00 | Evaluate the full baseline. | Case table and Figure 3 heatmap. |
-| 14:00–20:00 | Inspect local MLflow. | Eight traces, seven required child-span names, Figure 4. |
-| 20:00–25:00 | Change only keyword RRF weight. | Two run IDs, aligned comparison, Figures 5–6. |
-| 25:00–28:00 | Inspect failure rows. | Explicit `abstention` classification, Figure 7. |
-| 28:00–30:00 | Verify and debrief. | Figure 8 and one exact final PASS marker. |
-| Optional | Run an explicit Ragas judge. | Figure 9 plus provider/model-labelled metrics or skipped status. |
+| 0:00–4:00 | Load `rag-cases-v1` and real Lesson 05 passages. | Coverage matrix, Figure 1. |
+| 4:00–9:00 | Keep retrieval fixed and compare two answers. | Controlled metric contrast, Figure 2. |
+| 9:00–14:00 | Evaluate all eight cases. | Case-by-metric heatmap, Figure 3. |
+| 14:00–20:00 | Inspect one persisted MLflow trace. | Span table and durations, Figure 4. |
+| 20:00–25:00 | Increase only the BM25 RRF weight. | Aggregate + rank comparison, Figure 5. |
+| 25:00–28:00 | Inspect failure ownership and verify. | Acceptance scorecard, Figure 6. |
+| 28:00–30:00 | Knowledge check and challenge. | Exact PASS marker. |
+| Optional | Construct explicit Ragas rows. | Provider/model-labelled skipped or judged status. |
+
+The notebook contains 18 cells, eight code cells and six figures. The main route is short
+enough for students to read every block rather than scrolling through plotting utilities.
 
 ## The versioned golden set
 
-The JSON dataset contains at least one case for each required behavior:
+The eight cases cover six distinct behaviors:
 
-- direct fact;
-- exact number;
+- direct fact retrieval;
+- exact-number retrieval;
 - semantic paraphrase;
-- NVIDIA filter safety;
-- Schneider Electric filter safety;
-- controlled cross-company leakage;
+- metadata filter safety;
 - multi-evidence comparison; and
-- insufficient evidence.
+- explicit abstention on unsupported questions.
 
-Every case stores stable evidence IDs, not text snippets. The manifest stores the dataset
-version, path and SHA-256 hash. Changing a question, expected ID or expected fact creates a
-new evaluation artifact and requires a deliberate version decision.
+Every positive case stores stable evidence IDs and maintained facts. Every negative case
+stores an explicit abstention requirement. A changed question, expected ID, fact or policy
+requires a version decision; it is not an invisible notebook edit.
 
-The two negative cases intentionally reveal a current capstone gap. Metadata eligibility
-can find NVIDIA passages even when the question asks for unsupported valuation or Energy
-Management information. The correct Lesson 07 output is a classified abstention failure,
-not a silently edited golden set.
+Figure 1 is a coverage matrix rather than a count chart. Students can see which behavior
+each case protects and where the dataset remains thin.
 
-## Deterministic metric formulas
+## Retrieval can pass while the answer fails
+
+Figure 2 evaluates two answers against the same retrieved passages:
+
+- the supported answer cites the expected NVIDIA evidence ID and states both facts;
+- the broken answer keeps retrieval recall and reciprocal rank at `1.0` but cites a
+  Schneider Electric passage and omits the maintained number.
+
+The visual makes the lesson's central distinction concrete. A single “RAG quality” score
+would hide which subsystem changed.
+
+## Deterministic metric layers
 
 For expected evidence set `E` and ordered final retrieved IDs `R`:
 
@@ -107,251 +126,144 @@ recall@k = |E ∩ R[:k]| / |E|
 reciprocal rank = 1 / rank(first expected ID), else 0
 ```
 
-Filter correctness is 1 only when the prediction used the case filters and every final
+Filter correctness is `1` only when the prediction uses the case filters and every final
 passage satisfies them.
 
-Citation correctness parses stable IDs from square brackets. It measures the share of
-citations that are both expected and present in the final retrieved set. A supported case
-with no citation receives 0.
+Citation correctness parses stable IDs from square brackets and measures the share that
+are both expected and present in the retrieved evidence. Grounded-fact coverage measures
+maintained facts present in the final answer.
 
-Grounded-fact coverage is:
+Abstention is an explicit application decision. A system may retrieve plausible passages
+and still correctly refuse a valuation question that those passages cannot support. Do
+not infer abstention from an empty retrieval result.
 
-```text
-matched maintained facts / expected maintained facts
-```
+The offline baseline intentionally keeps one known answer defect: the semantic-paraphrase
+answer uses the correct fact but omits its citation. Figure 3 should therefore show:
 
-The implementation normalizes punctuation and financial numeric phrases. It does not ask
-an LLM to judge its own answer.
+- retrieval recall `1.0` for all six positive cases;
+- abstention correctness `1.0` for both unsupported cases; and
+- citation correctness `0.0` for `nvda-semantic-paraphrase`.
 
-Abstention correctness is 1 only when the case requirement and application behavior
-agree. For a supported case, returning no evidence is wrong. For an unsupported case,
-returning plausible evidence is also wrong.
+Evaluation passes by finding that maintained defect—not by pretending every answer is
+perfect.
 
 ## Trace and run model
 
-One MLflow run is one complete configuration:
+One MLflow run represents one complete configuration:
 
 - dataset version;
-- provider;
-- chat model;
-- embedding model;
-- index version;
+- provider and chat model;
+- embedding model and index version;
 - prompt version;
 - `candidate_k` and `final_k`; and
-- keyword/dense RRF weights.
+- BM25/dense RRF weights.
 
-One trace is one case. Its root records the question, filters, configuration ID, answer,
-retrieved IDs, citations, rerank scores, stage timings and failure stage. Child spans are:
+One trace represents one case. Its root records the question, filters, configuration,
+answer, explicit abstention decision, retrieved IDs, citations, rerank scores, stage
+timings and failure stage. The persisted child spans are:
 
 ```text
-eligibility → keyword → dense → fusion → rerank → context → generation
+eligibility → bm25 → dense → fusion → rerank → context → generation
 ```
 
-The first five child spans come from the same observer boundary used in Lesson 06. Context
-and generation use that observer too. Trace instrumentation therefore stays orthogonal to
-retrieval behavior.
+Figure 4 is generated from the actual persisted span objects. The concept deck additionally
+shows the official MLflow trace interface so students recognize the professional tool they
+will open after the notebook:
+[MLflow trace UI](https://mlflow.org/docs/latest/genai/tracing/observe-with-traces/ui).
 
-## Local MLflow behavior
-
-The course uses a local SQLite backend because current MLflow tracing features no longer
-treat the legacy filesystem tracking backend as the preferred path. Artifacts remain in a
-local directory next to the database.
-
-To launch the UI after executing the notebook, use the path printed by the setup cell:
+To launch the local interface, copy the command printed by the first notebook cell:
 
 ```bash
 mlflow ui --backend-store-uri sqlite:////absolute/path/to/finai-lesson07-mlflow/mlflow.db
 ```
 
-Then open `http://127.0.0.1:5000`. Demonstrate:
-
-1. the two configuration runs;
-2. their parameter difference;
-3. aggregate metrics;
-4. one negative-case trace; and
-5. the `abstention` failure row artifact.
-
-The UI is an inspection surface, not a required notebook dependency.
+Then inspect the run table, one trace's span tree, inputs and outputs, duration and failure
+stage. The UI is an inspection surface, not a notebook dependency.
 
 ## Comparing configurations
 
-The baseline uses keyword/dense RRF weights `1:1`. The comparison uses `3:1`. Everything
-else remains fixed. The lesson does not claim that a changed rank proves improvement.
+The baseline uses BM25/dense RRF weights `1:1`. The comparison uses `3:1`. Every other
+declared variable stays fixed.
+
+Figure 5 deliberately combines two levels:
+
+- aggregate metrics answer whether the maintained contract changed; and
+- case-level ranks answer whether the configuration had any observable effect.
 
 Use this language:
 
-> “A configuration is better only when the aligned cases and decision-relevant metrics
-> improve without violating filter, evidence or abstention contracts.”
+> A moved rank proves that the policy changed behavior. It does not prove improvement.
 
-Aggregate metrics may tie while a passage rank changes. Figures 5 and 6 show both levels.
+A configuration is better only when aligned, decision-relevant cases improve without
+violating retrieval, filters, citations, grounding or abstention contracts.
 
-## Failure lab
+## Failure ownership
 
-Expected failure rows contain:
+Map the first failed layer to the component that can repair it:
 
-```text
-case_id
-configuration_id
-failure_stage
-expected_ids
-retrieved_ids
-citations
-retrieval_recall_at_k
-reciprocal_rank
-filter_correctness
-citation_correctness
-grounded_fact_coverage
-abstention_correctness
-```
+| Observed failure | Primary owner | First investigation |
+|---|---|---|
+| Retrieval recall / rank | Index, query, filters, fusion or reranker | Inspect eligible candidates and channel ranks. |
+| Filter correctness | Metadata model and eligibility boundary | Inspect filters before retrieval. |
+| Citation correctness | Prompt, structured answer schema or citation renderer | Compare cited IDs with final evidence IDs. |
+| Grounded-fact coverage | Context assembly and generation | Compare maintained facts with answer claims. |
+| Abstention correctness | Evidence-sufficiency policy | Inspect the explicit abstention decision. |
 
-The current negative cases are classified as `abstention`. The next engineering step is
-an evidence-sufficiency gate after reranking and before generation. Do not tune a global
-similarity threshold on two examples and call the problem solved.
+Figure 6 shows one known citation failure beside the acceptance scorecard. This is the
+engineering decision surface: the prompt/citation path owns the repair, while the BM25
+retriever does not need to be tuned for that defect.
 
-## Challenge solution
+## Challenge solution boundary
 
-The student challenge is to add a third configuration with a sufficiency gate. A valid
-solution:
+Students first repair the missing citation without editing the golden set. Then they may
+add an evidence-sufficiency gate between reranking and generation. A valid extension:
 
-1. receives the query, final evidence and transparent rerank features;
-2. emits a typed `sufficient: bool` decision plus a reason;
+1. receives the question and final evidence;
+2. returns an explicit `abstained: bool` decision and public reason;
 3. opens a `sufficiency` span;
-4. abstains before generation when insufficient;
-5. preserves recall on all six positive cases;
-6. passes both negative cases; and
-7. compares the third MLflow run against the same `rag-cases-v1` dataset.
+4. preserves all six positive retrieval cases;
+5. abstains on both unsupported cases; and
+6. compares the new configuration on the same `rag-cases-v1` dataset.
 
-The gate may start deterministic. An LLM-assisted gate is an advanced alternative only if
-its prompt, provider, model, cost and errors are logged and evaluated.
+## Ragas: optional extension
 
-## Ragas: optional final comparison
+Ragas is introduced only after the deterministic contract:
 
-Ragas is introduced for two judge-based metrics only:
+- context recall asks whether retrieved context contains the reference information; and
+- faithfulness asks whether response claims are supported by retrieved context.
 
-- context recall; and
-- faithfulness.
+The ID-based context-recall variant is particularly compatible with the course's stable
+evidence IDs. Faithfulness normally introduces a model judge. See the current official
+metric documentation:
+[Ragas context recall](https://docs.ragas.io/en/stable/concepts/metrics/available_metrics/context_recall/)
+and [Ragas faithfulness](https://docs.ragas.io/en/latest/concepts/metrics/available_metrics/faithfulness/).
 
-The course adapter accepts an explicit judge with declared provider and model. It never
-selects a default model. Offline mode returns recorded metrics or an explicit skipped
-status.
-
-State the limitations clearly:
-
-- judge metrics are model-dependent;
-- prompts and metric implementations can change;
-- an LLM judge adds latency and token cost;
-- judge scores can disagree with maintained business rules; and
-- Ragas complements, rather than replaces, deterministic retrieval and citation checks.
+The course adapter never selects an implicit judge. Provider, model, prompt, latency and
+cost are evaluation data. Ragas complements the deterministic retrieval and citation
+checks; it does not replace them.
 
 ## Expected outputs
 
-Offline:
+Offline execution must produce:
 
-- eight cases load;
-- six positive retrieval cases recover expected evidence within `final_k=2`;
-- two negative cases produce classified abstention failures;
-- two MLflow runs are logged;
-- each run contains eight traces;
-- every trace exposes the seven required stage names;
-- Figures 1–9 render; and
-- the final line appears exactly once:
+- eight versioned cases and seven provenance-preserving passages;
+- six positive retrieval cases with expected evidence inside `final_k=2`;
+- two correct explicit abstentions;
+- one maintained citation defect;
+- two aligned MLflow runs;
+- eight baseline traces with all seven required child-span names;
+- Figures 1–6; and
+- one exact final marker:
 
 ```text
 PASS — RAG evaluation and tracing verified
 ```
 
-Live Ollama/OpenAI:
+## Instructor cautions
 
-- corpus, filters, case alignment, span structure and metadata still pass;
-- generated answer metrics are labelled observations;
-- no fixed provider ranking or judge score is required; and
-- the same final PASS marker proves structural execution, not identical model quality.
-
-## Common failures
-
-### MLflow creates or looks for the wrong store
-
-Check the printed `FINAI_MLFLOW_DIR` and use the exact SQLite URI when launching the UI.
-Do not point the UI at a different working directory.
-
-### Traces exist but are not associated with a run
-
-Only pass `run_id` to the root span. Nested spans inherit the active trace. Passing a run
-ID to nested spans is ignored by MLflow and produces warnings.
-
-### The OpenAI run fails before evaluation
-
-Confirm `OPENAI_API_KEY`, chat model and embedding model. The notebook never falls back to
-Ollama or offline mode after an explicit OpenAI selection.
-
-### A live answer has no citations
-
-That is an answer-layer result, not a retrieval failure. Inspect the trace, then revise and
-version the generation prompt rather than changing the retriever first.
-
-### Ragas starts an unexpected model
-
-Stop. The course adapter requires an explicit judge. Do not rely on library defaults or
-ambient credentials.
-
-## Checkpoint answers
-
-1. **Why can recall@k equal 1 while citation correctness equals 0?**  
-   Expected evidence was retrieved, but the answer cited nothing or the wrong ID.
-
-2. **Why compare configurations on one golden-set version?**  
-   Otherwise the experiment changes both the system and the exam.
-
-3. **What does the trace add to a metric table?**  
-   It connects one input to stage-level work, timing, outputs and the final result.
-
-4. **Why are the negative cases valuable?**  
-   They test refusal and evidence sufficiency, which fluent positive demos omit.
-
-5. **Why is Ragas optional?**  
-   Its judge metrics add useful semantic checks but also provider dependence, variance and
-   cost.
-
-## Provider modes
-
-### Offline
-
-```bash
-python scripts/execute_notebooks.py notebooks/07_rag_evaluation.ipynb \
-  --mode offline \
-  --output-dir /tmp/finai-l07-offline
-```
-
-Answers are recorded and exact. Retrieval uses the deterministic teaching embeddings.
-
-### Ollama
-
-```bash
-FINAI_CHAT_MODEL=qwen3:8b \
-FINAI_EMBEDDING_MODEL=qwen3-embedding:0.6b \
-python scripts/execute_notebooks.py notebooks/07_rag_evaluation.ipynb \
-  --mode live --provider ollama \
-  --output-dir /tmp/finai-l07-ollama
-```
-
-### OpenAI
-
-```bash
-OPENAI_API_KEY="..." \
-FINAI_CHAT_MODEL=gpt-5-mini \
-FINAI_EMBEDDING_MODEL=text-embedding-3-small \
-python scripts/execute_notebooks.py notebooks/07_rag_evaluation.ipynb \
-  --mode live --provider openai \
-  --output-dir /tmp/finai-l07-openai
-```
-
-## Transition to Day 2
-
-Close with:
-
-> “Day 1 built and measured the RAG path. Day 2 will put these exact stages into state,
-> branches and bounded control flow. We will not add agency where a deterministic workflow
-> is easier to test.”
-
-Lesson 08 begins with the classified abstention gap and turns the measured pipeline into a
-stateful LangGraph workflow.
+- Do not collapse the six metric columns into one “quality” score.
+- Do not repair a citation failure by tuning retrieval.
+- Do not call a rerank score confidence.
+- Do not use the golden labels to force live application behavior.
+- Do not change more than one declared variable in a configuration comparison.
+- Do not present judge metrics without naming their provider and model.

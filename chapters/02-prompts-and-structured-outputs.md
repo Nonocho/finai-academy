@@ -208,7 +208,7 @@ uv run --extra ai jupyter lab
 OpenAI live run:
 
 ```bash
-FINAI_MODEL_PROVIDER=openai FINAI_CHAT_MODEL=gpt-5-mini \
+FINAI_MODEL_PROVIDER=openai FINAI_CHAT_MODEL=gpt-5.6-luna \
 uv run --extra ai jupyter lab
 ```
 

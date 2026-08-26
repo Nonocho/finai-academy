@@ -1,0 +1,230 @@
+{"kind":"deck","id":"pr/v811t9","name":"Deck"}
+{"kind":"layout","layoutId":"/ppt/slideMasters/slideMaster1.xml","name":"Master","type":"master"}
+{"kind":"layout","layoutId":"/ppt/slideLayouts/slideLayout1.xml","name":"Title Slide","type":"title"}
+{"kind":"slide","id":"sl/y90nupkv","slide":1,"title":"FIRST FINANCE","textShapes":5}
+{"kind":"shape","id":"sh/sryl4zqx","slide":1,"bbox":[102,82,132,8]}
+{"kind":"textbox","id":"sh/547294r6","slide":1,"text":"FIRST FINANCE","textPreview":"FIRST FINANCE","textChars":13,"textLines":1,"bbox":[102,116,320,32]}
+{"kind":"textbox","id":"sh/k3yl0zql","slide":1,"text":"One Document or Retrieval?","textPreview":"One Document or Retrieval?","textChars":26,"textLines":1,"bbox":[102,252,980,105]}
+{"kind":"textbox","id":"sh/7qp4be9c","slide":1,"text":"Choose CAG or RAG before generation","textPreview":"Choose CAG or RAG before generation","textChars":35,"textLines":1,"bbox":[102,382,1120,58]}
+{"kind":"textbox","id":"sh/65g3298r","slide":1,"text":"SESSION 03  ·  10:45–11:30  ·  18 MIN CONCEPTS + 25 MIN NOTEBOOK","textPreview":"SESSION 03  ·  10:45–11:30  ·  18 MIN CONCEPTS + 25 MIN NOTEBOOK","textChars":64,"textLines":1,"bbox":[102,694,1000,34]}
+{"kind":"textbox","id":"sh/ts7md4r2","slide":1,"text":"First Finance - Arnaud Demes","textPreview":"First Finance - Arnaud Demes","textChars":28,"textLines":1,"bbox":[102,752,540,38]}
+{"kind":"notes","id":"nt/y90nupkv","slide":1,"text":"Open with the decision, not the acronyms: should the application send a complete bounded source, or retrieve only the evidence needed? The lesson answers that question before teaching retrieval mechanics.\n\n[Sources]\n- https://www.sec.gov/Archives/edgar/data/1045810/000104581026000021/nvda-20260125.htm\n- https://developers.openai.com/api/docs/guides/prompt-caching\n[/Sources]"}
+{"kind":"slide","id":"sl/hwbqtkby","slide":2,"title":"CORE DISTINCTION","textShapes":12}
+{"kind":"textbox","id":"sh/ahwrqhgj","slide":2,"text":"CORE DISTINCTION","textPreview":"CORE DISTINCTION","textChars":16,"textLines":1,"bbox":[102,76,520,28]}
+{"kind":"textbox","id":"sh/9072xkry","slide":2,"text":"Prompting controls behaviour; context controls evidence","textPreview":"Prompting controls behaviour; context controls evidence","textChars":55,"textLines":1,"bbox":[102,124,1390,118]}
+{"kind":"textbox","id":"sh/ozy1ofad","slide":2,"text":"Prompt","textPreview":"Prompt","textChars":6,"textLines":1,"bbox":[112,300,460,90]}
+{"kind":"textbox","id":"sh/b29kza94","slide":2,"text":"Instructions · examples · output contract","textPreview":"Instructions · examples · output contract","textChars":41,"textLines":1,"bbox":[112,410,520,38]}
+{"kind":"shape","id":"sh/a10jqpsj","slide":2,"bbox":[680,286,2,330]}
+{"kind":"textbox","id":"sh/x4r21kru","slide":2,"text":"Context","textPreview":"Context","textChars":7,"textLines":1,"bbox":[760,300,520,90]}
+{"kind":"textbox","id":"sh/w3i1sfa9","slide":2,"text":"Documents · tools · memory · retrieved evidence","textPreview":"Documents · tools · memory · retrieved evidence","textChars":47,"textLines":1,"bbox":[760,410,580,38]}
+{"kind":"textbox","id":"sh/r65knqtk","slide":2,"text":"[CONTROLS]  what the model should do","textPreview":"[CONTROLS]  what the model should do","textChars":36,"textLines":1,"bbox":[112,520,600,38]}
+{"kind":"textbox","id":"sh/q5wjelsz","slide":2,"text":"[CONTROLS]  what the model can use","textPreview":"[CONTROLS]  what the model can use","textChars":34,"textLines":1,"bbox":[760,520,700,72]}
+{"kind":"textbox","id":"sh/ove9o7yd","slide":2,"text":"A better prompt cannot supply missing evidence; more evidence cannot repair a vague contract.","textPreview":"A better prompt cannot supply missing evidence; more evidence cannot repair a vague contract.","textChars":93,"textLines":1,"bbox":[112,666,1240,54]}
+{"kind":"shape","id":"sh/9wnqhczy","slide":2,"bbox":[90,830,1420,2]}
+{"kind":"shape","id":"sh/mtwrmxg7","slide":2,"bbox":[90,830,840,3]}
+{"kind":"textbox","id":"sh/nu58f2hs","slide":2,"text":"First Finance - Arnaud Demes","textPreview":"First Finance - Arnaud Demes","textChars":28,"textLines":1,"bbox":[102,856,420,24]}
+{"kind":"textbox","id":"sh/wjy9sry9","slide":2,"text":"BOUNDARY","textPreview":"BOUNDARY","textChars":8,"textLines":1,"bbox":[1310,856,160,24]}
+{"kind":"textbox","id":"sh/xk7qlczu","slide":2,"text":"02","textPreview":"02","textChars":2,"textLines":1,"bbox":[1480,856,30,24]}
+{"kind":"notes","id":"nt/hwbqtkby","slide":2,"text":"Separate two engineering responsibilities. Prompt engineering specifies behaviour and output. Context engineering determines the evidence, tools, and state available to the call. They work together but solve different failures.\n\n[Sources]\n- https://developers.openai.com/api/docs/guides/prompt-engineering\n- https://developers.openai.com/api/docs/guides/prompt-caching\n[/Sources]"}
+{"kind":"slide","id":"sl/ofy9wn61","slide":3,"title":"OFFICIAL SOURCE","textShapes":9}
+{"kind":"textbox","id":"sh/i9w3u58v","slide":3,"text":"OFFICIAL SOURCE","textPreview":"OFFICIAL SOURCE","textChars":15,"textLines":1,"bbox":[102,76,520,28]}
+{"kind":"textbox","id":"sh/cza94vmx","slide":3,"text":"The source is one 1.98 MB filing—not a pasted fact card","textPreview":"The source is one 1.98 MB filing—not a pasted fact card","textChars":55,"textLines":1,"bbox":[102,124,1390,118]}
+{"kind":"textbox","id":"sh/d0jax03i","slide":3,"text":"SEC PROVENANCE","textPreview":"SEC PROVENANCE","textChars":14,"textLines":1,"bbox":[112,302,220,36]}
+{"kind":"textbox","id":"sh/298ryl4v","slide":3,"text":"FY2026 Form 10-K\nAccession 0001045810-26-000021","textPreview":"FY2026 Form 10-K | Accession 0001045810-26-000021","textChars":47,"textLines":2,"bbox":[112,352,430,72]}
+{"kind":"shape","id":"sh/3ah8rqlg","slide":3,"bbox":[112,454,430,2]}
+{"kind":"textbox","id":"sh/obq90bml","slide":3,"text":"TWO ARTIFACTS","textPreview":"TWO ARTIFACTS","textChars":13,"textLines":1,"bbox":[112,492,220,36]}
+{"kind":"textbox","id":"sh/pcjqtg36","slide":3,"text":"Complete filing for corpus decisions\nBounded pack for repeated questions","textPreview":"Complete filing for corpus decisions | Bounded pack for repeated questions","textChars":72,"textLines":2,"bbox":[112,542,430,72]}
+{"kind":"shape","id":"sh/v6l4jq94","slide":3,"bbox":[90,830,1420,2]}
+{"kind":"shape","id":"sh/a5c3ql8z","slide":3,"bbox":[90,830,840,3]}
+{"kind":"textbox","id":"sh/x8nml0ra","slide":3,"text":"First Finance - Arnaud Demes","textPreview":"First Finance - Arnaud Demes","textChars":28,"textLines":1,"bbox":[102,856,420,24]}
+{"kind":"textbox","id":"sh/w7ulsvqp","slide":3,"text":"SOURCE","textPreview":"SOURCE","textChars":6,"textLines":1,"bbox":[1310,856,160,24]}
+{"kind":"textbox","id":"sh/ja54na9g","slide":3,"text":"03","textPreview":"03","textChars":2,"textLines":1,"bbox":[1480,856,30,24]}
+{"kind":"image","id":"im/p4bu58jm","slide":3,"name":"","geometry":"roundRect","alt":"NVIDIA FY2026 Form 10-K cover page on SEC.gov","bbox":[650,280,820,410]}
+{"kind":"notes","id":"nt/ofy9wn61","slide":3,"text":"The repository now preserves the official primary filing. The SEC index records accession 0001045810-26-000021, filing date February 25, 2026, report period January 25, 2026, and primary document size 1,967,816 bytes. The browser-rendered saved document is verified in the course manifest.\n\n[Sources]\n- https://www.sec.gov/Archives/edgar/data/1045810/000104581026000021/0001045810-26-000021-index.htm\n- https://www.sec.gov/Archives/edgar/data/1045810/000104581026000021/nvda-20260125.htm\n[/Sources]"}
+{"kind":"slide","id":"sl/jyx0ra1s","slide":4,"title":"CONTEXT BUDGET","textShapes":21}
+{"kind":"textbox","id":"sh/sri9s7q9","slide":4,"text":"CONTEXT BUDGET","textPreview":"CONTEXT BUDGET","textChars":14,"textLines":1,"bbox":[102,76,520,28]}
+{"kind":"textbox","id":"sh/1cj2d8b6","slide":4,"text":"The context window is a budget—not a document bin","textPreview":"The context window is a budget—not a document bin","textChars":49,"textLines":1,"bbox":[102,124,1390,118]}
+{"kind":"textbox","id":"sh/0ba143al","slide":4,"text":"01","textPreview":"01","textChars":2,"textLines":1,"bbox":[122,300,60,38]}
+{"kind":"textbox","id":"sh/rm1k7yt4","slide":4,"text":"Reserve answer capacity","textPreview":"Reserve answer capacity","textChars":23,"textLines":1,"bbox":[225,296,620,48]}
+{"kind":"textbox","id":"sh/ql8jytsj","slide":4,"text":"OUTPUT","textPreview":"OUTPUT","textChars":6,"textLines":1,"bbox":[900,300,110,34]}
+{"kind":"shape","id":"sh/doj29oba","slide":4,"bbox":[225,358,790,2]}
+{"kind":"textbox","id":"sh/sna103ap","slide":4,"text":"02","textPreview":"02","textChars":2,"textLines":1,"bbox":[122,388,60,38]}
+{"kind":"textbox","id":"sh/3ihk3et8","slide":4,"text":"Add instructions + question","textPreview":"Add instructions + question","textChars":27,"textLines":1,"bbox":[225,384,620,48]}
+{"kind":"textbox","id":"sh/ih8ju9sn","slide":4,"text":"ADD","textPreview":"ADD","textChars":3,"textLines":1,"bbox":[900,388,110,34]}
+{"kind":"shape","id":"sh/kbm987y5","slide":4,"bbox":[225,446,790,2]}
+{"kind":"textbox","id":"sh/5cva1cfq","slide":4,"text":"03","textPreview":"03","textChars":2,"textLines":1,"bbox":[122,476,60,38]}
+{"kind":"textbox","id":"sh/i94r6xgz","slide":4,"text":"Estimate evidence tokens","textPreview":"Estimate evidence tokens","textChars":24,"textLines":1,"bbox":[225,472,620,48]}
+{"kind":"textbox","id":"sh/jadsz2xk","slide":4,"text":"MEASURE","textPreview":"MEASURE","textChars":7,"textLines":1,"bbox":[900,476,110,34]}
+{"kind":"shape","id":"sh/w72947yt","slide":4,"bbox":[225,534,790,2]}
+{"kind":"textbox","id":"sh/x8vaxsfe","slide":4,"text":"04","textPreview":"04","textChars":2,"textLines":1,"bbox":[122,564,60,38]}
+{"kind":"textbox","id":"sh/a5kr2xg3","slide":4,"text":"Choose route before generation","textPreview":"Choose route before generation","textChars":30,"textLines":1,"bbox":[225,560,620,48]}
+{"kind":"textbox","id":"sh/v6tsv2xo","slide":4,"text":"ROUTE","textPreview":"ROUTE","textChars":5,"textLines":1,"bbox":[900,564,110,34]}
+{"kind":"shape","id":"sh/g36tgryd","slide":4,"bbox":[225,622,790,2]}
+{"kind":"shape","id":"sh/h4fa9wfy","slide":4,"bbox":[1110,306,350,340]}
+{"kind":"textbox","id":"sh/p0batw72","slide":4,"text":"TEACHING WINDOW","textPreview":"TEACHING WINDOW","textChars":15,"textLines":1,"bbox":[1160,360,250,32]}
+{"kind":"textbox","id":"sh/oz29krqh","slide":4,"text":"8,192 tokens","textPreview":"8,192 tokens","textChars":12,"textLines":1,"bbox":[1160,424,250,54]}
+{"kind":"textbox","id":"sh/3ytsrmpw","slide":4,"text":"pack fits\nfiling does not","textPreview":"pack fits | filing does not","textChars":25,"textLines":2,"bbox":[1160,520,250,82]}
+{"kind":"textbox","id":"sh/2xkrih8b","slide":4,"text":"Four characters per token is a teaching estimate—not a provider tokenizer.","textPreview":"Four characters per token is a teaching estimate—not a provider tokenizer.","textChars":74,"textLines":1,"bbox":[225,700,920,42]}
+{"kind":"shape","id":"sh/1wbapc7q","slide":4,"bbox":[90,830,1420,2]}
+{"kind":"shape","id":"sh/gv29g7q5","slide":4,"bbox":[90,830,840,3]}
+{"kind":"textbox","id":"sh/fu9sn2p0","slide":4,"text":"First Finance - Arnaud Demes","textPreview":"First Finance - Arnaud Demes","textChars":28,"textLines":1,"bbox":[102,856,420,24]}
+{"kind":"textbox","id":"sh/et0reh8f","slide":4,"text":"BUDGET","textPreview":"BUDGET","textChars":6,"textLines":1,"bbox":[1310,856,160,24]}
+{"kind":"textbox","id":"sh/tsrqlc7u","slide":4,"text":"04","textPreview":"04","textChars":2,"textLines":1,"bbox":[1480,856,30,24]}
+{"kind":"notes","id":"nt/jyx0ra1s","slide":4,"text":"Budget every component: instructions, evidence, question, and an answer reserve. The course uses a transparent four-characters-per-token estimate so students can see the application rule; production systems should use the selected model's tokenizer and verified limits.\n\n[Sources]\n- chapters/03-cag-financial-document.md\n- https://developers.openai.com/api/docs/guides/prompt-caching\n[/Sources]"}
+{"kind":"slide","id":"sl/i107q5of","slide":5,"title":"PROMPT CACHING","textShapes":14}
+{"kind":"textbox","id":"sh/tcfel0vu","slide":5,"text":"PROMPT CACHING","textPreview":"PROMPT CACHING","textChars":14,"textLines":1,"bbox":[102,76,520,28]}
+{"kind":"textbox","id":"sh/dgbulwnm","slide":5,"text":"CAG reuses a stable prefix; it does not cache answers","textPreview":"CAG reuses a stable prefix; it does not cache answers","textChars":53,"textLines":1,"bbox":[102,124,1390,118]}
+{"kind":"textbox","id":"sh/cf2tcr61","slide":5,"text":"STABLE PREFIX","textPreview":"STABLE PREFIX","textChars":13,"textLines":1,"bbox":[112,302,220,36]}
+{"kind":"textbox","id":"sh/z2tcnm5s","slide":5,"text":"Instructions + source remain exact","textPreview":"Instructions + source remain exact","textChars":34,"textLines":1,"bbox":[112,352,430,72]}
+{"kind":"shape","id":"sh/yhkbe1o7","slide":5,"bbox":[112,454,430,2]}
+{"kind":"textbox","id":"sh/l4bupwny","slide":5,"text":"CHANGING SUFFIX","textPreview":"CHANGING SUFFIX","textChars":15,"textLines":1,"bbox":[112,492,220,36]}
+{"kind":"textbox","id":"sh/032tgr6d","slide":5,"text":"Append each new question last","textPreview":"Append each new question last","textChars":29,"textLines":1,"bbox":[112,542,430,72]}
+{"kind":"shape","id":"sh/n6dcr65o","slide":5,"bbox":[650,280,820,410]}
+{"kind":"textbox","id":"sh/m5kbi1oj","slide":5,"text":"Request A:","textPreview":"Request A:","textChars":10,"textLines":1,"bbox":[712,326,680,36]}
+{"kind":"textbox","id":"sh/w32dkbuh","slide":5,"text":"policy → source → question A","textPreview":"policy → source → question A","textChars":28,"textLines":1,"bbox":[712,390,680,36]}
+{"kind":"textbox","id":"sh/x4vedgvm","slide":5,"text":"Request B:","textPreview":"Request B:","textChars":10,"textLines":1,"bbox":[712,454,710,36]}
+{"kind":"textbox","id":"sh/ahkvi1cb","slide":5,"text":"policy → source → question B","textPreview":"policy → source → question B","textChars":28,"textLines":1,"bbox":[712,518,680,36]}
+{"kind":"textbox","id":"sh/v2twb6dw","slide":5,"text":"Confirm reuse with cached-token telemetry; latency alone is not proof.","textPreview":"Confirm reuse with cached-token telemetry; latency alone is not proof.","textChars":70,"textLines":1,"bbox":[712,605,660,36]}
+{"kind":"shape","id":"sh/k7mxovud","slide":5,"bbox":[90,830,1420,2]}
+{"kind":"shape","id":"sh/58vehgvy","slide":5,"bbox":[90,830,840,3]}
+{"kind":"textbox","id":"sh/i54fmlc7","slide":5,"text":"First Finance - Arnaud Demes","textPreview":"First Finance - Arnaud Demes","textChars":28,"textLines":1,"bbox":[102,856,420,24]}
+{"kind":"textbox","id":"sh/j6dwfqds","slide":5,"text":"CACHE","textPreview":"CACHE","textChars":5,"textLines":1,"bbox":[1310,856,160,24]}
+{"kind":"textbox","id":"sh/sb6xsvu9","slide":5,"text":"05","textPreview":"05","textChars":2,"textLines":1,"bbox":[1480,856,30,24]}
+{"kind":"notes","id":"nt/i107q5of","slide":5,"text":"OpenAI prompt caching reuses eligible exact prefixes automatically. Put stable content first and dynamic content last. For GPT-5.6 and later, the guide states a 1,024-token minimum cacheable prompt length. A cache stores reusable processing state—not answers—and cached-token telemetry is the evidence of reuse.\n\n[Sources]\n- https://developers.openai.com/api/docs/guides/prompt-caching\n[/Sources]"}
+{"kind":"slide","id":"sl/x8f69ofe","slide":6,"title":"LONG CONTEXT","textShapes":9}
+{"kind":"textbox","id":"sh/svmt4v6t","slide":6,"text":"LONG CONTEXT","textPreview":"LONG CONTEXT","textChars":12,"textLines":1,"bbox":[102,76,520,28]}
+{"kind":"textbox","id":"sh/yhg7epsj","slide":6,"text":"Fits in the window does not mean every fact gets used","textPreview":"Fits in the window does not mean every fact gets used","textChars":53,"textLines":1,"bbox":[102,124,1390,118]}
+{"kind":"textbox","id":"sh/zi98nu94","slide":6,"text":"PUBLISHED RESULT","textPreview":"PUBLISHED RESULT","textChars":16,"textLines":1,"bbox":[112,302,220,36]}
+{"kind":"textbox","id":"sh/87ipkzal","slide":6,"text":"Accuracy changed with the position of the answer-bearing document.","textPreview":"Accuracy changed with the position of the answer-bearing document.","textChars":66,"textLines":1,"bbox":[112,352,430,72]}
+{"kind":"shape","id":"sh/98rqt4r6","slide":6,"bbox":[112,454,430,2]}
+{"kind":"textbox","id":"sh/ml07i9sv","slide":6,"text":"DESIGN IMPLICATION","textPreview":"DESIGN IMPLICATION","textChars":18,"textLines":1,"bbox":[112,492,220,36]}
+{"kind":"textbox","id":"sh/7m98ru9g","slide":6,"text":"Evaluate representative questions—not only token fit.","textPreview":"Evaluate representative questions—not only token fit.","textChars":53,"textLines":1,"bbox":[112,542,430,72]}
+{"kind":"shape","id":"sh/5svutgni","slide":6,"bbox":[90,830,1420,2]}
+{"kind":"shape","id":"sh/47mt0b6x","slide":6,"bbox":[90,830,840,3]}
+{"kind":"textbox","id":"sh/j6dcr65c","slide":6,"text":"First Finance - Arnaud Demes","textPreview":"First Finance - Arnaud Demes","textChars":28,"textLines":1,"bbox":[102,856,420,24]}
+{"kind":"textbox","id":"sh/i54bylor","slide":6,"text":"ATTENTION","textPreview":"ATTENTION","textChars":9,"textLines":1,"bbox":[1310,856,160,24]}
+{"kind":"textbox","id":"sh/twfux0ne","slide":6,"text":"06","textPreview":"06","textChars":2,"textLines":1,"bbox":[1480,856,30,24]}
+{"kind":"image","id":"im/zax8jq94","slide":6,"name":"","geometry":"roundRect","alt":"Lost in the Middle Figure 1 showing U-shaped accuracy by answer-document position","bbox":[650,280,820,410]}
+{"kind":"notes","id":"nt/x8f69ofe","slide":6,"text":"Liu et al. varied the position of the answer-bearing document among 20 retrieved documents. In the published example shown, accuracy was strongest near the beginning and improved again near the end, with weaker results through much of the middle. The implication is not that every model has the same curve; it is that fit and use must be evaluated separately.\n\n[Sources]\n- https://arxiv.org/abs/2307.03172\n[/Sources]"}
+{"kind":"slide","id":"sl/gnmp4jqx","slide":7,"title":"ARCHITECTURE CHOICE","textShapes":12}
+{"kind":"textbox","id":"sh/p8fih03e","slide":7,"text":"ARCHITECTURE CHOICE","textPreview":"ARCHITECTURE CHOICE","textChars":19,"textLines":1,"bbox":[102,76,520,28]}
+{"kind":"textbox","id":"sh/cb2tkvap","slide":7,"text":"Use CAG for complete evidence; RAG for selected evidence","textPreview":"Use CAG for complete evidence; RAG for selected evidence","textChars":56,"textLines":1,"bbox":[102,124,1390,118]}
+{"kind":"textbox","id":"sh/dcbud0ra","slide":7,"text":"Direct CAG","textPreview":"Direct CAG","textChars":10,"textLines":1,"bbox":[112,300,460,90]}
+{"kind":"textbox","id":"sh/ydkbm5sv","slide":7,"text":"Bounded · stable · useful as a whole","textPreview":"Bounded · stable · useful as a whole","textChars":36,"textLines":1,"bbox":[112,410,520,38]}
+{"kind":"shape","id":"sh/zedcfa9g","slide":7,"bbox":[680,286,2,330]}
+{"kind":"textbox","id":"sh/kzmdova1","slide":7,"text":"Retrieval + RAG","textPreview":"Retrieval + RAG","textChars":15,"textLines":1,"bbox":[760,300,520,90]}
+{"kind":"textbox","id":"sh/l0vuh0rm","slide":7,"text":"Large · changing · selectively relevant","textPreview":"Large · changing · selectively relevant","textChars":39,"textLines":1,"bbox":[760,410,580,38]}
+{"kind":"textbox","id":"sh/eh0ba1sr","slide":7,"text":"[USE]  repeated questions over the same source","textPreview":"[USE]  repeated questions over the same source","textChars":46,"textLines":1,"bbox":[112,520,600,38]}
+{"kind":"textbox","id":"sh/fi9c369c","slide":7,"text":"[USE]  search first · preserve source identity","textPreview":"[USE]  search first · preserve source identity","textChars":46,"textLines":1,"bbox":[760,520,700,72]}
+{"kind":"textbox","id":"sh/baxkjqlk","slide":7,"text":"The route belongs to the application—not to the acronym.","textPreview":"The route belongs to the application—not to the acronym.","textChars":56,"textLines":1,"bbox":[112,666,1240,54]}
+{"kind":"shape","id":"sh/a9ojq5kz","slide":7,"bbox":[90,830,1420,2]}
+{"kind":"shape","id":"sh/xcz2l03q","slide":7,"bbox":[90,830,840,3]}
+{"kind":"textbox","id":"sh/cbq1sv25","slide":7,"text":"First Finance - Arnaud Demes","textPreview":"First Finance - Arnaud Demes","textChars":28,"textLines":1,"bbox":[102,856,420,24]}
+{"kind":"textbox","id":"sh/n6x0fqlo","slide":7,"text":"CHOICE","textPreview":"CHOICE","textChars":6,"textLines":1,"bbox":[1310,856,160,24]}
+{"kind":"textbox","id":"sh/25ojml43","slide":7,"text":"07","textPreview":"07","textChars":2,"textLines":1,"bbox":[1480,856,30,24]}
+{"kind":"notes","id":"nt/gnmp4jqx","slide":7,"text":"CAG works best when a complete bounded source is useful across repeated questions. RAG earns its infrastructure when the corpus is too large, changes frequently, or each question needs only a selective evidence set. Both still require grounding checks.\n\n[Sources]\n- https://developers.openai.com/api/docs/guides/prompt-caching\n[/Sources]"}
+{"kind":"slide","id":"sl/fu1gfa1s","slide":8,"title":"ROUTING CONTRACT","textShapes":21}
+{"kind":"textbox","id":"sh/w3ed8r6x","slide":8,"text":"ROUTING CONTRACT","textPreview":"ROUTING CONTRACT","textChars":16,"textLines":1,"bbox":[102,76,520,28]}
+{"kind":"textbox","id":"sh/18byd4zy","slide":8,"text":"Make the route before generation","textPreview":"Make the route before generation","textChars":32,"textLines":1,"bbox":[102,124,1390,118]}
+{"kind":"textbox","id":"sh/g72x4zyd","slide":8,"text":"01","textPreview":"01","textChars":2,"textLines":1,"bbox":[122,300,60,38]}
+{"kind":"textbox","id":"sh/ri9g7uhw","slide":8,"text":"Does the complete artifact fit safely?","textPreview":"Does the complete artifact fit safely?","textChars":38,"textLines":1,"bbox":[225,296,620,48]}
+{"kind":"textbox","id":"sh/6h0fypgb","slide":8,"text":"FIT","textPreview":"FIT","textChars":3,"textLines":1,"bbox":[900,300,110,34]}
+{"kind":"shape","id":"sh/tkby9kzm","slide":8,"bbox":[225,358,790,2]}
+{"kind":"textbox","id":"sh/sjix0zy1","slide":8,"text":"02","textPreview":"02","textChars":2,"textLines":1,"bbox":[122,388,60,38]}
+{"kind":"textbox","id":"sh/je9g3ahk","slide":8,"text":"Is the whole artifact useful?","textPreview":"Is the whole artifact useful?","textChars":29,"textLines":1,"bbox":[225,384,620,48]}
+{"kind":"textbox","id":"sh/id0fu50z","slide":8,"text":"VALUE","textPreview":"VALUE","textChars":5,"textLines":1,"bbox":[900,388,110,34]}
+{"kind":"shape","id":"sh/o7ydoret","slide":8,"bbox":[225,446,790,2]}
+{"kind":"textbox","id":"sh/98rehwve","slide":8,"text":"03","textPreview":"03","textChars":2,"textLines":1,"bbox":[122,476,60,38]}
+{"kind":"textbox","id":"sh/m5gvmhwn","slide":8,"text":"Will it remain stable across questions?","textPreview":"Will it remain stable across questions?","textChars":39,"textLines":1,"bbox":[225,472,620,48]}
+{"kind":"textbox","id":"sh/n6pwfmd8","slide":8,"text":"STABLE","textPreview":"STABLE","textChars":6,"textLines":1,"bbox":[900,476,110,34]}
+{"kind":"shape","id":"sh/0jydkreh","slide":8,"bbox":[225,534,790,2]}
+{"kind":"textbox","id":"sh/1k7edwv2","slide":8,"text":"04","textPreview":"04","textChars":2,"textLines":1,"bbox":[122,564,60,38]}
+{"kind":"textbox","id":"sh/ehgvihwr","slide":8,"text":"Return route + reason","textPreview":"Return route + reason","textChars":21,"textLines":1,"bbox":[225,560,620,48]}
+{"kind":"textbox","id":"sh/zipwbmdc","slide":8,"text":"RECORD","textPreview":"RECORD","textChars":6,"textLines":1,"bbox":[900,564,110,34]}
+{"kind":"shape","id":"sh/kfixwbe1","slide":8,"bbox":[225,622,790,2]}
+{"kind":"shape","id":"sh/lgbepgvm","slide":8,"bbox":[1110,306,350,340]}
+{"kind":"textbox","id":"sh/tw7e9gnq","slide":8,"text":"TYPED STATE","textPreview":"TYPED STATE","textChars":11,"textLines":1,"bbox":[1160,360,250,32]}
+{"kind":"textbox","id":"sh/svydgb65","slide":8,"text":"Context\nDecision","textPreview":"Context | Decision","textChars":16,"textLines":2,"bbox":[1160,424,250,54]}
+{"kind":"textbox","id":"sh/7u5w765k","slide":8,"text":"route · tokens\nreason","textPreview":"route · tokens | reason","textChars":21,"textLines":2,"bbox":[1160,520,250,82]}
+{"kind":"textbox","id":"sh/6twve1oz","slide":8,"text":"Fit is necessary for CAG; usefulness and operations decide whether it is sufficient.","textPreview":"Fit is necessary for CAG; usefulness and operations decide whether it is sufficient.","textChars":84,"textLines":1,"bbox":[225,700,920,42]}
+{"kind":"shape","id":"sh/5sne5wne","slide":8,"bbox":[90,830,1420,2]}
+{"kind":"shape","id":"sh/kredcr6t","slide":8,"bbox":[90,830,840,3]}
+{"kind":"textbox","id":"sh/jq5w365o","slide":8,"text":"First Finance - Arnaud Demes","textPreview":"First Finance - Arnaud Demes","textChars":28,"textLines":1,"bbox":[102,856,420,24]}
+{"kind":"textbox","id":"sh/i5wva1o3","slide":8,"text":"DECIDE","textPreview":"DECIDE","textChars":6,"textLines":1,"bbox":[1310,856,160,24]}
+{"kind":"textbox","id":"sh/x4ne1wni","slide":8,"text":"08","textPreview":"08","textChars":2,"textLines":1,"bbox":[1480,856,30,24]}
+{"kind":"notes","id":"nt/fu1gfa1s","slide":8,"text":"The decision is application state, not an intuition hidden in notebook code. Record the document estimate, prompt overhead, available capacity, route, and reason before generation. Later lessons can log the same typed object as trace data.\n\n[Sources]\n- https://developers.openai.com/api/docs/guides/prompt-caching\n[/Sources]"}
+{"kind":"slide","id":"sl/udsvah03","slide":9,"title":"NVIDIA CASE","textShapes":12}
+{"kind":"textbox","id":"sh/qlcjipgn","slide":9,"text":"NVIDIA CASE","textPreview":"NVIDIA CASE","textChars":11,"textLines":1,"bbox":[102,76,520,28]}
+{"kind":"textbox","id":"sh/1cfmhgne","slide":9,"text":"The same filing routes two ways","textPreview":"The same filing routes two ways","textChars":31,"textLines":1,"bbox":[102,124,1390,118]}
+{"kind":"textbox","id":"sh/0b65obm9","slide":9,"text":"Context pack","textPreview":"Context pack","textChars":12,"textLines":1,"bbox":[112,300,460,90]}
+{"kind":"textbox","id":"sh/nex4jq5k","slide":9,"text":"~1,598 estimated tokens","textPreview":"~1,598 estimated tokens","textChars":23,"textLines":1,"bbox":[112,410,520,38]}
+{"kind":"shape","id":"sh/mdonql4z","slide":9,"bbox":[680,286,2,330]}
+{"kind":"textbox","id":"sh/9gzml0nq","slide":9,"text":"Full filing","textPreview":"Full filing","textChars":11,"textLines":1,"bbox":[760,300,520,90]}
+{"kind":"textbox","id":"sh/ofq5svm5","slide":9,"text":"~495,672 estimated tokens","textPreview":"~495,672 estimated tokens","textChars":25,"textLines":1,"bbox":[760,410,580,38]}
+{"kind":"textbox","id":"sh/bih4na5w","slide":9,"text":"[CAG]  complete pack · repeated questions","textPreview":"[CAG]  complete pack · repeated questions","textChars":41,"textLines":1,"bbox":[112,520,600,38]}
+{"kind":"textbox","id":"sh/ah8nu54b","slide":9,"text":"[RAG]  select evidence · keep provenance","textPreview":"[RAG]  select evidence · keep provenance","textChars":40,"textLines":1,"bbox":[760,520,700,72]}
+{"kind":"textbox","id":"sh/oza1gfyh","slide":9,"text":"Same issuer. Same filing. Different application artifact.","textPreview":"Same issuer. Same filing. Different application artifact.","textChars":57,"textLines":1,"bbox":[112,666,1240,54]}
+{"kind":"shape","id":"sh/p0ji9kf2","slide":9,"bbox":[90,830,1420,2]}
+{"kind":"shape","id":"sh/2xsjepgb","slide":9,"bbox":[90,830,840,3]}
+{"kind":"textbox","id":"sh/3y107axw","slide":9,"text":"First Finance - Arnaud Demes","textPreview":"First Finance - Arnaud Demes","textChars":28,"textLines":1,"bbox":[102,856,420,24]}
+{"kind":"textbox","id":"sh/cnu1kzyd","slide":9,"text":"CASE","textPreview":"CASE","textChars":4,"textLines":1,"bbox":[1310,856,160,24]}
+{"kind":"textbox","id":"sh/do3id4fy","slide":9,"text":"09","textPreview":"09","textChars":2,"textLines":1,"bbox":[1480,856,30,24]}
+{"kind":"notes","id":"nt/udsvah03","slide":9,"text":"These are deterministic course estimates using four characters per token: approximately 1,598 tokens for the bounded official context pack and 495,672 for the saved complete filing. In the 8,192-token teaching window, the pack routes to CAG and the complete filing routes to RAG.\n\n[Sources]\n- https://www.sec.gov/Archives/edgar/data/1045810/000104581026000021/nvda-20260125.htm\n[/Sources]"}
+{"kind":"slide","id":"sl/m90b6t0r","slide":10,"title":"PRACTICAL LAB","textShapes":21}
+{"kind":"textbox","id":"sh/0nut8rul","slide":10,"text":"PRACTICAL LAB","textPreview":"PRACTICAL LAB","textChars":13,"textLines":1,"bbox":[102,76,520,28]}
+{"kind":"textbox","id":"sh/xc3mho32","slide":10,"text":"The notebook proves the boundary with the real filing","textPreview":"The notebook proves the boundary with the real filing","textChars":53,"textLines":1,"bbox":[102,124,1390,118]}
+{"kind":"textbox","id":"sh/cbu58j2h","slide":10,"text":"01","textPreview":"01","textChars":2,"textLines":1,"bbox":[122,300,60,38]}
+{"kind":"textbox","id":"sh/zelojyl8","slide":10,"text":"Verify SEC file + manifest","textPreview":"Verify SEC file + manifest","textChars":26,"textLines":1,"bbox":[225,296,620,48]}
+{"kind":"textbox","id":"sh/ydcnatkn","slide":10,"text":"CHECK","textPreview":"CHECK","textChars":5,"textLines":1,"bbox":[900,300,110,34]}
+{"kind":"shape","id":"sh/l036l83y","slide":10,"bbox":[225,358,790,2]}
+{"kind":"textbox","id":"sh/kzu5c32t","slide":10,"text":"02","textPreview":"02","textChars":2,"textLines":1,"bbox":[122,388,60,38]}
+{"kind":"textbox","id":"sh/725onyl4","slide":10,"text":"Build bounded official pack","textPreview":"Build bounded official pack","textChars":27,"textLines":1,"bbox":[225,384,620,48]}
+{"kind":"textbox","id":"sh/m1cnetkj","slide":10,"text":"PACK","textPreview":"PACK","textChars":4,"textLines":1,"bbox":[900,388,110,34]}
+{"kind":"shape","id":"sh/s7yt4b21","slide":10,"bbox":[225,446,790,2]}
+{"kind":"textbox","id":"sh/d87uxg3m","slide":10,"text":"03","textPreview":"03","textChars":2,"textLines":1,"bbox":[122,476,60,38]}
+{"kind":"textbox","id":"sh/q5gb21kb","slide":10,"text":"Ask two stable-prefix questions","textPreview":"Ask two stable-prefix questions","textChars":31,"textLines":1,"bbox":[225,472,620,48]}
+{"kind":"textbox","id":"sh/r6pcv6lw","slide":10,"text":"CALL","textPreview":"CALL","textChars":4,"textLines":1,"bbox":[900,476,110,34]}
+{"kind":"shape","id":"sh/0bit8b2d","slide":10,"bbox":[225,534,790,2]}
+{"kind":"textbox","id":"sh/1cru1g3y","slide":10,"text":"04","textPreview":"04","textChars":2,"textLines":1,"bbox":[122,564,60,38]}
+{"kind":"textbox","id":"sh/e9gb61k7","slide":10,"text":"Route the complete filing to RAG","textPreview":"Route the complete filing to RAG","textChars":32,"textLines":1,"bbox":[225,560,620,48]}
+{"kind":"textbox","id":"sh/fapcz6ls","slide":10,"text":"DECIDE","textPreview":"DECIDE","textChars":6,"textLines":1,"bbox":[900,564,110,34]}
+{"kind":"shape","id":"sh/ozitcv29","slide":10,"bbox":[225,622,790,2]}
+{"kind":"shape","id":"sh/p0ru503u","slide":10,"bbox":[1110,306,350,340]}
+{"kind":"textbox","id":"sh/xwnupgvy","slide":10,"text":"NOW RUN","textPreview":"NOW RUN","textChars":7,"textLines":1,"bbox":[1160,360,250,32]}
+{"kind":"textbox","id":"sh/wvetgbud","slide":10,"text":"Notebook 03","textPreview":"Notebook 03","textChars":11,"textLines":1,"bbox":[1160,424,250,54]}
+{"kind":"textbox","id":"sh/bu5cnqd8","slide":10,"text":"15 cells\n25 minutes","textPreview":"15 cells | 25 minutes","textChars":19,"textLines":2,"bbox":[1160,520,250,82]}
+{"kind":"textbox","id":"sh/atwbelcn","slide":10,"text":"Four executable figures; same notebook code with Ollama or OpenAI.","textPreview":"Four executable figures; same notebook code with Ollama or OpenAI.","textChars":66,"textLines":1,"bbox":[225,700,920,42]}
+{"kind":"shape","id":"sh/lk7ut0va","slide":10,"bbox":[90,830,1420,2]}
+{"kind":"shape","id":"sh/kjytkvup","slide":10,"bbox":[90,830,840,3]}
+{"kind":"textbox","id":"sh/jypcrqd4","slide":10,"text":"First Finance - Arnaud Demes","textPreview":"First Finance - Arnaud Demes","textChars":28,"textLines":1,"bbox":[102,856,420,24]}
+{"kind":"textbox","id":"sh/yxgbilcj","slide":10,"text":"NOTEBOOK","textPreview":"NOTEBOOK","textChars":8,"textLines":1,"bbox":[1310,856,160,24]}
+{"kind":"textbox","id":"sh/1o3ahwvq","slide":10,"text":"10","textPreview":"10","textChars":2,"textLines":1,"bbox":[1480,856,30,24]}
+{"kind":"notes","id":"nt/m90b6t0r","slide":10,"text":"The compact notebook now has 15 cells. Students verify the official file, build the source-derived pack, visualize the budget, ask two repeated-prefix questions, inspect cache telemetry when available, and route the complete filing to RAG. No synthetic appendix is required.\n\n[Sources]\n- https://www.sec.gov/Archives/edgar/data/1045810/000104581026000021/nvda-20260125.htm\n- https://developers.openai.com/api/docs/guides/prompt-caching\n[/Sources]"}
+{"kind":"slide","id":"sl/jetc3ut0","slide":11,"title":"FIRST FINANCE","textShapes":11}
+{"kind":"shape","id":"sh/o7ih0r6h","slide":11,"bbox":[102,82,132,8]}
+{"kind":"textbox","id":"sh/xcryxg7y","slide":11,"text":"FIRST FINANCE","textPreview":"FIRST FINANCE","textChars":13,"textLines":1,"bbox":[102,116,320,32]}
+{"kind":"textbox","id":"sh/wbih4b6d","slide":11,"text":"Quick quiz","textPreview":"Quick quiz","textChars":10,"textLines":1,"bbox":[102,252,980,105]}
+{"kind":"textbox","id":"sh/n69grmpw","slide":11,"text":"Choose one answer for each question.","textPreview":"Choose one answer for each question.","textChars":36,"textLines":1,"bbox":[102,382,1120,58]}
+{"kind":"textbox","id":"sh/250zy18b","slide":11,"text":"LESSON 03  ·  3 QUESTIONS  ·  3 MINUTES","textPreview":"LESSON 03  ·  3 QUESTIONS  ·  3 MINUTES","textChars":39,"textLines":1,"bbox":[102,694,1000,34]}
+{"kind":"textbox","id":"sh/98rytw72","slide":11,"text":"First Finance - Arnaud Demes","textPreview":"First Finance - Arnaud Demes","textChars":28,"textLines":1,"bbox":[102,752,540,38]}
+{"kind":"textbox","id":"sh/72t03qp0","slide":11,"name":"quiz-question-1","text":"1. Which artifact routes to CAG in this lab?","textPreview":"1. Which artifact routes to CAG in this lab?","textChars":44,"textLines":1,"bbox":[102,462,1396,30]}
+{"kind":"textbox","id":"sh/61kzalof","slide":11,"name":"quiz-options-1","text":"A  Bounded official pack     |     B  Complete filing     |     C  Neither","textPreview":"A  Bounded official pack     |     B  Complete filing     |     C  Neither","textChars":74,"textLines":1,"bbox":[132,494,1366,26]}
+{"kind":"textbox","id":"sh/ofqtgnyt","slide":11,"name":"quiz-question-2","text":"2. What proves prompt-cache reuse?","textPreview":"2. What proves prompt-cache reuse?","textChars":34,"textLines":1,"bbox":[102,534,1396,30]}
+{"kind":"textbox","id":"sh/9gza9sze","slide":11,"name":"quiz-options-2","text":"A  Lower latency     |     B  Cached-token telemetry     |     C  A fluent answer","textPreview":"A  Lower latency     |     B  Cached-token telemetry     |     C  A fluent answer","textChars":81,"textLines":1,"bbox":[132,566,1366,26]}
+{"kind":"textbox","id":"sh/mdobedg3","slide":11,"name":"quiz-question-3","text":"3. When does RAG earn its complexity?","textPreview":"3. When does RAG earn its complexity?","textChars":37,"textLines":1,"bbox":[102,606,1396,30]}
+{"kind":"textbox","id":"sh/nehs7iho","slide":11,"name":"quiz-options-3","text":"A  Always     |     B  When evidence must be selected     |     C  When answers are short","textPreview":"A  Always     |     B  When evidence must be selected     |     C  When answers are short","textChars":89,"textLines":1,"bbox":[132,638,1366,26]}
+{"kind":"notes","id":"nt/jetc3ut0","slide":11,"text":"Ask learners to answer before showing the correction. The questions test the three architecture boundaries: artifact choice, cache evidence, and retrieval need.\n\n[Sources]\n- chapters/03-cag-financial-document.md\n- https://developers.openai.com/api/docs/guides/prompt-caching\n[/Sources]"}
+{"kind":"slide","id":"sl/8f2psfyx","slide":12,"title":"FIRST FINANCE","textShapes":11}
+{"kind":"shape","id":"sh/sb2lcnmd","slide":12,"bbox":[102,82,132,8]}
+{"kind":"textbox","id":"sh/1gbm9s3a","slide":12,"text":"FIRST FINANCE","textPreview":"FIRST FINANCE","textChars":13,"textLines":1,"bbox":[102,116,320,32]}
+{"kind":"textbox","id":"sh/0f2lgnmp","slide":12,"text":"Answers","textPreview":"Answers","textChars":7,"textLines":1,"bbox":[102,252,980,105]}
+{"kind":"textbox","id":"sh/ra943il8","slide":12,"text":"Check the idea, not only the letter.","textPreview":"Check the idea, not only the letter.","textChars":36,"textLines":1,"bbox":[102,382,1120,58]}
+{"kind":"textbox","id":"sh/q903ad4n","slide":12,"text":"LESSON 03  ·  CORRECTION","textPreview":"LESSON 03  ·  CORRECTION","textChars":24,"textLines":1,"bbox":[102,694,1000,34]}
+{"kind":"textbox","id":"sh/dcbm583y","slide":12,"text":"First Finance - Arnaud Demes","textPreview":"First Finance - Arnaud Demes","textChars":28,"textLines":1,"bbox":[102,752,540,38]}
+{"kind":"textbox","id":"sh/b6d4f2lc","slide":12,"name":"quiz-answer-1","text":"1. A. Bounded official pack","textPreview":"1. A. Bounded official pack","textChars":27,"textLines":1,"bbox":[102,462,1396,30]}
+{"kind":"textbox","id":"sh/a543mx4r","slide":12,"name":"quiz-explanation-1","text":"Its complete evidence is useful and fits the teaching budget.","textPreview":"Its complete evidence is useful and fits the teaching budget.","textChars":61,"textLines":1,"bbox":[132,494,1366,26]}
+{"kind":"textbox","id":"sh/wvupgz6t","slide":12,"name":"quiz-answer-2","text":"2. B. Cached-token telemetry","textPreview":"2. B. Cached-token telemetry","textChars":28,"textLines":1,"bbox":[102,534,1396,30]}
+{"kind":"textbox","id":"sh/xw3q94ne","slide":12,"name":"quiz-explanation-2","text":"Latency varies; the provider's cached-token field records reuse.","textPreview":"Latency varies; the provider's cached-token field records reuse.","textChars":64,"textLines":1,"bbox":[132,566,1366,26]}
+{"kind":"textbox","id":"sh/atc7epon","slide":12,"name":"quiz-answer-3","text":"3. B. When evidence must be selected","textPreview":"3. B. When evidence must be selected","textChars":36,"textLines":1,"bbox":[102,606,1396,30]}
+{"kind":"textbox","id":"sh/bulo7u58","slide":12,"name":"quiz-explanation-3","text":"Retrieval earns its complexity when full context is too large or selectively useful.","textPreview":"Retrieval earns its complexity when full context is too large or selectively useful.","textChars":84,"textLines":1,"bbox":[132,638,1366,26]}
+{"kind":"notes","id":"nt/8f2psfyx","slide":12,"text":"Close by resolving the opening question. For this application, the source-derived bounded pack uses CAG and the complete filing uses RAG. The decision is recorded before generation, and neither route removes the need for grounding.\n\n[Sources]\n- chapters/03-cag-financial-document.md\n- https://developers.openai.com/api/docs/guides/prompt-caching\n- https://www.sec.gov/Archives/edgar/data/1045810/000104581026000021/nvda-20260125.htm\n[/Sources]"}

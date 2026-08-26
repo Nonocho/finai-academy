@@ -6,7 +6,7 @@ from collections.abc import Callable, Mapping
 from typing import Any, Literal, TypedDict
 
 from langgraph.graph import END, START, StateGraph
-from pydantic import BaseModel, Field, model_validator
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 
 class MetricRequest(BaseModel):
@@ -36,6 +36,37 @@ class AgentAction(BaseModel):
         if self.action == "finish" and not self.answer:
             raise ValueError("finish action requires an answer")
         return self
+
+
+class ModelAgentAction(BaseModel):
+    """Flat strict wire schema for provider Structured Outputs."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    action: Literal["tool", "finish"]
+    ticker: str | None
+    metric: str | None
+    answer: str | None
+    reason: str
+
+    @model_validator(mode="after")
+    def validate_action(self) -> ModelAgentAction:
+        if self.action == "tool" and (not self.ticker or not self.metric):
+            raise ValueError("tool action requires ticker and metric")
+        if self.action == "finish" and not self.answer:
+            raise ValueError("finish action requires an answer")
+        return self
+
+    def to_agent_action(self) -> AgentAction:
+        request = None
+        if self.action == "tool":
+            request = MetricRequest(ticker=self.ticker or "", metric=self.metric or "")
+        return AgentAction(
+            action=self.action,
+            request=request,
+            answer=self.answer,
+            reason=self.reason,
+        )
 
 
 class RecoveryEvent(BaseModel):

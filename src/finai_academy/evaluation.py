@@ -200,6 +200,8 @@ def evaluate_case(
     case: EvaluationCase,
     retrieval: RetrievalResult,
     answer: str,
+    *,
+    abstained: bool | None = None,
 ) -> CaseEvaluation:
     """Evaluate one prediction without an LLM judge or hidden provider defaults."""
 
@@ -208,7 +210,11 @@ def evaluate_case(
         raise ValueError("answer must not be empty")
     retrieved_ids = tuple(hit.passage.passage_id for hit in retrieval.reranked_hits)
     parsed_citations = tuple(dict.fromkeys(CITATION_PATTERN.findall(normalized_answer)))
-    abstained = bool(retrieval.abstention_reason) and not retrieved_ids
+    inferred_abstention = bool(retrieval.abstention_reason) and not retrieved_ids
+    if abstained is None:
+        abstained = inferred_abstention
+    elif not isinstance(abstained, bool):
+        raise TypeError("abstained must be a boolean or None")
 
     if case.requires_abstention:
         retrieval_recall_at_k = 1.0 if abstained else 0.0

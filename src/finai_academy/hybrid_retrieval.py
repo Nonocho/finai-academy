@@ -8,6 +8,7 @@ import math
 import pickle
 import re
 import zipfile
+from collections import Counter
 from collections.abc import Mapping, Sequence
 from dataclasses import asdict, dataclass
 from pathlib import Path
@@ -174,6 +175,86 @@ class KeywordIndex:
             )
         )
         return self._retriever.rank_subset(query, eligible_indices)[:top_k]
+
+
+class BM25Index:
+    """Okapi BM25 retrieval with the same metadata eligibility boundary."""
+
+    def __init__(
+        self,
+        passages: Sequence[IndexedPassage],
+        *,
+        k1: float = 1.5,
+        b: float = 0.75,
+    ) -> None:
+        self.passages = tuple(passages)
+        _validate_passages(self.passages)
+        if not isinstance(k1, (int, float)) or isinstance(k1, bool) or k1 <= 0:
+            raise ValueError("k1 must be a positive number")
+        if not isinstance(b, (int, float)) or isinstance(b, bool) or not 0 <= b <= 1:
+            raise ValueError("b must be between 0 and 1")
+        self.k1 = float(k1)
+        self.b = float(b)
+        self._tokens = tuple(_tokenize_bm25(passage.text) for passage in self.passages)
+        self._term_frequencies = tuple(Counter(tokens) for tokens in self._tokens)
+        self._document_lengths = tuple(len(tokens) for tokens in self._tokens)
+        self._average_document_length = sum(self._document_lengths) / len(self._document_lengths)
+        document_frequency = Counter(
+            term for tokens in self._tokens for term in set(tokens)
+        )
+        corpus_size = len(self.passages)
+        self._idf = {
+            term: math.log(1 + (corpus_size - frequency + 0.5) / (frequency + 0.5))
+            for term, frequency in document_frequency.items()
+        }
+
+    def search(
+        self,
+        query: str,
+        top_k: int,
+        filters: RetrievalFilters | None = None,
+    ) -> list[RetrievalHit]:
+        """Return normalized BM25 hits after applying metadata eligibility."""
+
+        _validate_top_k(top_k)
+        raw_scores = self.bm25_scores(query, filters)
+        if not raw_scores:
+            return []
+        maximum = max(score for _passage, score in raw_scores)
+        return [
+            RetrievalHit(
+                passage=passage,
+                score=(score / maximum if maximum > 0 else 0.0),
+            )
+            for passage, score in raw_scores[:top_k]
+        ]
+
+    def bm25_scores(
+        self,
+        query: str,
+        filters: RetrievalFilters | None = None,
+    ) -> list[tuple[IndexedPassage, float]]:
+        """Expose raw BM25 scores for teaching visualizations."""
+
+        _validate_query(query)
+        query_terms = tuple(dict.fromkeys(_tokenize_bm25(query)))
+        scores = []
+        for index, passage in enumerate(self.passages):
+            if filters is not None and not filters.matches(passage):
+                continue
+            length = self._document_lengths[index]
+            normalization = self.k1 * (
+                1 - self.b + self.b * length / self._average_document_length
+            )
+            score = sum(
+                self._idf.get(term, 0.0)
+                * (frequency * (self.k1 + 1))
+                / (frequency + normalization)
+                for term in query_terms
+                if (frequency := self._term_frequencies[index].get(term, 0))
+            )
+            scores.append((passage, float(score)))
+        return sorted(scores, key=lambda item: (-item[1], item[0].passage_id))
 
 
 class DenseIndex:
@@ -359,6 +440,12 @@ def _normalize_metadata(value: str) -> str:
 
 def _normalize_text(text: str) -> str:
     return re.sub(r"\s+", " ", text.casefold().replace("-", " ")).strip()
+
+
+def _tokenize_bm25(text: str) -> tuple[str, ...]:
+    """Keep financial literals such as ``18.7%`` intact during lexical ranking."""
+
+    return tuple(re.findall(r"[a-z]+(?:-[a-z]+)*|\d+(?:\.\d+)?%?", text.casefold()))
 
 
 def _normalize_vector(vector: list[float]) -> list[float]:

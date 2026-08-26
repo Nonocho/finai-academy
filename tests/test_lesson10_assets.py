@@ -60,20 +60,22 @@ def test_lesson10_notebook_is_output_free_and_contains_the_teaching_contract() -
         if cell.cell_type == "code"
     )
     assert len({cell.id for cell in notebook.cells}) == len(notebook.cells)
-    assert 22 <= len(notebook.cells) <= 26
+    assert 15 <= len(notebook.cells) <= 17
+    assert sum(cell.cell_type == "code" for cell in notebook.cells) <= 8
     assert nbformat.writes(_build_notebook()) == nbformat.writes(notebook)
     for heading in (
         "## Learning objectives",
-        "## Where this fits",
-        "## Failure lab",
-        "## Verification",
-        "## Challenge",
-        "## Capstone integration",
-        "## Recap",
+        "## The server declares a contract",
+        "## Run the real MCP lifecycle",
+        "## Read the returned evidence",
+        "## Discovery is not permission",
+        "## Optional live selection",
+        "## Knowledge check and capstone handoff",
     ):
         assert heading in source
     for marker in (
         "MCPServer",
+        "Client",
         "finance://coverage",
         "get_company_metric",
         "search_financial_documents",
@@ -85,14 +87,23 @@ def test_lesson10_notebook_is_output_free_and_contains_the_teaching_contract() -
         "OpenAI",
         "LESSON_10_PASS",
         "DiscoveredToolSpec",
-        "FinancialCapabilityRegistry",
-        "registry_source",
-        "server_source",
+        "financial_stdio_transport",
+        "await client.list_tools()",
+        "await client.list_resources()",
+        "await client.list_prompts()",
+        "await client.read_resource",
+        "await client.call_tool",
+        "await client.get_prompt",
         "Knowledge check",
+        'tool_name: Literal["get_company_metric"]',
+        'metric: Literal["EPS", "P/E"]',
+        "json.dumps(provider_summary(settings)",
     ):
         assert marker in source
     assert "tool_catalog = [" not in source
-    assert "mcp_run.tool_specs" in source
+    assert "discover_and_run_financial_mcp" not in source
+    assert "arguments: dict" not in source
+    assert '"live_provider=" + provider_summary(settings)' not in source
 
 
 def test_lesson10_notebook_executes_offline_with_visual_evidence(tmp_path: Path) -> None:
@@ -117,8 +128,11 @@ def test_lesson10_notebook_executes_offline_with_visual_evidence(tmp_path: Path)
 
     assert result.returncode == 0, result.stderr
     executed = nbformat.read(output_dir / NOTEBOOK.name, as_version=4)
-    assert _png_output_count(executed) >= 5
-    assert "LESSON_10_PASS" in _stream_text(executed)
+    assert _png_output_count(executed) >= 4
+    stream = _stream_text(executed)
+    assert "catalog=1 resource | 2 tools | 1 prompt" in stream
+    assert "allowlist_refusal=blocked" in stream
+    assert "LESSON_10_PASS" in stream
 
 
 def test_lesson10_chapter_and_discoverable_indexes_expose_the_classroom_contract() -> None:
@@ -140,21 +154,25 @@ def test_lesson10_chapter_and_discoverable_indexes_expose_the_classroom_contract
         "Streamable HTTP",
         "Ollama",
         "OpenAI",
+        "gpt-5.6-luna",
+        "OpenAI MCP and Connectors",
         "No-network fallback",
         "Skip if late",
         "Lesson 11",
         "LESSON_10_PASS",
-        "lesson10-003",
-        "lesson10-010",
-        "lesson10-016",
-        "lesson10-018",
-        "lesson10-022",
+        "lesson10-002",
+        "lesson10-004",
+        "lesson10-006",
+        "lesson10-011",
+        "lesson10-014",
     ):
         assert marker in chapter
 
     assert "notebooks/10_financial_mcp.ipynb" in chapter
     assert "decks/10-financial-mcp.pptx" in chapter
     assert "full Lesson 10 route is ready for an instructor-led test class" in chapter
+    assert "eleven-slide deck" in chapter
+    assert "nine-slide deck" not in chapter
     assert "pending Task 6" not in chapter
     assert "Static recovery catalog" in chapter
     for capability in (
@@ -222,8 +240,12 @@ def test_lesson10_deck_has_the_complete_sourced_concept_route() -> None:
     assert visible_text.count("First Finance - Arnaud Demes") == 11
     assert "—" not in visible_text
     for marker in (
-        "Build a Financial MCP",
-        "Direct import",
+        "Connect Financial Tools with MCP",
+        "Without MCP, every AI application needs custom integrations",
+        "Anthropic introduced MCP as an open connector standard",
+        "One shared protocol replaces a web of custom connectors",
+        "The host controls one MCP client per server",
+        "The protocol standardizes access, not trust",
         "HOST",
         "CLIENT",
         "SERVER",
@@ -236,6 +258,13 @@ def test_lesson10_deck_has_the_complete_sourced_concept_route() -> None:
         "compare_companies",
         "DISCOVERY",
         "stdio",
+        "LOCAL STDIO",
+        "REMOTE MCP",
+        "server_url",
+        "APPROVAL",
+        "AUTHENTICATION",
+        "ALLOWLIST",
+        "ARGUMENT VALIDATION",
         "DISCOVERY IS NOT PERMISSION",
         "LESSON 11",
     ):
@@ -244,3 +273,4 @@ def test_lesson10_deck_has_the_complete_sourced_concept_route() -> None:
     assert notes_text.count("[/Sources]") == 11
     assert "chapters/10-financial-mcp.md" in notes_text
     assert "https://modelcontextprotocol.io" in notes_text
+    assert "https://www.anthropic.com/news/model-context-protocol" in notes_text

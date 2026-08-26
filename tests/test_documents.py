@@ -3,9 +3,11 @@ from __future__ import annotations
 from pathlib import Path
 
 import pytest
+from bs4 import BeautifulSoup
 
 from finai_academy.documents import (
     DocumentSource,
+    build_nvidia_fy2026_context_pack,
     load_source_manifest,
     parse_html,
     parse_pdf,
@@ -82,6 +84,42 @@ def test_manifest_matches_fixture_hashes() -> None:
     }
     assert all(record.fixture_sha256 for record in records)
     assert all(record.verify_fixture(ROOT) for record in records)
+
+
+def test_nvidia_source_versions_the_complete_official_filing() -> None:
+    records = load_source_manifest(ROOT / "assets" / "course-data" / "manifest.json")
+    nvidia = next(record for record in records if record.company == "NVIDIA")
+
+    assert nvidia.document_type == "Form 10-K"
+    assert nvidia.official_path == (
+        "assets/course-data/downloads/nvidia_fy2026_form_10k.html"
+    )
+    assert nvidia.official_sha256
+    assert nvidia.verify_official(ROOT)
+    assert nvidia.accession_number == "0001045810-26-000021"
+
+    filing = ROOT / nvidia.official_path
+    assert filing.stat().st_size > 1_500_000
+    filing_text = BeautifulSoup(
+        filing.read_text(encoding="utf-8"), "html.parser"
+    ).get_text(" ", strip=True)
+    assert "FORM 10-K" in filing_text
+
+
+def test_nvidia_context_pack_is_derived_from_the_official_filing() -> None:
+    filing = FIXTURES.parent / "downloads" / "nvidia_fy2026_form_10k.html"
+
+    pack = build_nvidia_fy2026_context_pack(filing)
+
+    assert pack.source_path == filing
+    assert pack.anchor_count == 2
+    assert "[F1] Fiscal Year 2026 Summary" in pack.text
+    assert "$215.9 billion" in pack.text
+    assert "[F2] Revenue by End Market" in pack.text
+    assert "Data Center $193,737 million" in pack.text
+    assert "Gaming $16,042 million" in pack.text
+    assert "not a reproduction of the full filing" not in pack.text
+    assert len(pack.text) > 5_000
 
 
 def test_source_rejects_missing_provenance() -> None:

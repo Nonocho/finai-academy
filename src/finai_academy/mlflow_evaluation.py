@@ -66,8 +66,8 @@ class EvaluationConfiguration:
         if self.final_k > self.candidate_k:
             raise ValueError("final_k must not exceed candidate_k")
         weights = dict(self.rrf_weights)
-        if set(weights) != {"keyword", "dense"}:
-            raise ValueError("rrf_weights must contain keyword and dense")
+        if set(weights) != {"bm25", "dense"}:
+            raise ValueError("rrf_weights must contain bm25 and dense")
         if any(
             not isinstance(value, (int, float))
             or isinstance(value, bool)
@@ -77,6 +77,15 @@ class EvaluationConfiguration:
             raise ValueError("rrf_weights must be positive numbers")
         object.__setattr__(self, "rrf_weights", MappingProxyType(weights))
 
+    @property
+    def retrieval_weights(self) -> dict[str, float]:
+        """Translate the learner-facing BM25 label to the pipeline's lexical channel key."""
+
+        return {
+            "keyword": self.rrf_weights["bm25"],
+            "dense": self.rrf_weights["dense"],
+        }
+
 
 @dataclass(frozen=True)
 class EvaluationPrediction:
@@ -85,12 +94,15 @@ class EvaluationPrediction:
     retrieval: RetrievalResult
     answer: str
     contexts: tuple[str, ...]
+    abstained: bool = False
 
     def __post_init__(self) -> None:
         normalized_answer = _normalized_text(self.answer, field_name="answer")
         normalized_contexts = tuple(context.strip() for context in self.contexts)
         if any(not context for context in normalized_contexts):
             raise ValueError("contexts must not contain empty text")
+        if not isinstance(self.abstained, bool):
+            raise TypeError("abstained must be a boolean")
         object.__setattr__(self, "answer", normalized_answer)
         object.__setattr__(self, "contexts", normalized_contexts)
 
@@ -140,8 +152,9 @@ class MLflowStageObserver:
     ) -> Iterator[StageSpan]:
         normalized_name = _normalized_text(name, field_name="span name")
         safe_inputs = dict(inputs)
+        public_name = "bm25" if normalized_name == "keyword" else normalized_name
         with mlflow.start_span(
-            name=normalized_name,
+            name=public_name,
             span_type="RETRIEVER" if normalized_name in {"eligibility", "keyword", "dense", "fusion", "rerank"} else "CHAIN",
         ) as live_span:
             live_span.set_inputs(safe_inputs)
@@ -234,10 +247,16 @@ def run_mlflow_evaluation(
                     }
                 )
                 prediction = predict_fn(case, observer)
-                result = evaluate_case(case, prediction.retrieval, prediction.answer)
+                result = evaluate_case(
+                    case,
+                    prediction.retrieval,
+                    prediction.answer,
+                    abstained=prediction.abstained,
+                )
                 root_span.set_outputs(
                     {
                         "answer": prediction.answer,
+                        "abstained": prediction.abstained,
                         "context_count": len(prediction.contexts),
                         "retrieved_ids": list(result.retrieved_ids),
                         "citations": list(result.parsed_citations),

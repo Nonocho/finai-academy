@@ -1,0 +1,190 @@
+{"kind":"deck","id":"pr/yiset6","name":"Deck"}
+{"kind":"layout","layoutId":"/ppt/slideMasters/slideMaster1.xml","name":"Master","type":"master"}
+{"kind":"layout","layoutId":"/ppt/slideLayouts/slideLayout1.xml","name":"Title Slide","type":"title"}
+{"kind":"slide","id":"sl/y90nupkv","slide":1,"title":"FIRST FINANCE","textShapes":5}
+{"kind":"shape","id":"sh/sryl4zqx","slide":1,"bbox":[102,82,132,8]}
+{"kind":"textbox","id":"sh/547294r6","slide":1,"text":"FIRST FINANCE","textPreview":"FIRST FINANCE","textChars":13,"textLines":1,"bbox":[102,112,300,44]}
+{"kind":"textbox","id":"sh/k3yl0zql","slide":1,"text":"Find the Failure in a RAG System","textPreview":"Find the Failure in a RAG System","textChars":32,"textLines":1,"bbox":[102,248,1396,94]}
+{"kind":"textbox","id":"sh/7qp4be9c","slide":1,"text":"Measure retrieval, generation and abstention before changing the system","textPreview":"Measure retrieval, generation and abstention before changing the system","textChars":71,"textLines":1,"bbox":[102,374,1180,54]}
+{"kind":"textbox","id":"sh/65g3298r","slide":1,"text":"SESSION 07  ·  15 MIN CONCEPTS + 30 MIN NOTEBOOK","textPreview":"SESSION 07  ·  15 MIN CONCEPTS + 30 MIN NOTEBOOK","textChars":48,"textLines":1,"bbox":[102,680,1000,42]}
+{"kind":"textbox","id":"sh/ts7md4r2","slide":1,"text":"First Finance - Arnaud Demes","textPreview":"First Finance - Arnaud Demes","textChars":28,"textLines":1,"bbox":[102,742,500,40]}
+{"kind":"notes","id":"nt/y90nupkv","slide":1,"text":"Open with the distinction between a fluent demo and a diagnosable system.\n\n[Sources]\n- chapters/07-rag-evaluation.md\n- notebooks/07_rag_evaluation.ipynb\n[/Sources]"}
+{"kind":"slide","id":"sl/hwbqtkby","slide":2,"title":"WHY EVALUATE","textShapes":23}
+{"kind":"textbox","id":"sh/ba9cn6l4","slide":2,"text":"WHY EVALUATE","textPreview":"WHY EVALUATE","textChars":12,"textLines":1,"bbox":[102,70,500,36]}
+{"kind":"textbox","id":"sh/9072xkry","slide":2,"text":"A fluent answer can hide five different failures","textPreview":"A fluent answer can hide five different failures","textChars":48,"textLines":1,"bbox":[102,124,1396,82]}
+{"kind":"shape","id":"sh/ozy1ofad","slide":2,"name":"ingestion-1","bbox":[104,324,236,238]}
+{"kind":"textbox","id":"sh/b29kza94","slide":2,"text":"01","textPreview":"01","textChars":2,"textLines":1,"bbox":[124,346,54,30]}
+{"kind":"textbox","id":"sh/a10jqpsj","slide":2,"text":"Retrieval","textPreview":"Retrieval","textChars":9,"textLines":1,"bbox":[116,394,212,72]}
+{"kind":"textbox","id":"sh/x4r21kru","slide":2,"text":"wrong evidence","textPreview":"wrong evidence","textChars":14,"textLines":1,"bbox":[124,484,196,54]}
+{"kind":"shape","id":"sh/w3i1sfa9","slide":2,"name":"ingestion-2","bbox":[400,324,236,238]}
+{"kind":"textbox","id":"sh/r65knqtk","slide":2,"text":"02","textPreview":"02","textChars":2,"textLines":1,"bbox":[420,346,54,30]}
+{"kind":"textbox","id":"sh/q5wjelsz","slide":2,"text":"Filters","textPreview":"Filters","textChars":7,"textLines":1,"bbox":[412,394,212,72]}
+{"kind":"textbox","id":"sh/ove9o7yd","slide":2,"text":"wrong company / period","textPreview":"wrong company / period","textChars":22,"textLines":1,"bbox":[420,484,196,54]}
+{"kind":"shape","id":"sh/9wnqhczy","slide":2,"name":"ingestion-3","bbox":[696,324,236,238]}
+{"kind":"textbox","id":"sh/mtwrmxg7","slide":2,"text":"03","textPreview":"03","textChars":2,"textLines":1,"bbox":[716,346,54,30]}
+{"kind":"textbox","id":"sh/nu58f2hs","slide":2,"text":"Citation","textPreview":"Citation","textChars":8,"textLines":1,"bbox":[708,394,212,72]}
+{"kind":"textbox","id":"sh/wjy9sry9","slide":2,"text":"missing or invented ID","textPreview":"missing or invented ID","textChars":22,"textLines":1,"bbox":[716,484,196,54]}
+{"kind":"shape","id":"sh/xk7qlczu","slide":2,"name":"ingestion-4","bbox":[992,324,236,238]}
+{"kind":"textbox","id":"sh/ahwrqhgj","slide":2,"text":"04","textPreview":"04","textChars":2,"textLines":1,"bbox":[1012,346,54,30]}
+{"kind":"textbox","id":"sh/bip8jmho","slide":2,"text":"Grounding","textPreview":"Grounding","textChars":9,"textLines":1,"bbox":[1004,394,212,72]}
+{"kind":"textbox","id":"sh/cnupgny5","slide":2,"text":"unsupported claim","textPreview":"unsupported claim","textChars":17,"textLines":1,"bbox":[1012,484,196,54]}
+{"kind":"shape","id":"sh/do3q9szq","slide":2,"name":"ingestion-5","bbox":[1288,324,236,238]}
+{"kind":"textbox","id":"sh/t8byxkn2","slide":2,"text":"05","textPreview":"05","textChars":2,"textLines":1,"bbox":[1308,346,54,30]}
+{"kind":"textbox","id":"sh/s72xofmh","slide":2,"text":"Abstention","textPreview":"Abstention","textChars":10,"textLines":1,"bbox":[1300,394,212,72]}
+{"kind":"textbox","id":"sh/76twva5c","slide":2,"text":"answers unsupported work","textPreview":"answers unsupported work","textChars":24,"textLines":1,"bbox":[1308,484,196,54]}
+{"kind":"shape","id":"sh/4zm9cvu9","slide":2,"bbox":[340,443,60,0]}
+{"kind":"shape","id":"sh/j29876dk","slide":2,"bbox":[636,443,60,0]}
+{"kind":"shape","id":"sh/y10ry1cz","slide":2,"bbox":[932,443,60,0]}
+{"kind":"shape","id":"sh/o7y587ax","slide":2,"bbox":[1228,443,60,0]}
+{"kind":"textbox","id":"sh/u94fqp4n","slide":2,"text":"One successful demo cannot tell you which layer will fail next.","textPreview":"One successful demo cannot tell you which layer will fail next.","textChars":63,"textLines":1,"bbox":[250,652,1100,48]}
+{"kind":"textbox","id":"sh/p0vy54na","slide":2,"text":"same question · different failure owner","textPreview":"same question · different failure owner","textChars":39,"textLines":1,"bbox":[198,718,470,34]}
+{"kind":"textbox","id":"sh/4zmxwzmp","slide":2,"text":"measure by layer · inspect by trace","textPreview":"measure by layer · inspect by trace","textChars":35,"textLines":1,"bbox":[924,718,500,34]}
+{"kind":"shape","id":"sh/mlgvq147","slide":2,"bbox":[90,829,1420,3]}
+{"kind":"shape","id":"sh/nmpcj6ls","slide":2,"bbox":[90,829,840,4]}
+{"kind":"textbox","id":"sh/onydsbmd","slide":2,"text":"First Finance - Arnaud Demes","textPreview":"First Finance - Arnaud Demes","textChars":28,"textLines":1,"bbox":[102,846,390,34]}
+{"kind":"textbox","id":"sh/9o7ulg3y","slide":2,"text":"DATASET","textPreview":"DATASET","textChars":7,"textLines":1,"bbox":[1280,846,190,34]}
+{"kind":"textbox","id":"sh/a9gvulkj","slide":2,"text":"02","textPreview":"02","textChars":2,"textLines":1,"bbox":[1484,846,28,34]}
+{"kind":"notes","id":"nt/hwbqtkby","slide":2,"text":"Use the five cards to show why one overall quality score cannot diagnose RAG.\n\n[Sources]\n- https://developers.openai.com/api/docs/guides/evaluation-best-practices\n- src/finai_academy/evaluation.py\n[/Sources]"}
+{"kind":"slide","id":"sl/ofy9wn61","slide":3,"title":"EVALUATION DATASET","textShapes":5}
+{"kind":"textbox","id":"sh/czmhc7id","slide":3,"text":"EVALUATION DATASET","textPreview":"EVALUATION DATASET","textChars":18,"textLines":1,"bbox":[102,70,500,36]}
+{"kind":"textbox","id":"sh/cza94vmx","slide":3,"text":"A golden set must cover behavior—not just contain questions","textPreview":"A golden set must cover behavior—not just contain questions","textChars":59,"textLines":1,"bbox":[102,124,1396,82]}
+{"kind":"shape","id":"sh/l4fi9cza","slide":3,"bbox":[90,829,1420,3]}
+{"kind":"shape","id":"sh/k3m1g7yp","slide":3,"bbox":[90,829,840,4]}
+{"kind":"textbox","id":"sh/z2d07mh4","slide":3,"text":"First Finance - Arnaud Demes","textPreview":"First Finance - Arnaud Demes","textChars":28,"textLines":1,"bbox":[102,846,390,34]}
+{"kind":"textbox","id":"sh/y14jehgj","slide":3,"text":"DATASET","textPreview":"DATASET","textChars":7,"textLines":1,"bbox":[1280,846,190,34]}
+{"kind":"textbox","id":"sh/x0vi5czy","slide":3,"text":"03","textPreview":"03","textChars":2,"textLines":1,"bbox":[1484,846,28,34]}
+{"kind":"image","id":"im/gfy9wfil","slide":3,"name":"","geometry":"rect","alt":"Coverage matrix for eight versioned financial RAG cases","bbox":[128,230,1344,548]}
+{"kind":"notes","id":"nt/ofy9wn61","slide":3,"text":"Read across the matrix: each row protects a different behavior contract.\n\n[Sources]\n- notebooks/07_rag_evaluation.ipynb — Figure 1\n- assets/course-data/evaluation/rag_cases_v1.json\n[/Sources]"}
+{"kind":"slide","id":"sl/jyx0ra1s","slide":4,"title":"CONTROLLED FAILURE","textShapes":5}
+{"kind":"textbox","id":"sh/rilczq5s","slide":4,"text":"CONTROLLED FAILURE","textPreview":"CONTROLLED FAILURE","textChars":18,"textLines":1,"bbox":[102,70,500,36]}
+{"kind":"textbox","id":"sh/1cj2d8b6","slide":4,"text":"The same retrieved evidence can still produce a failed answer","textPreview":"The same retrieved evidence can still produce a failed answer","textChars":61,"textLines":1,"bbox":[102,124,1396,82]}
+{"kind":"shape","id":"sh/nulw7u18","slide":4,"bbox":[90,829,1420,3]}
+{"kind":"shape","id":"sh/fm5c3q54","slide":4,"bbox":[90,829,840,4]}
+{"kind":"textbox","id":"sh/elwba54j","slide":4,"text":"First Finance - Arnaud Demes","textPreview":"First Finance - Arnaud Demes","textChars":28,"textLines":1,"bbox":[102,846,390,34]}
+{"kind":"textbox","id":"sh/18nu50nu","slide":4,"text":"DIAGNOSE","textPreview":"DIAGNOSE","textChars":8,"textLines":1,"bbox":[1280,846,190,34]}
+{"kind":"textbox","id":"sh/0netcvm9","slide":4,"text":"04","textPreview":"04","textChars":2,"textLines":1,"bbox":[1484,846,28,34]}
+{"kind":"image","id":"im/dorehgni","slide":4,"name":"","geometry":"rect","alt":"Controlled comparison of a supported and broken answer with identical retrieval","bbox":[128,236,1344,536]}
+{"kind":"notes","id":"nt/jyx0ra1s","slide":4,"text":"Retrieval recall and rank remain fixed; citation and grounded-fact metrics expose the answer defect.\n\n[Sources]\n- notebooks/07_rag_evaluation.ipynb — Figure 2\n- src/finai_academy/evaluation.py\n[/Sources]"}
+{"kind":"slide","id":"sl/i107q5of","slide":5,"title":"METRICS BY LAYER","textShapes":21}
+{"kind":"textbox","id":"sh/ji5kf2ho","slide":5,"text":"METRICS BY LAYER","textPreview":"METRICS BY LAYER","textChars":16,"textLines":1,"bbox":[102,70,500,36]}
+{"kind":"textbox","id":"sh/dgbulwnm","slide":5,"text":"Each failure layer requires a different test","textPreview":"Each failure layer requires a different test","textChars":44,"textLines":1,"bbox":[102,124,1396,82]}
+{"kind":"textbox","id":"sh/cf2tcr61","slide":5,"text":"RETRIEVAL · 0…1","textPreview":"RETRIEVAL · 0…1","textChars":15,"textLines":1,"bbox":[108,294,260,38]}
+{"kind":"shape","id":"sh/z2tcnm5s","slide":5,"bbox":[390,288,250,68]}
+{"kind":"textbox","id":"sh/yhkbe1o7","slide":5,"text":"expected IDs","textPreview":"expected IDs","textChars":12,"textLines":1,"bbox":[400,298,230,48]}
+{"kind":"shape","id":"sh/l4bupwny","slide":5,"bbox":[646,288,210,68]}
+{"kind":"textbox","id":"sh/032tgr6d","slide":5,"text":"∩ top-k","textPreview":"∩ top-k","textChars":7,"textLines":1,"bbox":[656,298,190,48]}
+{"kind":"shape","id":"sh/n6dcr65o","slide":5,"bbox":[862,288,176,68]}
+{"kind":"textbox","id":"sh/m5kbi1oj","slide":5,"text":"÷ expected","textPreview":"÷ expected","textChars":10,"textLines":1,"bbox":[872,298,156,48]}
+{"kind":"shape","id":"sh/w32dkbuh","slide":5,"bbox":[1044,288,112,68]}
+{"kind":"textbox","id":"sh/x4vedgvm","slide":5,"text":"R@k","textPreview":"R@k","textChars":3,"textLines":1,"bbox":[1054,298,92,48]}
+{"kind":"textbox","id":"sh/ahkvi1cb","slide":5,"text":"MRR = 1 / first relevant rank","textPreview":"MRR = 1 / first relevant rank","textChars":29,"textLines":1,"bbox":[1260,294,230,38]}
+{"kind":"textbox","id":"sh/v2twb6dw","slide":5,"text":"ANSWER · 0…1","textPreview":"ANSWER · 0…1","textChars":12,"textLines":1,"bbox":[108,448,260,38]}
+{"kind":"shape","id":"sh/k7mxovud","slide":5,"bbox":[390,442,330,68]}
+{"kind":"textbox","id":"sh/58vehgvy","slide":5,"text":"cited IDs","textPreview":"cited IDs","textChars":9,"textLines":1,"bbox":[400,452,310,48]}
+{"kind":"shape","id":"sh/i54fmlc7","slide":5,"bbox":[726,442,310,68]}
+{"kind":"textbox","id":"sh/j6dwfqds","slide":5,"text":"∩ returned IDs","textPreview":"∩ returned IDs","textChars":14,"textLines":1,"bbox":[736,452,290,48]}
+{"kind":"shape","id":"sh/sb6xsvu9","slide":5,"bbox":[1042,442,210,68]}
+{"kind":"textbox","id":"sh/tcfel0vu","slide":5,"text":"÷ cited IDs","textPreview":"÷ cited IDs","textChars":11,"textLines":1,"bbox":[1052,452,190,48]}
+{"kind":"textbox","id":"sh/hgrmpwj2","slide":5,"text":"citation correctness","textPreview":"citation correctness","textChars":20,"textLines":1,"bbox":[1260,448,230,38]}
+{"kind":"textbox","id":"sh/gfi5grih","slide":5,"text":"ABSTENTION · BOOLEAN","textPreview":"ABSTENTION · BOOLEAN","textChars":20,"textLines":1,"bbox":[108,602,260,38]}
+{"kind":"shape","id":"sh/fe94nm1w","slide":5,"bbox":[390,596,348,68]}
+{"kind":"textbox","id":"sh/ud0ne10b","slide":5,"text":"unsupported question","textPreview":"unsupported question","textChars":20,"textLines":1,"bbox":[400,606,328,48]}
+{"kind":"shape","id":"sh/pkr6tgjy","slide":5,"bbox":[744,596,502,68]}
+{"kind":"textbox","id":"sh/4ji5kbid","slide":5,"text":"explicit abstain = true","textPreview":"explicit abstain = true","textChars":23,"textLines":1,"bbox":[754,606,482,48]}
+{"kind":"textbox","id":"sh/3i94r61s","slide":5,"text":"correct","textPreview":"correct","textChars":7,"textLines":1,"bbox":[1260,602,230,38]}
+{"kind":"shape","id":"sh/2h0ni107","slide":5,"bbox":[390,296,3,366]}
+{"kind":"shape","id":"sh/5o7mhcju","slide":5,"bbox":[108,718,1382,64]}
+{"kind":"textbox","id":"sh/kny587i9","slide":5,"text":"Cheap first: reproducible · inspectable · fast enough for every change.","textPreview":"Cheap first: reproducible · inspectable · fast enough for every change.","textChars":71,"textLines":1,"bbox":[144,728,1310,42]}
+{"kind":"shape","id":"sh/atcjidg7","slide":5,"bbox":[90,829,1420,3]}
+{"kind":"shape","id":"sh/vu5kbihc","slide":5,"bbox":[90,829,840,4]}
+{"kind":"textbox","id":"sh/wve1knyx","slide":5,"text":"First Finance - Arnaud Demes","textPreview":"First Finance - Arnaud Demes","textChars":28,"textLines":1,"bbox":[102,846,390,34]}
+{"kind":"textbox","id":"sh/xwn2dszi","slide":5,"text":"METRICS","textPreview":"METRICS","textChars":7,"textLines":1,"bbox":[1280,846,190,34]}
+{"kind":"textbox","id":"sh/ihw3mxg3","slide":5,"text":"05","textPreview":"05","textChars":2,"textLines":1,"bbox":[1484,846,28,34]}
+{"kind":"notes","id":"nt/i107q5of","slide":5,"text":"Work one finance case through retrieval recall, citation correctness and explicit abstention.\n\n[Sources]\n- src/finai_academy/evaluation.py\n- https://developers.openai.com/api/docs/guides/evaluation-best-practices\n[/Sources]"}
+{"kind":"slide","id":"sl/x8f69ofe","slide":6,"title":"REAL MLFLOW TRACE","textShapes":5}
+{"kind":"textbox","id":"sh/u907axkf","slide":6,"text":"REAL MLFLOW TRACE","textPreview":"REAL MLFLOW TRACE","textChars":17,"textLines":1,"bbox":[102,70,500,36]}
+{"kind":"textbox","id":"sh/yhg7epsj","slide":6,"text":"A trace shows exactly where the pipeline broke","textPreview":"A trace shows exactly where the pipeline broke","textChars":46,"textLines":1,"bbox":[102,124,1396,82]}
+{"kind":"shape","id":"sh/jet8nm1c","slide":6,"bbox":[90,829,1420,3]}
+{"kind":"shape","id":"sh/idk7ehkr","slide":6,"bbox":[90,829,840,4]}
+{"kind":"textbox","id":"sh/50bqpcj2","slide":6,"text":"Source: MLflow docs · First Finance - Arnaud Demes","textPreview":"Source: MLflow docs · First Finance - Arnaud Demes","textChars":50,"textLines":1,"bbox":[102,846,390,34]}
+{"kind":"textbox","id":"sh/4f2pgr2h","slide":6,"text":"TRACE","textPreview":"TRACE","textChars":5,"textLines":1,"bbox":[1280,846,190,34]}
+{"kind":"textbox","id":"sh/va98j210","slide":6,"text":"06","textPreview":"06","textChars":2,"textLines":1,"bbox":[1484,846,28,34]}
+{"kind":"image","id":"im/yh0n6x87","slide":6,"name":"","geometry":"rect","alt":"Official MLflow trace detail view with span tree, timeline, inputs and outputs","bbox":[218,224,1164,566]}
+{"kind":"notes","id":"nt/x8f69ofe","slide":6,"text":"Point to the span tree, latency timeline and input/output panel. The notebook persists bm25, dense, fusion, rerank, context and generation spans.\n\n[Sources]\n- https://mlflow.org/docs/latest/genai/tracing/observe-with-traces/ui\n- https://mlflow.org/docs/latest/images/llms/tracing/trace-ui-detail-view.png\n- src/finai_academy/mlflow_evaluation.py\n[/Sources]"}
+{"kind":"slide","id":"sl/gnmp4jqx","slide":7,"title":"CASE-LEVEL EVIDENCE","textShapes":5}
+{"kind":"textbox","id":"sh/c3a5wzq5","slide":7,"text":"CASE-LEVEL EVIDENCE","textPreview":"CASE-LEVEL EVIDENCE","textChars":19,"textLines":1,"bbox":[102,70,500,36]}
+{"kind":"textbox","id":"sh/cb2tkvap","slide":7,"text":"Case-level metrics reveal the defect aggregate scores hide","textPreview":"Case-level metrics reveal the defect aggregate scores hide","textChars":58,"textLines":1,"bbox":[102,124,1396,82]}
+{"kind":"shape","id":"sh/p0zmlk7u","slide":7,"bbox":[90,829,1420,3]}
+{"kind":"shape","id":"sh/ozq5szq9","slide":7,"bbox":[90,829,840,4]}
+{"kind":"textbox","id":"sh/nyh4jupo","slide":7,"text":"First Finance - Arnaud Demes","textPreview":"First Finance - Arnaud Demes","textChars":28,"textLines":1,"bbox":[102,846,390,34]}
+{"kind":"textbox","id":"sh/2x8nqp83","slide":7,"text":"CASES","textPreview":"CASES","textChars":5,"textLines":1,"bbox":[1280,846,190,34]}
+{"kind":"textbox","id":"sh/x4j6p47q","slide":7,"text":"07","textPreview":"07","textChars":2,"textLines":1,"bbox":[1484,846,28,34]}
+{"kind":"image","id":"im/kfilofml","slide":7,"name":"","geometry":"rect","alt":"Case-by-metric heatmap showing one maintained citation failure","bbox":[118,230,1364,548]}
+{"kind":"notes","id":"nt/gnmp4jqx","slide":7,"text":"The semantic-paraphrase row retrieves the correct evidence but has citation correctness 0.0.\n\n[Sources]\n- notebooks/07_rag_evaluation.ipynb — Figure 3\n- assets/course-data/evaluation/rag_cases_v1.json\n[/Sources]"}
+{"kind":"slide","id":"sl/fu1gfa1s","slide":8,"title":"CONTROLLED COMPARISON","textShapes":5}
+{"kind":"textbox","id":"sh/z61s7il4","slide":8,"text":"CONTROLLED COMPARISON","textPreview":"CONTROLLED COMPARISON","textChars":21,"textLines":1,"bbox":[102,70,500,36]}
+{"kind":"textbox","id":"sh/18byd4zy","slide":8,"text":"A moved rank proves impact—not improvement","textPreview":"A moved rank proves impact—not improvement","textChars":42,"textLines":1,"bbox":[102,124,1396,82]}
+{"kind":"shape","id":"sh/m9sb2x4v","slide":8,"bbox":[90,829,1420,3]}
+{"kind":"shape","id":"sh/na1sb2lg","slide":8,"bbox":[90,829,840,4]}
+{"kind":"textbox","id":"sh/8bat47ml","slide":8,"text":"First Finance - Arnaud Demes","textPreview":"First Finance - Arnaud Demes","textChars":28,"textLines":1,"bbox":[102,846,390,34]}
+{"kind":"textbox","id":"sh/9w3uds36","slide":8,"text":"COMPARE","textPreview":"COMPARE","textChars":7,"textLines":1,"bbox":[1280,846,190,34]}
+{"kind":"textbox","id":"sh/y5sbed4j","slide":8,"text":"08","textPreview":"08","textChars":2,"textLines":1,"bbox":[1484,846,28,34]}
+{"kind":"image","id":"im/fm1cj650","slide":8,"name":"","geometry":"rect","alt":"Aligned aggregate metrics and case-level rank movement after changing only the BM25 RRF weight","bbox":[112,242,1376,508]}
+{"kind":"notes","id":"nt/fu1gfa1s","slide":8,"text":"Only the BM25 RRF weight changes from 1 to 3. The rank moves while aggregate outcomes remain aligned.\n\n[Sources]\n- notebooks/07_rag_evaluation.ipynb — Figure 5\n- src/finai_academy/mlflow_evaluation.py\n[/Sources]"}
+{"kind":"slide","id":"sl/udsvah03","slide":9,"title":"FAILURE OWNERSHIP","textShapes":18}
+{"kind":"textbox","id":"sh/xgzitk76","slide":9,"text":"FAILURE OWNERSHIP","textPreview":"FAILURE OWNERSHIP","textChars":17,"textLines":1,"bbox":[102,70,500,36]}
+{"kind":"textbox","id":"sh/1cfmhgne","slide":9,"text":"The failed metric tells you which component to fix","textPreview":"The failed metric tells you which component to fix","textChars":50,"textLines":1,"bbox":[102,124,1396,82]}
+{"kind":"shape","id":"sh/0b65obm9","slide":9,"name":"decision-source","bbox":[108,314,286,164]}
+{"kind":"textbox","id":"sh/nex4jq5k","slide":9,"text":"RETRIEVAL","textPreview":"RETRIEVAL","textChars":9,"textLines":1,"bbox":[136,334,230,34]}
+{"kind":"textbox","id":"sh/mdonql4z","slide":9,"text":"recall · rank\nfilter leakage","textPreview":"recall · rank | filter leakage","textChars":28,"textLines":2,"bbox":[136,384,230,68]}
+{"kind":"shape","id":"sh/9gzml0nq","slide":9,"name":"decision-child","bbox":[542,300,342,192]}
+{"kind":"textbox","id":"sh/ofq5svm5","slide":9,"text":"GENERATION","textPreview":"GENERATION","textChars":10,"textLines":1,"bbox":[574,306,278,50]}
+{"kind":"textbox","id":"sh/bih4na5w","slide":9,"text":"citation\ngrounded facts","textPreview":"citation | grounded facts","textChars":23,"textLines":2,"bbox":[574,356,278,84]}
+{"kind":"textbox","id":"sh/ah8nu54b","slide":9,"text":"prompt · context\nanswer schema","textPreview":"prompt · context | answer schema","textChars":30,"textLines":2,"bbox":[574,440,278,50]}
+{"kind":"shape","id":"sh/oza1gfyh","slide":9,"name":"decision-parent","bbox":[1032,314,372,164]}
+{"kind":"textbox","id":"sh/p0ji9kf2","slide":9,"text":"ABSTENTION","textPreview":"ABSTENTION","textChars":10,"textLines":1,"bbox":[1064,334,308,34]}
+{"kind":"textbox","id":"sh/2xsjepgb","slide":9,"text":"unsupported work\nanswered anyway","textPreview":"unsupported work | answered anyway","textChars":32,"textLines":2,"bbox":[1064,382,308,72]}
+{"kind":"shape","id":"sh/yl47218n","slide":9,"bbox":[394,396,148,0]}
+{"kind":"shape","id":"sh/zmd8b698","slide":9,"bbox":[884,396,148,0]}
+{"kind":"shape","id":"sh/do3id4fy","slide":9,"bbox":[168,574,1264,118]}
+{"kind":"textbox","id":"sh/qlcjipgn","slide":9,"text":"FIRST FAILED LAYER","textPreview":"FIRST FAILED LAYER","textChars":18,"textLines":1,"bbox":[204,592,260,30]}
+{"kind":"textbox","id":"sh/bml0buxs","slide":9,"text":"owns the diagnosis; the corresponding component owns the repair.","textPreview":"owns the diagnosis; the corresponding component owns the repair.","textChars":64,"textLines":1,"bbox":[204,626,520,42]}
+{"kind":"shape","id":"sh/0ru1ozyp","slide":9,"bbox":[786,592,3,78]}
+{"kind":"textbox","id":"sh/lsn2h4fa","slide":9,"text":"TRACE EVIDENCE","textPreview":"TRACE EVIDENCE","textChars":14,"textLines":1,"bbox":[826,592,330,30]}
+{"kind":"textbox","id":"sh/98ji147e","slide":9,"text":"proves stage inputs · outputs · timing · failure location","textPreview":"proves stage inputs · outputs · timing · failure location","textChars":57,"textLines":1,"bbox":[826,626,540,42]}
+{"kind":"textbox","id":"sh/87a18zqt","slide":9,"text":"NEXT","textPreview":"NEXT","textChars":4,"textLines":1,"bbox":[108,744,160,34]}
+{"kind":"textbox","id":"sh/76h0zup8","slide":9,"text":"Repair one owner, rerun the same versioned cases, and compare again.","textPreview":"Repair one owner, rerun the same versioned cases, and compare again.","textChars":68,"textLines":1,"bbox":[284,734,1198,50]}
+{"kind":"shape","id":"sh/ml8j6p8n","slide":9,"bbox":[90,829,1420,3]}
+{"kind":"shape","id":"sh/hcji5o7a","slide":9,"bbox":[90,829,840,4]}
+{"kind":"textbox","id":"sh/wba1cjqp","slide":9,"text":"First Finance - Arnaud Demes","textPreview":"First Finance - Arnaud Demes","textChars":28,"textLines":1,"bbox":[102,846,390,34]}
+{"kind":"textbox","id":"sh/va103ep4","slide":9,"text":"DECIDE","textPreview":"DECIDE","textChars":6,"textLines":1,"bbox":[1280,846,190,34]}
+{"kind":"textbox","id":"sh/u9sja98z","slide":9,"text":"09","textPreview":"09","textChars":2,"textLines":1,"bbox":[1484,846,28,34]}
+{"kind":"notes","id":"nt/udsvah03","slide":9,"text":"Map each first failed metric to the application component that can repair it. Do not tune retrieval for a citation failure.\n\n[Sources]\n- chapters/07-rag-evaluation.md — Failure ownership\n- src/finai_academy/evaluation.py\n[/Sources]"}
+{"kind":"slide","id":"sl/m90b6t0r","slide":10,"title":"FIRST FINANCE","textShapes":11}
+{"kind":"shape","id":"sh/kzu5c32t","slide":10,"bbox":[102,82,132,8]}
+{"kind":"textbox","id":"sh/xc3mho32","slide":10,"text":"FIRST FINANCE","textPreview":"FIRST FINANCE","textChars":13,"textLines":1,"bbox":[102,112,300,44]}
+{"kind":"textbox","id":"sh/cbu58j2h","slide":10,"text":"Quick quiz","textPreview":"Quick quiz","textChars":10,"textLines":1,"bbox":[102,248,1396,94]}
+{"kind":"textbox","id":"sh/zelojyl8","slide":10,"text":"Choose the component or comparison rule that the evidence supports.","textPreview":"Choose the component or comparison rule that the evidence supports.","textChars":67,"textLines":1,"bbox":[102,374,1180,54]}
+{"kind":"textbox","id":"sh/ydcnatkn","slide":10,"text":"LESSON 07  ·  3 QUESTIONS  ·  3 MINUTES","textPreview":"LESSON 07  ·  3 QUESTIONS  ·  3 MINUTES","textChars":39,"textLines":1,"bbox":[102,680,1000,42]}
+{"kind":"textbox","id":"sh/l036l83y","slide":10,"text":"First Finance - Arnaud Demes","textPreview":"First Finance - Arnaud Demes","textChars":28,"textLines":1,"bbox":[102,742,500,40]}
+{"kind":"textbox","id":"sh/725onyl4","slide":10,"name":"quiz-question-1","text":"1. Recall@k is 1.0 but citation correctness is 0.0. What failed?","textPreview":"1. Recall@k is 1.0 but citation correctness is 0.0. What failed?","textChars":64,"textLines":1,"bbox":[102,462,1396,30]}
+{"kind":"textbox","id":"sh/m1cnetkj","slide":10,"name":"quiz-options-1","text":"A  Retrieval     |     B  Generation     |     C  Dataset version","textPreview":"A  Retrieval     |     B  Generation     |     C  Dataset version","textChars":65,"textLines":1,"bbox":[132,494,1366,26]}
+{"kind":"textbox","id":"sh/s7yt4b21","slide":10,"name":"quiz-question-2","text":"2. Which comparison isolates an RRF weight change?","textPreview":"2. Which comparison isolates an RRF weight change?","textChars":50,"textLines":1,"bbox":[102,534,1396,30]}
+{"kind":"textbox","id":"sh/d87uxg3m","slide":10,"name":"quiz-options-2","text":"A  Same cases + prompt     |     B  New cases + prompt     |     C  One demo","textPreview":"A  Same cases + prompt     |     B  New cases + prompt     |     C  One demo","textChars":76,"textLines":1,"bbox":[132,566,1366,26]}
+{"kind":"textbox","id":"sh/q5gb21kb","slide":10,"name":"quiz-question-3","text":"3. What should you inspect after a citation failure?","textPreview":"3. What should you inspect after a citation failure?","textChars":52,"textLines":1,"bbox":[102,606,1396,30]}
+{"kind":"textbox","id":"sh/r6pcv6lw","slide":10,"name":"quiz-options-3","text":"A  BM25 index     |     B  Generation span     |     C  Stock price","textPreview":"A  BM25 index     |     B  Generation span     |     C  Stock price","textChars":67,"textLines":1,"bbox":[132,638,1366,26]}
+{"kind":"notes","id":"nt/m90b6t0r","slide":10,"text":"Ask for one letter per question, then require learners to name the evidence behind it.\n\n[Sources]\n- chapters/07-rag-evaluation.md\n[/Sources]"}
+{"kind":"slide","id":"sl/jetc3ut0","slide":11,"title":"FIRST FINANCE","textShapes":11}
+{"kind":"shape","id":"sh/o7ih0r6h","slide":11,"bbox":[102,82,132,8]}
+{"kind":"textbox","id":"sh/xcryxg7y","slide":11,"text":"FIRST FINANCE","textPreview":"FIRST FINANCE","textChars":13,"textLines":1,"bbox":[102,112,300,44]}
+{"kind":"textbox","id":"sh/wbih4b6d","slide":11,"text":"Answers","textPreview":"Answers","textChars":7,"textLines":1,"bbox":[102,248,1396,94]}
+{"kind":"textbox","id":"sh/n69grmpw","slide":11,"text":"Diagnose before changing: the metric names the failing layer; the trace shows the evidence.","textPreview":"Diagnose before changing: the metric names the failing layer; the trace shows the evidence.","textChars":91,"textLines":1,"bbox":[102,374,1180,54]}
+{"kind":"textbox","id":"sh/250zy18b","slide":11,"text":"LESSON 07  ·  CORRECTION","textPreview":"LESSON 07  ·  CORRECTION","textChars":24,"textLines":1,"bbox":[102,680,1000,42]}
+{"kind":"textbox","id":"sh/98rytw72","slide":11,"text":"First Finance - Arnaud Demes","textPreview":"First Finance - Arnaud Demes","textChars":28,"textLines":1,"bbox":[102,742,500,40]}
+{"kind":"textbox","id":"sh/72t03qp0","slide":11,"name":"quiz-answer-1","text":"1. B. Generation","textPreview":"1. B. Generation","textChars":16,"textLines":1,"bbox":[102,462,1396,30]}
+{"kind":"textbox","id":"sh/61kzalof","slide":11,"name":"quiz-explanation-1","text":"The right passage arrived; generation omitted or mis-cited the evidence ID.","textPreview":"The right passage arrived; generation omitted or mis-cited the evidence ID.","textChars":75,"textLines":1,"bbox":[132,494,1366,26]}
+{"kind":"textbox","id":"sh/ofqtgnyt","slide":11,"name":"quiz-answer-2","text":"2. A. Same cases + prompt","textPreview":"2. A. Same cases + prompt","textChars":25,"textLines":1,"bbox":[102,534,1396,30]}
+{"kind":"textbox","id":"sh/9gza9sze","slide":11,"name":"quiz-explanation-2","text":"Keep cases, prompt, models and budgets fixed; change only the RRF weight.","textPreview":"Keep cases, prompt, models and budgets fixed; change only the RRF weight.","textChars":73,"textLines":1,"bbox":[132,566,1366,26]}
+{"kind":"textbox","id":"sh/mdobedg3","slide":11,"name":"quiz-answer-3","text":"3. B. Generation span","textPreview":"3. B. Generation span","textChars":21,"textLines":1,"bbox":[102,606,1396,30]}
+{"kind":"textbox","id":"sh/nehs7iho","slide":11,"name":"quiz-explanation-3","text":"Inspect generation inputs, output, citations and timing before touching retrieval.","textPreview":"Inspect generation inputs, output, citations and timing before touching retrieval.","textChars":82,"textLines":1,"bbox":[132,638,1366,26]}
+{"kind":"notes","id":"nt/jetc3ut0","slide":11,"text":"Close by restating the rule: diagnose the first failed layer, repair its owner, rerun the same cases.\n\n[Sources]\n- chapters/07-rag-evaluation.md\n[/Sources]"}
