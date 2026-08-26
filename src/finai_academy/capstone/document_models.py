@@ -13,7 +13,8 @@ from pydantic import AnyUrl, BaseModel, ConfigDict, Field, HttpUrl, model_valida
 
 _SECRET_PATTERN = re.compile(
     r"""(?ix)(
-        \b(?:(?:[a-z0-9]+(?:[_-]|\s))+)?api(?:[_-]|\s)+key\b\s*(?:=|:|\s+)\s*[a-z0-9._-]{16,}
+        \b(?:(?:[a-z0-9]+(?:[_-]|\s))+)?api(?:[_-]|\s)+key\b\s*(?:=|:)\s*\S+
+        | \b(?:(?:[a-z0-9]+(?:[_-]|\s))+)?api(?:[_-]|\s)+key\b\s+[a-z0-9._-]{16,}
         | \bauthorization\b\s*(?:(?:=|:)\s*\S+|(?:basic|bearer)\s+\S+)
         | bearer\s+[a-z0-9._-]+
         | sk-[a-z0-9]{12,}
@@ -131,6 +132,9 @@ class FrozenDocumentModel(BaseModel):
 ElementType = Literal[
     "heading", "paragraph", "list", "table", "figure_caption", "footnote"
 ]
+_ELEMENT_TYPES = frozenset(
+    {"heading", "paragraph", "list", "table", "figure_caption", "footnote"}
+)
 
 
 class FinancialDocumentSource(FrozenDocumentModel):
@@ -344,9 +348,24 @@ class DocumentFilters(FrozenDocumentModel):
     company_name: str | None = None
     reporting_period: str | None = None
     document_type: str | None = None
-    element_type: str | None = None
+    element_type: ElementType | None = None
     segment: str | None = None
     document_id: str | None = None
+
+    @model_validator(mode="before")
+    @classmethod
+    def normalize_element_type(cls, value: Any) -> Any:
+        if not isinstance(value, dict) or value.get("element_type") is None:
+            return value
+        element_type = value["element_type"]
+        if not isinstance(element_type, str):
+            return value
+        canonical_element_type = element_type.casefold().strip()
+        if canonical_element_type not in _ELEMENT_TYPES:
+            raise ValueError("element_type must be one of the supported document element types")
+        normalized = dict(value)
+        normalized["element_type"] = canonical_element_type
+        return normalized
 
     def matches(self, chunk: FinancialChunk) -> bool:
         pairs = (

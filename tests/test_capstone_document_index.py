@@ -112,6 +112,15 @@ def test_document_filters_match_segment_and_document_identity_case_insensitively
     )
 
 
+def test_document_filters_canonicalize_supported_element_types_and_reject_unknown_values() -> None:
+    """Accepting arbitrary element-type strings must not turn typos into empty retrieval."""
+
+    assert DocumentFilters(element_type="TABLE").element_type == "table"
+
+    with pytest.raises(ValueError, match="element_type must be one of"):
+        DocumentFilters(element_type="not-an-element")
+
+
 def test_segment_and_document_identity_filters_constrain_both_rankers_before_ranking(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
