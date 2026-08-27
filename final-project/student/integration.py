@@ -1,62 +1,55 @@
-"""Four bounded integration seams for the Financial Analyst Copilot capstone."""
+"""Capstone student integration seams for the document-evidence challenge."""
 
 from __future__ import annotations
 
-import dataclasses
-from collections.abc import Sequence
+from collections.abc import Mapping
+from finai_academy.capstone.models import CapstoneEvidenceHit, EvidenceGateDecision, ResearchRunResult
 
-from finai_academy.capstone.models import (
-    CapstoneEvidenceHit,
-    EvidenceGateDecision,
-    ResearchRunResult,
-)
-from finai_academy.capstone.views import CapstoneRunView
-
-
-@dataclasses.dataclass(frozen=True, slots=True)
 class StudentIntegrationIncomplete(Exception):
-    """A conceptual, path-free status for one unfinished student seam."""
+    """Raised whenever a student seam is intentionally left as a TODO."""
 
     seam: str
     hint: str
 
-    def __str__(self) -> str:
-        return f"{self.seam}: {self.hint}"
+    def __init__(self, seam: str, hint: str) -> None:
+        self.seam = seam
+        self.hint = hint
+        super().__init__(seam)
 
 
 def wire_retriever(company: str, query: str) -> tuple[CapstoneEvidenceHit, ...]:
-    """Return certified document evidence for one company-scoped query."""
+    """Return certified retrieval hits bounded by company and certified source."""
 
     raise StudentIntegrationIncomplete(
         seam="wire_retriever",
-        hint="Use the certified retriever and preserve the company boundary.",
+        hint="Connect the certified company-scoped retrieval boundary.",
     )
 
 
-def register_analyst_capabilities(discovered: Sequence[str]) -> tuple[str, ...]:
-    """Return the safe subset of capabilities discovered at runtime."""
+def register_analyst_capabilities(
+    discovered: Mapping[str, object] | tuple[str, ...] | list[str] | set[str],
+) -> tuple[str, ...]:
+    """Return only discovered and allowed analyst capabilities."""
 
     raise StudentIntegrationIncomplete(
         seam="register_analyst_capabilities",
-        hint="Intersect discovered tools with the certified analyst allowlist.",
+        hint="Apply discovery through the approved read-tool policy.",
     )
 
 
-def evaluate_student_evidence_gate(
-    hits: Sequence[CapstoneEvidenceHit],
-) -> EvidenceGateDecision:
-    """Require document evidence for both companies in the fixed mission."""
+def evaluate_student_evidence_gate(hits: tuple[CapstoneEvidenceHit, ...]) -> EvidenceGateDecision:
+    """Return a compact evidence-gate decision for the completed run."""
 
     raise StudentIntegrationIncomplete(
         seam="evaluate_student_evidence_gate",
-        hint="Require document evidence for both companies before release.",
+        hint="Require document evidence for both companies.",
     )
 
 
-def assemble_public_briefing_view(result: ResearchRunResult) -> CapstoneRunView:
-    """Convert a completed domain result to the safe public presentation model."""
+def assemble_public_briefing_view(result: ResearchRunResult):
+    """Build the safe public run view for the learner-facing output."""
 
     raise StudentIntegrationIncomplete(
         seam="assemble_public_briefing_view",
-        hint="Convert the run through the public presentation boundary.",
+        hint="Use the display-safe public view boundary.",
     )

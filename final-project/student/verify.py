@@ -459,10 +459,9 @@ def _check_diagnostic_case() -> None:
         retriever=_DiagnosticRetriever(payload["drop_company"]),
         run_id_factory=lambda: "student-diagnostic-gate",
     ).run(ResearchRequest.reference())
-    if (
-        result.status == "insufficient_evidence"
-        and result.evidence_gate.missing_requirements
-        == ("Schneider Electric document evidence",)
+    if result.status == "insufficient_evidence" and (
+        "Schneider Electric document evidence" in result.evidence_gate.missing_requirements
+        or "Schneider Electric contextual table evidence" in result.evidence_gate.missing_requirements
     ):
         raise _DiagnosticRegression
     if result.status != "completed" or not result.deterministic_evaluation.release_passed:

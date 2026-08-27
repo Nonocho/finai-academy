@@ -23,6 +23,16 @@ Keep **Recorded demo** and **Certified snapshots** selected, open **Reference mi
 
 The result shows the validated plan, tool activity, typed recovery and replan, evidence gate, five briefing sections, citations, execution trace, and deterministic release evaluation. The optional judge is separate from the release decision.
 
+## Short classroom rebuild
+
+For the small 2–3 hour student build, run:
+
+```bash
+uv run streamlit run final-project/simple_app.py
+```
+
+This route keeps the whole learning path in one file: parse the two tracked reports, create page/table chunks, retrieve matching evidence, and generate a cited answer. The larger reference and integration-challenge routes below are instructor material.
+
 ## Folders and routes
 
 - [`reference/`](reference/README.md) is the complete application and correction route for demonstration and review.

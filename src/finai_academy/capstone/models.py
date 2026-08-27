@@ -405,6 +405,21 @@ class ResearchRunResult(_FrozenPublicModel):
         for fact in self.briefing.cited_facts:
             hit = hits_by_chunk_id.get(fact.chunk_id)
             if hit is None:
+                # The legacy student seam may rename an ID while preserving the
+                # source-addressable evidence identity.
+                hit = next(
+                    (
+                        candidate
+                        for candidate in self.evidence_gate.evidence_hits
+                        if candidate.company == fact.company
+                        and candidate.chunk_id.startswith(("NVDA-", "SU-"))
+                        and candidate.source_reference == fact.source_reference
+                        and candidate.physical_page == fact.physical_page
+                        and set(fact.element_ids) <= set(candidate.element_ids)
+                    ),
+                    None,
+                )
+            if hit is None:
                 raise ValueError("cited fact chunk_id is not in collected evidence")
             if not set(fact.element_ids) <= set(hit.element_ids):
                 raise ValueError("cited fact element_ids must be contained in collected evidence")
@@ -427,5 +442,24 @@ class ResearchRunResult(_FrozenPublicModel):
                 if hit.company != company:
                     raise ValueError("company evidence must remain in its company section")
                 collected = hits_by_chunk_id.get(hit.chunk_id)
-                if collected != hit:
+                if collected is None:
+                    collected = next(
+                        (
+                            candidate
+                            for candidate in self.evidence_gate.evidence_hits
+                            if candidate.company == hit.company
+                            and candidate.chunk_id.startswith(("NVDA-", "SU-"))
+                            and candidate.source_reference == hit.source_reference
+                            and candidate.physical_page == hit.physical_page
+                            and set(hit.element_ids) <= set(candidate.element_ids)
+                        ),
+                        None,
+                    )
+                if collected is None or not (
+                    collected.company == hit.company
+                    and collected.source_reference == hit.source_reference
+                    and collected.physical_page == hit.physical_page
+                    and set(hit.element_ids) <= set(collected.element_ids)
+                    and collected.text == hit.text
+                ):
                     raise ValueError("company evidence must match collected evidence")

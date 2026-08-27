@@ -203,6 +203,7 @@ class CapstoneRunView(_FrozenPublicModel):
     run_id: str
     question: str
     answer: AnswerView | None
+    briefing: BriefingSectionsView | None = None
     evidence: tuple[EvidenceComparisonView, ...]
     how_it_worked: HowItWorkedView
     release: ReleaseView
@@ -250,10 +251,11 @@ def to_run_view(result: ResearchRunResult) -> CapstoneRunView:
         run_id=result.run_id,
         question=result.request.question,
         answer=_answer_view(result, citations),
+        briefing=_briefing_sections(result.briefing),
         evidence=tuple(
             _evidence_view(hit)
             for hit in result.evidence_gate.evidence_hits
-            if False
+            if _is_renderable_evidence(hit)
         ),
         how_it_worked=HowItWorkedView(
             pipeline_steps=_PIPELINE_STEPS,
@@ -311,6 +313,37 @@ def _citation_rows(result: ResearchRunResult) -> tuple[CitedFactRowView, ...]:
     )
 
 
+def _briefing_sections(briefing: object) -> BriefingSectionsView | None:
+    if briefing is None:
+        return None
+    if not hasattr(briefing, "executive_summary"):
+        return None
+    cited_facts = getattr(briefing, "cited_facts", ())
+    if not cited_facts:
+        return None
+    company_claims: dict[str, list[str]] = {}
+    for fact in cited_facts:
+        company = getattr(fact, "company", None)
+        claim = getattr(fact, "claim", None)
+        if isinstance(company, str) and isinstance(claim, str):
+            company_claims.setdefault(company, []).append(claim)
+    if not company_claims:
+        return None
+    return BriefingSectionsView(
+        executive_briefing=briefing.executive_summary,
+        company_evidence=tuple(
+            CompanyEvidenceView(company=company, claims=tuple(claims))
+            for company, claims in company_claims.items()
+        ),
+        cross_company_comparison=tuple(briefing.cross_company_observations),
+        limitations_and_open_questions=tuple(
+            briefing.limitations
+            + tuple(f"Open question: {question}" for question in briefing.open_questions)
+        ),
+        sources_and_execution=briefing.aggregate_sources,
+    )
+
+
 def _answer_view(
     result: ResearchRunResult, citations: tuple[CitedFactRowView, ...]
 ) -> AnswerView | None:
@@ -336,8 +369,7 @@ def _answer_view(
 def _evidence_view(hit: CapstoneEvidenceHit) -> EvidenceComparisonView:
     """Map one certified evidence hit; callers ensure its visual assets exist."""
 
-    assert hit.crop_asset_key is not None
-    assert hit.original_markdown is not None
+    assert hit.crop_asset_key is not None and hit.original_markdown is not None
     report = (
         "NVIDIA FY2026 annual report"
         if hit.company == "NVIDIA"
@@ -360,6 +392,10 @@ def _evidence_view(hit: CapstoneEvidenceHit) -> EvidenceComparisonView:
             ("Document hash", hit.document_sha256),
         ),
     )
+
+
+def _is_renderable_evidence(hit: CapstoneEvidenceHit) -> bool:
+    return hit.crop_asset_key is not None and hit.original_markdown is not None
 
 
 def _trace_row(event: object) -> TraceRowView:

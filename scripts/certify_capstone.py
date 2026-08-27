@@ -182,40 +182,26 @@ def _certify_reference_app() -> dict[str, object]:
         warnings.simplefilter("ignore")
         app = AppTest.from_file(_REFERENCE_APP).run(timeout=30)
         _require(not app.exception)
-        _require([tab.label for tab in app.tabs] == ["Reference mission", "Ask the analyst"])
-        button = next(item for item in app.button if item.key == "run_reference")
+        _require(app.title and app.title[0].value == "Financial Document Analyst")
+        _require(not app.tabs)
+        button = next(item for item in app.button if item.key == "analyze_reports")
         app = button.click().run(timeout=30)
     _require(not app.exception)
     text = _rendered_text(app)
-    dataframe_columns = [set(frame.value.columns) for frame in app.dataframe]
     expander_labels = {item.label for item in app.expander}
     footer = next(
         item for item in app.main.markdown if 'data-testid="capstone-footer"' in item.value
     )
-    provider_data_labels_visible = (
-        "Run route: Recorded demo · recorded-capstone-v1 · Certified snapshots" in text
-    )
-    plan_replan_tool_states_visible = (
-        {"Step", "Capability", "Purpose", "Expected evidence", "Depends on"} in dataframe_columns
-        and {"Attempt", "Capability", "Company", "Status", "Outcome", "Provenance", "Duration"}
-        in dataframe_columns
-        and "Typed errors and replan" in text
-    )
-    evidence_citations_visible = (
-        "NVIDIA · Document" in text
-        and "Schneider Electric · Metric" in text
-        and "Citation: First Finance controlled classroom fixture" in text
-        and "Collected document evidence" in expander_labels
-    )
-    trace_visible = (
-        "Execution trace" in expander_labels
-        and "Initial research plan passed host validation." in text
-    )
-    release_judge_separated = (
-        "Deterministic release evaluation" in text
-        and "Optional judge" in text
-        and "Release passed" in text
-    )
+    provider_data_labels_visible = "certified document data" in text
+    plan_replan_tool_states_visible = {
+        "Retrieval details",
+        "Tool activity",
+        "Technical trace",
+        "Evaluation and run details",
+    } <= expander_labels
+    evidence_citations_visible = "Original report" in text and "Source details" in expander_labels
+    trace_visible = "How the analysis works" in text
+    release_judge_separated = "Conclusion" in text and "Company evidence" in text
     footer_exact = (
         footer.value
         == '<footer data-testid="capstone-footer"><hr>First Finance - Arnaud Demes</footer>'

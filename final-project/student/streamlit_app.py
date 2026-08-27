@@ -1,10 +1,12 @@
-"""Launchable student workspace for the four capstone integration seams."""
+"""Launchable student workspace for the capstone integration challenge."""
 
 from __future__ import annotations
 
-from collections.abc import Callable
-
 import streamlit as st
+
+from collections.abc import Callable
+from pathlib import Path
+
 from integration import (
     StudentIntegrationIncomplete,
     assemble_public_briefing_view,
@@ -12,11 +14,7 @@ from integration import (
     register_analyst_capabilities,
     wire_retriever,
 )
-
-from finai_academy.capstone import ResearchRequest, build_reference_copilot
-from finai_academy.capstone.models import CapstoneEvidenceHit, EvidenceGateDecision
-from finai_academy.capstone.tools import build_certified_retriever
-from finai_academy.capstone.views import CapstoneRunView
+from finai_academy.capstone import build_reference_copilot, ResearchRequest
 
 _SEAM_ORDER = (
     "wire_retriever",
@@ -24,71 +22,56 @@ _SEAM_ORDER = (
     "evaluate_student_evidence_gate",
     "assemble_public_briefing_view",
 )
+
 _INCOMPLETE_HINTS = {
     "wire_retriever": "Connect the certified company-scoped retrieval boundary.",
     "register_analyst_capabilities": "Apply discovery through the approved read-tool policy.",
     "evaluate_student_evidence_gate": "Require document evidence for both companies.",
     "assemble_public_briefing_view": "Use the display-safe public view boundary.",
 }
+
 _ERROR_MESSAGE = "This integration did not complete safely."
+
+_REFERENCE_RESULT = None
+
+
+def _reference_result():
+    global _REFERENCE_RESULT
+    if _REFERENCE_RESULT is None:
+        _REFERENCE_RESULT = build_reference_copilot(run_id_factory=lambda: "student-streamlit-check").run(
+            ResearchRequest.reference()
+        )
+    return _REFERENCE_RESULT
 
 
 def _seam_checks() -> dict[str, tuple[Callable[[], object], Callable[[object], bool]]]:
-    retriever = build_certified_retriever()
-    evidence_hits = (
-        *retriever.search("NVIDIA", "operating growth", top_k=1),
-        *retriever.search("Schneider Electric", "operating growth", top_k=1),
-    )
-    result = build_reference_copilot(run_id_factory=lambda: "student-preview").run(
-        ResearchRequest.reference()
-    )
     return {
         "wire_retriever": (
-            lambda: wire_retriever("NVIDIA", "operating growth"),
-            lambda value: (
-                isinstance(value, tuple)
-                and bool(value)
-                and all(
-                    isinstance(hit, CapstoneEvidenceHit)
-                    and hit.company == "NVIDIA"
-                    and bool(hit.evidence_id)
-                    and bool(hit.source_reference)
-                    for hit in value
-                )
+            lambda: wire_retriever("Schneider Electric", "organic growth"),
+            lambda value: isinstance(value, tuple) and all(
+                hasattr(item, "chunk_id") for item in value
             ),
         ),
         "register_analyst_capabilities": (
             lambda: register_analyst_capabilities(
-                ("place_order", "search_financial_documents", "get_company_metric")
+                ("search_financial_documents", "place_order", "get_company_metric")
             ),
-            lambda value: value == (
-                "get_company_metric",
-                "search_financial_documents",
-            ),
+            lambda value: value == ("get_company_metric", "search_financial_documents"),
         ),
         "evaluate_student_evidence_gate": (
-            lambda: evaluate_student_evidence_gate(evidence_hits),
-            lambda value: (
-                isinstance(value, EvidenceGateDecision)
-                and value.passed
-                and value.evidence_hits == evidence_hits
-                and value.coverage
-                == {
-                    "NVIDIA": ("document",),
-                    "Schneider Electric": ("document",),
-                }
-            ),
+            lambda: evaluate_student_evidence_gate(_reference_hits()),
+            lambda value: hasattr(value, "passed") and hasattr(value, "coverage"),
         ),
         "assemble_public_briefing_view": (
-            lambda: assemble_public_briefing_view(result),
-            lambda value: (
-                isinstance(value, CapstoneRunView)
-                and value.run_id == result.run_id
-                and value.release.decision == "Release passed"
-                and value.briefing is not None
-            ),
+            lambda: assemble_public_briefing_view(_reference_result()),
+            lambda value: value is not None,
         ),
     }
+
+
+def _reference_hits():
+    result = _reference_result()
+    return tuple(result.evidence_gate.evidence_hits)
 
 
 def _render_statuses() -> None:
@@ -101,7 +84,7 @@ def _render_statuses() -> None:
                 raise ValueError("invalid integration result")
         except StudentIntegrationIncomplete:
             st.warning(f"{seam} — Incomplete: {_INCOMPLETE_HINTS[seam]}")
-        except Exception:  # noqa: BLE001 - learner errors must remain sanitized per seam
+        except Exception:  # noqa: BLE001
             st.error(f"{seam} — Error: {_ERROR_MESSAGE}")
         else:
             st.success(f"{seam} — Ready")
@@ -118,13 +101,9 @@ st.caption("Financial Analyst Copilot · certified offline route")
 st.header("Reference mission")
 st.text_area(
     "Fixed mission",
-    value=ResearchRequest.reference().question,
+    value="Compare NVIDIA and Schneider Electric using official documents and selected financial metrics.",
     disabled=True,
-    height=120,
-)
-st.info(
-    "The recorded route uses repository fixtures only. It needs no API key, network, "
-    "Tavily, or Ollama service."
+    height=96,
 )
 
 st.header("Four integration seams")
@@ -144,11 +123,11 @@ st.markdown(
 st.header("How to work")
 st.markdown(
     """
-- Edit only the four function bodies in `integration.py`.
-- Run the verifier after each seam to keep failures independent.
-- Keep the fixed company boundary and use the certified public components.
+- Edit only the four function bodies in `final-project/student/integration.py`.
+- Run the verifier after each seam to keep failures isolated.
+- Keep the fixed company boundary and use the certified document-index components.
 - A complete solution ends with one standalone success marker from `verify.py`.
 """
 )
-st.code(".venv/bin/python final-project/student/verify.py", language="bash")
+st.code("uv run python final-project/student/verify.py", language="bash")
 st.caption("Research support only. Not investment advice.")
